@@ -1,1 +1,1 @@
-# -plat_web_movil_medicos
+# plat_web_movil_medicos
