@@ -143,14 +143,14 @@ commits, proceso de pull request y Definición de Terminado.
 
 ## Equipo — Grupo 15
 
-| Rol | Integrante |
-|---|---|
-| Scrum Master | Luis Mateo |
-| Product Owner | Alexander Osinaga Blanco |
-| Developer | Karen Ortega |
-| Developer | Aguayo |
-| Developer | Iporo |
-| Developer | Mamani |
+| Rol | Integrante | Registrto |
+|---|---|---|
+| Scrum Master | Luis Mateo Hurtado Castro | 222008687 |
+| Product Owner | Alexander Osinaga Blanco | 223043631 |
+| Developer | Karen Paola Ortega Mancilla | 222056592 |
+| Developer | Luis Miguel Aguayo Quiroz | 218000405 |
+| Developer | José Daniel Iporo Chulque | 216024773 |
+| Developer | Michael Alexander Mamani Samurio | 220153590 |
 
 ## Licencia
 
