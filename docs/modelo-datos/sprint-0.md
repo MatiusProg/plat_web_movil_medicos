@@ -1,5 +1,20 @@
 # Modelo de datos — Sprint 0
 
+> **Los tres archivos de esta carpeta, y para qué sirve cada uno**
+>
+> | Archivo | Qué es | ¿Se ejecuta? |
+> |---|---|---|
+> | `sprint-0.md` | este documento: las decisiones y el porqué | — |
+> | `esquema-generado.sql` | el DDL **real**, salida de `manage.py sqlmigrate`. Es el que va a la documentación del proyecto | **no** |
+> | `sprint-0.sql` | el borrador de diseño con el que se acordó el modelo, previo a Django | **no** |
+>
+> El esquema se aplica **siempre** con `python manage.py migrate`. Ninguno de
+> los dos `.sql` se ejecuta: si se corrieran, Django después querría crear
+> tablas que ya existen.
+>
+> `esquema-generado.sql` se regenera con `python scripts/generar_esquema.py`
+> cada vez que se agrega una migración.
+
 Historias cubiertas: **US-43, US-44, US-45, US-01, US-02, US-04**
 (las seis del Sprint 0 según el apartado 3.11 del documento del proyecto).
 

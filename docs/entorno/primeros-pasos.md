@@ -31,6 +31,54 @@ sin pedirle nada a nadie.
 
 ---
 
+## 0. Lo que tiene que estar instalado
+
+Tres cosas. Si ya las tenés, saltá al paso 1.
+
+| | Para qué | Comprobar con |
+|---|---|---|
+| **Git** | clonar el repositorio | `git --version` |
+| **Docker Desktop** | levantar la base de datos | `docker --version` |
+| **Python 3.13** | correr el backend | paso 1 |
+
+```powershell
+winget install --id Git.Git -e
+winget install --id Docker.DockerDesktop -e
+```
+
+En macOS: `brew install git` y Docker Desktop desde `docker.com`.
+
+### Docker Desktop en Windows: la parte que suele trabar
+
+Docker necesita **virtualización activada**. Si al abrirlo aparece un error
+sobre WSL 2 o sobre virtualización, hacé esto en PowerShell **como
+administrador** y reiniciá:
+
+```powershell
+dism /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+wsl --set-default-version 2
+```
+
+Si sigue fallando después de reiniciar, la virtualización está apagada en la
+BIOS/UEFI y hay que activarla ahí (suele llamarse *Intel VT-x*, *AMD-V* o
+*SVM Mode*).
+
+Para confirmar que quedó bien:
+
+```powershell
+(Get-CimInstance Win32_ComputerSystem).HypervisorPresent   # tiene que ser True
+```
+
+> Ojo con un falso negativo: con el hipervisor corriendo,
+> `Win32_Processor.VirtualizationFirmwareEnabled` reporta **False** aunque todo
+> esté bien. El indicador válido es `HypervisorPresent`.
+
+**Docker Desktop tiene que estar abierto** cada vez que trabajes. No arranca
+solo salvo que lo configures.
+
+---
+
 ## 1. Instalar Python 3.13
 
 **Tiene que ser 3.13.** Ni 3.12 ni 3.14. Si ya tenés otra versión instalada,
@@ -99,6 +147,30 @@ SECRET_KEY=aqui_va_lo_que_te_imprimio_el_comando
 ```
 
 **Eso es todo lo que hay que completar.** Las demás líneas ya vienen listas.
+
+### El `DATABASE_URL` ya viene puesto y es el correcto
+
+No hay que pedírselo a nadie. La plantilla ya trae éste, que apunta a tu
+contenedor local:
+
+```
+DATABASE_URL=postgresql://app_user:app_local_pass@localhost:5432/plataforma
+```
+
+Esa contraseña (`app_local_pass`) **no es un secreto**: es la del PostgreSQL
+que corre en tu propia máquina, está a la vista en `docker-compose.yml` y sólo
+sirve en `localhost`. Es igual para los seis.
+
+**No necesitás las credenciales de Supabase.** Todo el desarrollo y todas las
+pruebas van contra tu contenedor. Las de Supabase las tiene sólo el Scrum
+Master, para aplicar migraciones, y si alguna vez hicieran falta se piden por
+el gestor de contraseñas del equipo — nunca por WhatsApp y nunca dentro del
+repositorio, que es público.
+
+Una advertencia concreta, porque el error es fácil de cometer: la contraseña de
+Supabase que **sí** funcionaría es la del usuario `postgres`, y ese rol tiene
+`BYPASSRLS`. Con ella la conexión anda, pero el aislamiento entre
+organizaciones queda apagado y las pruebas pasan sin verificar nada.
 
 Tres cosas importantes:
 
