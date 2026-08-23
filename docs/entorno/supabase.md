@@ -29,12 +29,13 @@ Nadie corre `ALTER TABLE` a mano en Supabase. Si el esquema de Supabase y las
 migraciones se separan, `makemigrations` empieza a generar migraciones absurdas
 y no hay forma limpia de volver atrás.
 
-> **Nota de estado (2026-08-23).** Todavía no existe el proyecto Django, así que
-> hoy el esquema se aplica corriendo `docs/modelo-datos/sprint-0.sql` a mano.
-> Eso es un arranque, no el procedimiento definitivo: en cuanto existan los
-> modelos de Django, la base de Supabase se **borra y se reconstruye** desde las
-> migraciones. Como todavía no hay datos reales, no se pierde nada. Conviene
-> hacerlo antes de cargar el primer dato de demostración.
+> **Nota de estado (2026-08-23).** El proyecto Django ya existe, así que el
+> esquema se aplica **siempre con `python manage.py migrate`**.
+>
+> El archivo `docs/modelo-datos/sprint-0.sql` pasó a ser sólo documentación de
+> referencia: sirve para leer el modelo completo de un vistazo y para discutirlo
+> en equipo. **No se ejecuta.** Si alguien lo corre contra una base, Django
+> después va a querer crear tablas que ya existen.
 
 ---
 
@@ -43,8 +44,11 @@ y no hay forma limpia de volver atrás.
 Lo hace **una sola persona** (el Scrum Master). Los demás sólo se conectan.
 
 1. Entrar a `supabase.com`, iniciar sesión con GitHub.
-2. **New project**. Nombre: `plat-medicos-demo`. Región: la más cercana
-   (`South America (São Paulo)` o `East US`).
+2. **New project**. Nombre: `plat-medicos-demo`. Región: **`East US (North
+   Virginia)`** — `aws-0-us-east-1`. No se eligió por cercanía geográfica a
+   Bolivia sino por cercanía a **Railway**, donde vive la aplicación: la
+   latencia que importa es la de cada consulta entre el backend y la base, no
+   la del navegador.
 3. Anotar la **Database Password** que genera. Es la del usuario `postgres`, la
    única vez que se muestra. Va al gestor de contraseñas del equipo, no a
    WhatsApp y no al repositorio.
@@ -105,47 +109,57 @@ El rol `postgres` de Supabase **sí** tiene `BYPASSRLS`: por eso el SQL Editor y
 el Table Editor del panel siempre muestran todas las filas de todos los
 inquilinos. No es un error de las políticas.
 
-### 2.2 · Aplicar el modelo — **como `app_user`, no desde el SQL Editor**
+### 2.2 · Aplicar el modelo — con `migrate`, **nunca desde el SQL Editor**
 
-El SQL Editor del panel corre como `postgres`. Si el esquema se crea desde ahí,
-las tablas quedan siendo de `postgres` y hay que ir repartiendo permisos a mano.
-Peor: no se parece a lo que hará Django, que crea las tablas como `app_user`.
+El SQL Editor del panel corre como `postgres`. Si el esquema se creara desde
+ahí, las tablas quedarían siendo de `postgres` y habría que repartir permisos a
+mano. Peor: no se parecería a lo que hace Django, que las crea como `app_user`.
 
-Lo correcto es conectarse con `psql` **como `app_user`** y correr el archivo:
+Lo hace **una sola persona**, con el `DATABASE_URL` de Supabase en su `.env`:
 
 ```bash
-psql "postgresql://app_user.PROJECT_REF:CLAVE@aws-0-sa-east-1.pooler.supabase.com:5432/postgres" \
-  -v ON_ERROR_STOP=1 -f docs/modelo-datos/sprint-0.sql
+cd backend
+python manage.py migrate
 ```
 
 Así las 14 tablas quedan siendo de `app_user`, igual que en local y que en
 producción. Es exactamente por esto que las políticas llevan `FORCE`: sin él,
 `app_user` sería dueño y quedaría exento de sus propias reglas.
 
-Al terminar, comprobar:
+Al terminar, comprobar desde el SQL Editor:
 
 ```sql
+-- 14 tablas nuestras + django_migrations, django_content_type, auth_* y
+-- token_blacklist_*: en total unas 22.
 SELECT count(*) FROM information_schema.tables
-WHERE table_schema = 'public' AND table_type = 'BASE TABLE';   -- 14
+ WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
 
-SELECT relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE n.nspname = 'public' AND c.relkind = 'r'
-  AND NOT (c.relrowsecurity AND c.relforcerowsecurity);        -- solo: permissions
+-- Ninguna tabla con organization_id puede quedar sin RLS forzado.
+SELECT c.relname
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  JOIN information_schema.columns col
+    ON col.table_name = c.relname AND col.table_schema = n.nspname
+ WHERE n.nspname = 'public' AND c.relkind = 'r'
+   AND col.column_name = 'organization_id'
+   AND NOT (c.relrowsecurity AND c.relforcerowsecurity);   -- debe salir vacío
 ```
 
-### 2.3 · Si aun así lo corriste desde el SQL Editor
+### 2.3 · Volver a empezar en Supabase
 
-Entonces las tablas son de `postgres` y hay que habilitar a `app_user`:
+Si el esquema quedó inconsistente —por ejemplo porque alguien corrió el `.sql`
+a mano antes de que existieran las migraciones— la salida es reconstruir:
 
 ```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES    IN SCHEMA public TO app_user;
-GRANT USAGE, SELECT                  ON ALL SEQUENCES IN SCHEMA public TO app_user;
-
--- RNF-18: la bitácora es inalterable.
-REVOKE UPDATE, DELETE ON audit_log, login_attempts FROM app_user;
+-- BORRA TODO el esquema public. Sólo mientras no haya datos que importen.
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+ALTER SCHEMA public OWNER TO app_user;
+GRANT USAGE, CREATE ON SCHEMA public TO app_user;
 ```
 
-Si seguiste 2.2, este paso **no hace falta**.
+Y después `python manage.py migrate` de nuevo. **Esto no se hace una vez que
+haya datos de demostración cargados**: ahí el camino es una migración nueva.
 
 ### 2.4 · Verificar que el aislamiento quedó activo
 
@@ -173,20 +187,55 @@ cp .env.example .env
 
 ### De dónde sale cada valor
 
-| Variable | De dónde | ¿Hace falta ahora? |
-|---|---|---|
-| `SECRET_KEY` | se genera, ver abajo | **sí** |
-| `DEBUG` | `True` en local, `False` en Railway | sí, ya viene |
-| `ALLOWED_HOSTS` | `localhost,127.0.0.1` en local | sí, ya viene |
-| `DATABASE_URL` | tu contenedor local **o** Supabase, ver abajo | **sí** |
-| `DEFAULT_TENANT_ID` | consulta a la base, después de sembrar | sí, en cuanto exista una organización |
-| `VITE_API_BASE_URL` | `http://localhost:8000/api` | sí, ya viene |
-| `STRIPE_SECRET_KEY` | panel de Stripe, modo prueba | no — Sprint 2 |
-| `STRIPE_WEBHOOK_SECRET` | `stripe listen` o panel de Stripe | no — Sprint 2 |
-| `OPENAI_API_KEY` | `platform.openai.com` | no — Sprint 3 |
+Django lee **seis** variables. Las demás de la plantilla todavía no las usa
+nadie.
 
-Las tres últimas **se dejan vacías** por ahora. No hay que ir a sacar claves de
-Stripe ni de OpenAI para el Sprint 0.
+| Variable | ¿La lee Django? | De dónde | ¿Hace falta ahora? |
+|---|---|---|---|
+| `SECRET_KEY` | sí | se genera, ver abajo | **sí, la única obligatoria** |
+| `DATABASE_URL` | sí | tu contenedor local **o** Supabase | sí — el valor local ya viene correcto |
+| `DEBUG` | sí | `True` en local, `False` en Railway | ya viene |
+| `ALLOWED_HOSTS` | sí | `localhost,127.0.0.1` en local | ya viene |
+| `CORS_ALLOWED_ORIGINS` | sí | puertos de Vite y CRA | ya viene |
+| `DEFAULT_TENANT_ID` | sí | consulta a la base | **vacía** hasta que exista una organización (US-43) |
+| `STRIPE_SECRET_KEY` | todavía no | panel de Stripe, modo prueba | no — Sprint 2 |
+| `STRIPE_WEBHOOK_SECRET` | todavía no | `stripe listen` | no — Sprint 2 |
+| `OPENAI_API_KEY` | todavía no | `platform.openai.com` | no — Sprint 3 |
+| `VITE_API_BASE_URL` | **no, la lee Vite** | `http://localhost:8000/api` | no — Sprint 1 |
+
+Las cuatro últimas **se dejan vacías**. No hay que ir a sacar claves de Stripe
+ni de OpenAI para el Sprint 0.
+
+`DEFAULT_TENANT_ID` se deja vacía a propósito: no existe ninguna organización
+hasta que US-43 cree la primera. Después sale de la base:
+
+```bash
+docker compose exec db psql -U app_user -d plataforma \
+  -c "SELECT id, slug, name FROM organizations;"
+```
+
+### Formato — dos reglas, verificadas contra django-environ
+
+1. **Nunca un comentario en la misma línea que un valor.** No se descarta: se
+   vuelve parte del valor. `VAR=abc  # nota` llega como `'abc  # nota'`.
+2. **Sin espacios alrededor del `=`.** `VAR = abc` descarta la línea entera y
+   la variable queda sin definir, sin ningún aviso.
+
+Lo que **sí** está permitido, y suele darse por prohibido de más:
+
+- Un `#` dentro del valor. `VAR=abc#def` llega entero, así que una contraseña
+  con `#` no da problemas.
+- Las comillas. `VAR="abc def"` llega como `abc def`: se quitan solas.
+
+### ¿Cuál de las dos contraseñas va en `DATABASE_URL`?
+
+La de **`app_user`**, siempre. La regla: la contraseña tiene que ser la del
+usuario que aparece en la URL, y ahí el usuario es `app_user.PROJECT_REF`.
+
+La *Database Password* que generó Supabase es la del rol `postgres`, y sólo se
+usa para el `pg_dump` de la sección 5.2. **Nunca va en el `DATABASE_URL`**:
+`postgres` tiene `BYPASSRLS`, así que la conexión funcionaría igual pero con el
+aislamiento apagado y las pruebas pasando sin verificar nada.
 
 #### `SECRET_KEY`
 
@@ -235,7 +284,7 @@ La cadena que da el panel viene con el usuario `postgres`. Hay que cambiar dos
 cosas: el usuario a `app_user.PROJECT_REF` y la contraseña a la de `app_user`.
 
 ```
-DATABASE_URL=postgresql://app_user.abcdefghijklmnopqrst:CLAVE_APP_USER@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://app_user.abcdefghijklmnopqrst:CLAVE_APP_USER@aws-0-us-east-1.pooler.supabase.com:5432/postgres
              ................^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                              usuario   tu PROJECT_REF                           el host que muestre TU panel
 ```
@@ -283,7 +332,7 @@ Ya tenés el cliente: viene con el PostgreSQL 18 nativo, en
 `C:\Program Files\PostgreSQL\18\bin` (ya está en el PATH de usuario).
 
 ```bash
-psql "postgresql://app_user.abcdefghijklmnopqrst:CLAVE@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
+psql "postgresql://app_user.abcdefghijklmnopqrst:CLAVE@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 ```
 
 Las comillas son necesarias en PowerShell. La conexión va cifrada sola; no hace
@@ -302,7 +351,7 @@ Ya lo tenés instalado con el PostgreSQL 18.
 *Servers → Register → Server*:
 
 - **General → Name:** `Supabase demo`
-- **Connection → Host:** `aws-0-sa-east-1.pooler.supabase.com` (el de tu panel)
+- **Connection → Host:** `aws-0-us-east-1.pooler.supabase.com` (el de tu panel)
 - **Port:** `5432`
 - **Maintenance database:** `postgres`
 - **Username:** `app_user.abcdefghijklmnopqrst`
@@ -339,23 +388,29 @@ Sí, se puede. Pero **sólo los datos, nunca el esquema**.
 Cada uno arma su base local desde la misma fuente que Supabase:
 
 ```bash
-# Hoy (todavía sin Django):
 docker compose down -v          # borra el volumen y arranca de cero
 docker compose up -d
-docker compose exec -T db psql -U app_user -d plataforma -v ON_ERROR_STOP=1 \
-  -f - < docs/modelo-datos/sprint-0.sql
 
-# En cuanto exista el proyecto Django, esto lo reemplaza:
-python manage.py migrate
+cd backend
+python manage.py migrate        # con el DATABASE_URL local en el .env
+pytest                          # 21 en verde = el aislamiento quedó activo
 ```
 
-**`-U app_user`, no `-U postgres`.** Es lo que hará Django, y deja las tablas
-con el dueño correcto. Dentro del contenedor la conexión va por socket local,
-así que no pide contraseña. Verificar que quedó bien:
+Verificar que las tablas quedaron con el dueño correcto:
 
 ```bash
 docker compose exec db psql -U app_user -d plataforma -c "\dt"
-# las 14 tablas deben aparecer con Owner = app_user
+# las 14 tablas nuestras deben aparecer con Owner = app_user
+```
+
+**Ojo con el `DATABASE_URL`.** Si lo tenés apuntando a Supabase, `migrate` se
+aplica **a Supabase**, no a tu contenedor. Antes de correrlo, confirmá a dónde
+apunta:
+
+```bash
+python manage.py shell -c "from django.db import connection; print(connection.settings_dict['HOST'])"
+# localhost            -> tu contenedor
+# ...supabase.com      -> la base compartida
 ```
 
 Así los esquemas son idénticos por construcción, sin depender de la red ni de
@@ -366,7 +421,7 @@ contenedor no existen.
 ### 5.2 · Los datos sí: exportar de Supabase
 
 ```bash
-pg_dump "postgresql://postgres.PROJECT_REF:CLAVE_POSTGRES@aws-0-sa-east-1.pooler.supabase.com:5432/postgres" \
+pg_dump "postgresql://postgres.PROJECT_REF:CLAVE_POSTGRES@aws-0-us-east-1.pooler.supabase.com:5432/postgres" \
   --data-only \
   --schema=public \
   --no-owner \

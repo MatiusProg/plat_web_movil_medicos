@@ -187,7 +187,8 @@ docs/
 
 | Si vas a… | Leé primero |
 |---|---|
-| montar tu entorno | [docs/entorno/versiones.md](docs/entorno/versiones.md) |
+| **montar tu entorno por primera vez** | **[docs/entorno/primeros-pasos.md](docs/entorno/primeros-pasos.md)** — de cero a `21 passed` |
+| entender por qué Python 3.13 y no 3.14 | [docs/entorno/versiones.md](docs/entorno/versiones.md) |
 | conectarte a Supabase o traerte datos | [docs/entorno/supabase.md](docs/entorno/supabase.md) |
 | tocar la base de datos | [docs/modelo-datos/sprint-0.md](docs/modelo-datos/sprint-0.md) |
 | instalar Flutter | [docs/entorno/setup-movil.md](docs/entorno/setup-movil.md) |
