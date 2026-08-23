@@ -48,6 +48,11 @@ winget install --id Docker.DockerDesktop -e
 
 En macOS: `brew install git` y Docker Desktop desde `docker.com`.
 
+> **¿Tu máquina no puede con Docker?** Pasa en equipos más antiguos o en
+> Windows Home sin virtualización. **Se puede trabajar igual**: instalás
+> PostgreSQL directamente y seguís [sin-docker.md](sin-docker.md). Está
+> verificado que las 6 migraciones y las 21 pruebas pasan igual.
+
 ### Docker Desktop en Windows: la parte que suele trabar
 
 Docker necesita **virtualización activada**. Si al abrirlo aparece un error
