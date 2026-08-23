@@ -1,0 +1,38 @@
+# =========================================================================
+#  Dependencias del backend — versiones fijadas para los seis integrantes.
+#
+#  Requiere Python 3.13.x. NO usar 3.14: djangorestframework-simplejwt
+#  declara soporte hasta Django 5.2, y Django 5.2 no cubre Python 3.14.
+#  El porqué está en docs/entorno/versiones.md.
+#
+#  Instalación:
+#      py -3.13 -m venv .venv
+#      .venv\Scripts\activate          (Windows)
+#      source .venv/bin/activate       (macOS / Linux)
+#      pip install -r requirements.txt
+# =========================================================================
+
+# ---------- Núcleo ----------
+Django==5.2.17                      # LTS
+djangorestframework==3.18.0
+djangorestframework-simplejwt==5.5.1
+
+# ---------- Base de datos ----------
+# psycopg 3, no psycopg2: es el controlador vigente y trae wheels binarios
+# para Windows, macOS y Linux, sin necesidad de compilador.
+psycopg[binary]==3.3.4
+dj-database-url==3.1.2
+
+# ---------- Configuración ----------
+django-environ==0.14.0
+django-cors-headers==4.9.0
+
+# ---------- Seguridad ----------
+# RNF-04: las contraseñas se almacenan con hash y salt.
+argon2-cffi==25.1.0
+
+# ---------- Pruebas ----------
+# RNF-08 y criterio 4 de la Definición de Terminado: las pruebas de
+# aislamiento se conectan como app_user, nunca como postgres.
+pytest==9.1.1
+pytest-django==4.14.0
