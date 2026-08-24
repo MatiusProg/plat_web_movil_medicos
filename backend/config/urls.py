@@ -12,16 +12,30 @@ Cada historia del Sprint 0 agrega su router acá:
     US-04                ->  api/accounts/    (Michael)
 """
 
-from django.http import JsonResponse
 from django.urls import path
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+from tenancy.context import current_context
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def health(request):
-    """Sonda de estado. Sirve para verificar que el contenedor responde."""
-    return JsonResponse({
+    """Sonda de estado.
+
+    Es una vista de DRF y no de Django a propósito: así la autenticación
+    —y con ella el contexto de inquilino— corre igual que en cualquier
+    endpoint real. Devuelve el contexto tal como lo ve PostgreSQL, no lo que
+    la aplicación cree haber fijado.
+    """
+    tenant, es_admin_plataforma = current_context()
+    return Response({
         "status": "ok",
-        "tenant": str(getattr(request, "tenant_id", None) or ""),
-        "platform_admin": getattr(request, "is_platform_admin", False),
+        "tenant": tenant,
+        "platform_admin": es_admin_plataforma,
+        "user": request.user.email if request.user.is_authenticated else None,
     })
 
 

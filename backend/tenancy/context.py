@@ -67,6 +67,27 @@ def _scoped(tenant_id: str = "", platform_admin: bool = False):
                     _set(cursor, param, value)
 
 
+def set_context(organization_id=None, platform_admin: bool = False) -> None:
+    """Fija el contexto en la transacción en curso, sin abrir una nueva.
+
+    A diferencia de los gestores de abajo, esto **no restaura** nada: el valor
+    vive hasta que termine la transacción. Es lo que se necesita en el ciclo de
+    una petición, donde el contexto se fija una vez y dura hasta el COMMIT.
+
+    Lo usan el middleware y la clase de autenticación. Para todo lo demás
+    —scripts, tareas programadas, pruebas— usar los gestores, que sí restauran.
+    """
+    with connection.cursor() as cursor:
+        _set(cursor, TENANT_PARAM, str(organization_id or ""))
+        _set(cursor, PLATFORM_ADMIN_PARAM, "on" if platform_admin else "")
+
+
+def current_context() -> tuple[str, bool]:
+    """Devuelve el contexto vigente: (tenant_id, es_admin_de_plataforma)."""
+    with connection.cursor() as cursor:
+        return _get(cursor, TENANT_PARAM), _get(cursor, PLATFORM_ADMIN_PARAM) == "on"
+
+
 @contextmanager
 def tenant_context(organization_id):
     """Abre una transacción con el contexto de un inquilino.

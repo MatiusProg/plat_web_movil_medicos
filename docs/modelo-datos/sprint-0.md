@@ -600,6 +600,82 @@ La prueba 12 muestra el patrón funcionando.
 
 ---
 
+## 7.4 · Dónde vive el contexto en tiempo de ejecución
+
+Decidido a partir de la revisión de Karen del 2026-08-23. **Si vas a escribir
+un endpoint, esto es lo que tenés que saber.**
+
+### El contexto lo fija la autenticación, no el middleware
+
+Un middleware de Django corre **antes** de la vista; la autenticación de DRF
+ocurre **dentro** de la vista. Un middleware no puede leer el usuario del JWT:
+ahí `request.user` es siempre anónimo.
+
+Pero hay una razón más fuerte, y es la que cierra la discusión: **SimpleJWT
+resuelve el usuario con `User.objects.get(id=...)`, y `users` está protegida
+por RLS.** Sin contexto, esa consulta devuelve cero filas y la autenticación
+falla con *"User not found"*. O sea que el contexto tiene que fijarse **antes**
+de resolver el usuario, y por lo tanto no puede salir de la base.
+
+Conclusión: **la organización viaja en el token**.
+
+```
+1. validar la firma del token            (sin tocar la base)
+2. leer organization_id del claim
+3. SET LOCAL app.tenant_id               (ahora sí)
+4. resolver el usuario                   (ya es visible bajo RLS)
+5. comprobar el nivel de acceso          (segunda barrera)
+```
+
+Vive en `accounts/authentication.py`. El middleware quedó con dos
+responsabilidades y ninguna más: abrir la transacción de la petición, y
+resolver el inquilino por `X-Organization` **sólo para peticiones sin
+autenticar** — que es lo que necesita el login.
+
+### Reglas para el equipo
+
+**Nunca emitir tokens con `AccessToken.for_user()` ni `RefreshToken.for_user()`.**
+Usar `accounts.tokens.tokens_para(usuario)`. Un token sin los claims se rechaza
+con un 401 que explica el motivo.
+
+**Si el token y el encabezado `X-Organization` no coinciden, manda el token.**
+Era el riesgo que planteó Karen: si mandara el encabezado, bastaría cambiar una
+cabecera para leer los datos de otra organización. Hay una prueba que lo fija.
+
+**Un token cuya organización no es la del usuario ya lo rechaza la base**, no la
+aplicación: bajo el contexto reclamado, la fila del usuario no es visible. La
+aplicación sólo agrega la alerta, porque sin ella el intento pasaba en silencio
+y el panel de US-45 no lo veía nunca.
+
+### Tres cosas que cuestan una tarde si se descubren solas
+
+**`SET LOCAL` no se deshace al salir de un `atomic()` anidado.** Vive hasta el
+fin de la transacción. Por eso el middleware limpia el contexto de forma
+explícita al cerrar: con conexiones agrupadas, si sobreviviera, la petición
+siguiente leería datos ajenos.
+
+**DRF llama a `set_rollback()` cuando maneja una excepción.** Todo lo escrito
+durante un rechazo se descarta. Por eso las alertas de aislamiento no se
+guardan en el momento: quedan pendientes en la petición y el middleware las
+persiste **después** de cerrar la transacción. Si escribís auditoría en un
+camino de error, te va a pasar lo mismo.
+
+**DRF envuelve el `HttpRequest` de Django en su propio objeto `Request`.** Un
+atributo asignado sobre el envoltorio no lo ve el middleware. Hay que
+desenvolver con `request._request`.
+
+### Por qué las 21 pruebas pasaban con el backend roto
+
+Ninguna entraba por el ciclo HTTP: probaban las políticas de la base
+directamente. Un `ImportError` en el middleware dejaba el backend sin arrancar
+y `pytest` seguía en verde.
+
+`backend/tests/test_peticiones.py` cubre ese hueco: entra por el cliente HTTP,
+como un cliente real. **Todo endpoint nuevo suma su caso ahí, no sólo en
+`test_isolation.py`.**
+
+---
+
 ## 8. Lo que queda por decidir
 
 1. **`slug` en móvil.** En web sale del subdominio. En la app, el paciente tiene

@@ -58,14 +58,20 @@ INSTALLED_APPS = [
     "patients",
 ]
 
+# Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
+# JWT, no hay sesiones de navegador. AuthenticationMiddleware, además, exige
+# SessionMiddleware y dejaría un request.user siempre anónimo que invita a
+# construir el aislamiento sobre algo que nunca se completa.
+#
+# La autenticación la hace DRF dentro de la vista, con
+# accounts.authentication.AutenticacionDeInquilino, que es también donde se
+# fija el contexto de inquilino.
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    # Va DESPUÉS de AuthenticationMiddleware: necesita request.user para saber
-    # a qué organización pertenece la petición. Sin este middleware, toda
+    # Abre la transacción de la petición y resuelve el inquilino por slug para
+    # las peticiones sin autenticar (el login). Sin este middleware, toda
     # consulta sobre una tabla con RLS devuelve cero filas.
     "tenancy.middleware.TenantMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -157,8 +163,11 @@ LOGIN_LOCKOUT_MINUTES = 15
 #  API
 # --------------------------------------------------------------------------
 REST_FRAMEWORK = {
+    # NO usar rest_framework_simplejwt.authentication.JWTAuthentication a
+    # secas: no fija el contexto de inquilino, y sin contexto la propia
+    # búsqueda del usuario devuelve cero filas por RLS ("User not found").
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "accounts.authentication.AutenticacionDeInquilino",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
