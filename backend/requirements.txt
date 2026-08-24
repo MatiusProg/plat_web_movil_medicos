@@ -31,6 +31,16 @@ django-cors-headers==4.9.0
 # RNF-04: las contraseñas se almacenan con hash y salt.
 argon2-cffi==25.1.0
 
+# ---------- Servir en produccion ----------
+# gunicorn NO corre en Windows (necesita fcntl): se instala igual, pero solo
+# se ejecuta en el contenedor de Railway, que es Linux. En local se sigue
+# usando `manage.py runserver`.
+gunicorn==23.0.0
+# Sirve los archivos estaticos desde el propio proceso de Django. Sin esto,
+# con DEBUG=False el panel de administracion queda sin estilos: Railway no
+# tiene un servidor web delante que los sirva.
+whitenoise==6.11.0
+
 # ---------- Pruebas ----------
 # RNF-08 y criterio 4 de la Definición de Terminado: las pruebas de
 # aislamiento se conectan como app_user, nunca como postgres.

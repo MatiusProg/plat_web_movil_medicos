@@ -24,6 +24,7 @@ env = environ.Env(
     DATABASE_URL=(
         str, "postgresql://app_user:app_local_pass@localhost:5432/plataforma"
     ),
+    CSRF_TRUSTED_ORIGINS=(list, []),
     DEFAULT_TENANT_ID=(str, ""),
     SECRET_KEY=(str, "clave-insegura-solo-para-desarrollo-local"),
 )
@@ -75,6 +76,12 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Sirve los estáticos desde el propio proceso. Va justo detrás de
+    # SecurityMiddleware y por delante de todo lo demás, como pide su
+    # documentación: así una petición de un archivo estático se resuelve sin
+    # atravesar el resto de la cadena —incluido TenantMiddleware, que abriría
+    # una transacción para servir un CSS—.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
     # Abre la transacción de la petición y resuelve el inquilino por slug para
     # las peticiones sin autenticar (el login). Sin este middleware, toda
@@ -219,10 +226,38 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Donde `collectstatic` deja los archivos para que WhiteNoise los sirva. En
+# local no hace falta correrlo: con DEBUG=True Django los sirve solo.
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        # Comprime y agrega un hash al nombre de cada archivo, para poder
+        # cachearlos sin límite. Si un archivo referencia a otro que no existe,
+        # `collectstatic` falla en el despliegue en vez de servir un 404 en
+        # producción.
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 
 # --------------------------------------------------------------------------
 #  Seguridad en producción
 # --------------------------------------------------------------------------
+# La API es **sin estado**: autentica por JWT en el encabezado, no por cookie
+# de sesión, así que no hay CSRF que proteger y `CsrfViewMiddleware` no está
+# en la cadena. Es la razón del aviso security.W003 de `check --deploy`, y es
+# deliberado.
+#
+# Esta variable queda declarada igual, vacía por omisión, porque el día que
+# alguien agregue una vista con sesión —el panel de administración de Django,
+# que hoy ni siquiera está instalado— detrás del proxy HTTPS de Railway, los
+# POST van a fallar con "CSRF verification failed" y el motivo no es evidente.
+# Con la variable ya en su lugar, se resuelve poniendo el dominio:
+#     CSRF_TRUSTED_ORIGINS=https://<tu-servicio>.up.railway.app
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+
 if not DEBUG:
     # RNF-05: toda comunicación por HTTPS/TLS.
     SECURE_SSL_REDIRECT = True

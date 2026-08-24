@@ -1,0 +1,15 @@
+# =========================================================================
+#  Las dependencias de verdad están en backend/requirements.txt.
+#
+#  Este archivo existe para el constructor de Railway (Nixpacks), que decide
+#  que un proyecto es Python porque encuentra un requirements.txt EN LA RAÍZ.
+#  Con el nuestro dentro de backend/, el proyecto no se detecta y la
+#  construcción falla sin decir por qué.
+#
+#  Se resuelve apuntando al de verdad en vez de duplicar la lista: una lista
+#  duplicada se desincroniza en el primer cambio de versión.
+#
+#  Para instalar en local se sigue usando el de backend/, como dice la guía
+#  de primeros pasos.
+# =========================================================================
+-r backend/requirements.txt
