@@ -191,7 +191,8 @@ docs/
 
 | Si vas a… | Leé primero |
 |---|---|
-| **montar tu entorno por primera vez** | **[docs/entorno/primeros-pasos.md](docs/entorno/primeros-pasos.md)** — de cero a `21 passed` |
+| **montar tu entorno por primera vez** | **[docs/entorno/primeros-pasos.md](docs/entorno/primeros-pasos.md)** — de cero a las pruebas en verde |
+| **entrar al sistema y registrar tu organización** | **[docs/entorno/primera-organizacion.md](docs/entorno/primera-organizacion.md)** — el superadministrador y el primer inquilino |
 | montarlo en una máquina que no corre Docker | [docs/entorno/sin-docker.md](docs/entorno/sin-docker.md) |
 | entender por qué Python 3.13 y no 3.14 | [docs/entorno/versiones.md](docs/entorno/versiones.md) |
 | conectarte a Supabase o traerte datos | [docs/entorno/supabase.md](docs/entorno/supabase.md) |

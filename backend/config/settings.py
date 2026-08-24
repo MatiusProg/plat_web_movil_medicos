@@ -40,6 +40,12 @@ DEFAULT_TENANT_ID = env("DEFAULT_TENANT_ID") or None
 #  Aplicaciones
 # --------------------------------------------------------------------------
 INSTALLED_APPS = [
+    # `accounts` va ANTES que django.contrib.auth a propósito: Django resuelve
+    # los comandos de `manage.py` con el orden de esta lista, y `accounts`
+    # sobrescribe `createsuperuser` para fijar el contexto de plataforma —sin
+    # el cual RLS rechaza la fila—. Si se mueve más abajo, gana el comando de
+    # Django y crear el primer superadministrador vuelve a fallar.
+    "accounts",
     "django.contrib.contenttypes",
     # django.contrib.auth se instala por AbstractBaseUser y los hashers de
     # contraseña. Su sistema de permisos NO se usa: `auth_permission` y
@@ -53,7 +59,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "tenancy",
-    "accounts",
     "catalog",
     "patients",
 ]
