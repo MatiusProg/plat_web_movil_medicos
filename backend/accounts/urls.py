@@ -16,6 +16,7 @@ toca su bloque y no la línea de al lado.
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .views.auth import login, logout, refresh
 from .views.registration import register_patient
 
 app_name = "accounts"
@@ -32,4 +33,9 @@ router = DefaultRouter()
 urlpatterns = router.urls + [
     # ---------- US-01 (Alexander): registro de paciente -------------------
     path("register/", register_patient, name="register"),
+
+    # ---------- US-02 (Karen): inicio de sesión ---------------------------
+    path("login/", login, name="login"),
+    path("token/refresh/", refresh, name="token-refresh"),
+    path("logout/", logout, name="logout"),
 ]
