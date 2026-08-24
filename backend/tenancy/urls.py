@@ -17,6 +17,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views.metrics import IsolationAlertViewSet, dashboard
+from .views.organizations import OrganizationViewSet
 from .views.plans import (
     OrganizationSubscriptionViewSet,
     SubscriptionPlanViewSet,
@@ -26,6 +27,9 @@ from .views.plans import (
 app_name = "tenancy"
 
 router = DefaultRouter()
+
+# ---------- US-43 (Luis Mateo): alta de organizaciones --------------------
+router.register("organizations", OrganizationViewSet, basename="organization")
 
 # ---------- US-44 (Daniel): planes y suscripciones ------------------------
 router.register("plans", SubscriptionPlanViewSet, basename="platform-plan")
