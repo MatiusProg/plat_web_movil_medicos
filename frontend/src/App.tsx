@@ -1,37 +1,131 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import {
+    BrowserRouter,
+    Navigate,
+    Outlet,
+    Route,
+    Routes,
+} from 'react-router-dom'
+
+import { BarraPlataforma } from '@/componentes/BarraPlataforma'
 
 import { InicioSesion } from '@/paginas/InicioSesion'
 import { Panel } from '@/paginas/Panel'
+import { Planes } from '@/paginas/Planes'
+import { Suscripciones } from '@/paginas/Suscripciones'
+import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
+
 import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
 
-/**
- * Las rutas de la aplicación web.
- *
- * En el Sprint 0 son dos: la de entrar y la de después de entrar. Cada
- * historia de los sprints siguientes agrega la suya acá adentro de
- * `<RutaProtegida>`.
- */
+
+function LayoutPlataforma() {
+    return (
+        <div className="flex min-h-dvh bg-slate-50">
+
+            <BarraPlataforma />
+
+            <main className="min-w-0 flex-1 overflow-x-hidden">
+                <Outlet />
+            </main>
+
+        </div>
+    )
+}
+
+
+function Protegida({
+                       children,
+                   }: {
+    children: React.ReactNode
+}) {
+    return (
+        <RutaProtegida>
+            {children}
+        </RutaProtegida>
+    )
+}
+
+
 export default function App() {
-  return (
-    <ProveedorSesion>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/ingresar" element={<InicioSesion />} />
-          <Route
-            path="/panel"
-            element={
-              <RutaProtegida>
-                <Panel />
-              </RutaProtegida>
-            }
-          />
-          {/* Cualquier otra ruta cae en el panel, que a su vez manda al login
-              si no hay sesión. Así una URL vieja o mal escrita nunca deja una
-              pantalla en blanco. */}
-          <Route path="*" element={<Navigate to="/panel" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </ProveedorSesion>
-  )
+    return (
+        <ProveedorSesion>
+
+            <BrowserRouter>
+
+                <Routes>
+
+                    <Route
+                        path="/ingresar"
+                        element={
+                            <InicioSesion />
+                        }
+                    />
+
+
+                    <Route
+                        element={
+                            <Protegida>
+                                <LayoutPlataforma />
+                            </Protegida>
+                        }
+                    >
+
+                        <Route
+                            path="/panel"
+                            element={
+                                <Panel />
+                            }
+                        />
+
+                        <Route
+                            path="/planes"
+                            element={
+                                <Planes />
+                            }
+                        />
+
+                        <Route
+                            path="/suscripciones"
+                            element={
+                                <Suscripciones />
+                            }
+                        />
+
+                        <Route
+                            path="/suscripciones/:organizationId/historial"
+                            element={
+                                <HistorialSuscripcion />
+                            }
+                        />
+
+                    </Route>
+
+
+                    <Route
+                        path="/"
+                        element={
+                            <Navigate
+                                to="/panel"
+                                replace
+                            />
+                        }
+                    />
+
+
+                    <Route
+                        path="*"
+                        element={
+                            <Navigate
+                                to="/panel"
+                                replace
+                            />
+                        }
+                    />
+
+                </Routes>
+
+            </BrowserRouter>
+
+        </ProveedorSesion>
+    )
 }
