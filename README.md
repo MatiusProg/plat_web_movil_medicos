@@ -19,7 +19,7 @@ Proyecto académico — Sistemas de Información 2, Grupo 15.
 | Lenguaje del backend | Python | **3.13** — ver la advertencia de abajo |
 | Base de datos | PostgreSQL + pgvector + Row Level Security | **16** |
 | Controlador de base de datos | psycopg | **3.3** (no psycopg2) |
-| Frontend web | React + Vite | _(a fijar en el Sprint 1)_ |
+| Frontend web | React + Vite + TailwindCSS | React **19.2** · Vite 8.2 · Tailwind 4.3 |
 | Móvil | Flutter | _(a fijar en la tarea 6 del Sprint 0)_ |
 | Base de demostración | Supabase (PostgreSQL gestionado) | — |
 | Hospedaje de la aplicación | Railway | — |
@@ -175,7 +175,11 @@ backend/
   patients/      pacientes y pacientes a cargo
   tests/         pruebas de aislamiento multi-inquilino
   init-db/       SQL de arranque del contenedor local
-frontend/    React
+frontend/
+  src/api/       el contrato con el backend
+  src/sesion/    estado de la sesion, renovacion automatica
+  src/componentes/  los reutilizables
+  src/paginas/   una carpeta por pantalla
 mobile/      Flutter
 docs/
   sprints/       Actas de Scrum por sprint — la evidencia del proceso
@@ -192,6 +196,7 @@ docs/
 | entender por qué Python 3.13 y no 3.14 | [docs/entorno/versiones.md](docs/entorno/versiones.md) |
 | conectarte a Supabase o traerte datos | [docs/entorno/supabase.md](docs/entorno/supabase.md) |
 | **escribir código del backend** | **[docs/convenciones-de-codigo.md](docs/convenciones-de-codigo.md)** — dónde va cada cosa, y las reglas que no se rompen |
+| **escribir código del frontend web** | **[docs/frontend/decisiones.md](docs/frontend/decisiones.md)** — el stack, el idioma del código y lo que falta acordar |
 | tocar la base de datos | [docs/modelo-datos/sprint-0.md](docs/modelo-datos/sprint-0.md) |
 | saber qué se rompió y por qué | [docs/registro-de-defectos.md](docs/registro-de-defectos.md) |
 | instalar Flutter | [docs/entorno/setup-movil.md](docs/entorno/setup-movil.md) |

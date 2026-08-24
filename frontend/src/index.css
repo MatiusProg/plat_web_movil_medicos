@@ -1,0 +1,200 @@
+@import 'tailwindcss';
+
+/* =========================================================================
+   Sistema visual de la plataforma.
+
+   Los colores se declaran como tokens y no sueltos en las clases, por una
+   razón concreta del proyecto: es multi-inquilino. Cada centro médico va a
+   querer su propio color de marca (Organization ya tiene los campos), y con
+   tokens eso se resuelve reescribiendo variables en :root, sin tocar ni un
+   componente.
+
+   La paleta es un verde azulado profundo. Es deliberado: el azul corporativo
+   se confunde con cualquier panel administrativo, y el verde solo tira a
+   farmacia. El azulado verdoso se lee como salud sin caer en el cliché.
+   ========================================================================= */
+
+@theme {
+  /* Marca */
+  --color-marca-50: #eefdfa;
+  --color-marca-100: #d3f9f1;
+  --color-marca-200: #abf1e5;
+  --color-marca-300: #72e4d5;
+  --color-marca-400: #38cec0;
+  --color-marca-500: #16b2a6;
+  --color-marca-600: #0d8f88;
+  --color-marca-700: #10726e;
+  --color-marca-800: #125b59;
+  --color-marca-900: #134b4a;
+  --color-marca-950: #042f2f;
+
+  /* Neutros: pizarra, un punto más fríos que el gris puro */
+  --color-tinta-50: #f8fafc;
+  --color-tinta-100: #f1f5f9;
+  --color-tinta-200: #e2e8f0;
+  --color-tinta-300: #cbd5e1;
+  --color-tinta-400: #94a3b8;
+  --color-tinta-500: #64748b;
+  --color-tinta-600: #475569;
+  --color-tinta-700: #334155;
+  --color-tinta-800: #1e293b;
+  --color-tinta-900: #0f172a;
+  --color-tinta-950: #020617;
+
+  /* Estados. El de bloqueo es ámbar y no rojo a propósito: la cuenta no está
+     comprometida ni el dato es erróneo, sólo hay que esperar. */
+  --color-alerta-50: #fef2f2;
+  --color-alerta-200: #fecaca;
+  --color-alerta-500: #ef4444;
+  --color-alerta-600: #dc2626;
+  --color-alerta-700: #b91c1c;
+  --color-espera-50: #fffbeb;
+  --color-espera-200: #fde68a;
+  --color-espera-600: #d97706;
+  --color-espera-700: #b45309;
+
+  --font-sans: 'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Números tabulares para la cuenta regresiva del bloqueo: sin esto los
+     dígitos cambian de ancho y el texto tiembla cada segundo. */
+  --font-cifras: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo,
+    Consolas, monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  * {
+    @apply border-tinta-200 dark:border-tinta-800;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-white text-tinta-800 antialiased dark:bg-tinta-950 dark:text-tinta-100;
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Un anillo de foco visible y consistente. Se ve sólo con teclado, que es
+     donde hace falta: quien navega con tab tiene que saber dónde está. */
+  :focus-visible {
+    @apply outline-marca-500 outline-2 outline-offset-2;
+  }
+
+  /* Quitarle el fondo amarillo del autocompletado de Chrome, que ignora
+     cualquier background y rompe el diseño en modo oscuro. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-tinta-900);
+    box-shadow: 0 0 0 1000px var(--color-white) inset;
+    transition: background-color 9999s ease-out;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--color-tinta-100);
+      box-shadow: 0 0 0 1000px var(--color-tinta-900) inset;
+    }
+  }
+}
+
+@layer utilities {
+  .cifras {
+    font-family: var(--font-cifras);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* La malla del panel de marca. Es CSS puro y no una imagen: pesa nada,
+     escala a cualquier pantalla y se adapta al color de la organización. */
+  .malla-marca {
+    background-image:
+      radial-gradient(
+        60rem 60rem at 15% 0%,
+        color-mix(in oklab, var(--color-marca-400) 32%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        45rem 45rem at 95% 100%,
+        color-mix(in oklab, var(--color-marca-300) 22%, transparent),
+        transparent 55%
+      ),
+      linear-gradient(
+        160deg,
+        var(--color-marca-950) 0%,
+        var(--color-marca-800) 55%,
+        var(--color-marca-700) 100%
+      );
+  }
+
+  /* Retícula fina encima de la malla, para que el degradado no se vea plano. */
+  .reticula {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, white 6%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, white 6%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 3.5rem 3.5rem;
+    mask-image: radial-gradient(70% 70% at 50% 40%, black, transparent 100%);
+  }
+
+  @keyframes surgir {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .surgir {
+    animation: surgir 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  @keyframes temblar {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-0.2rem);
+    }
+    40%,
+    80% {
+      transform: translateX(0.2rem);
+    }
+  }
+
+  .temblar {
+    animation: temblar 0.4s ease-in-out;
+  }
+}
+
+/* Quien pidió menos movimiento no debería tener que soportar el nuestro. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
