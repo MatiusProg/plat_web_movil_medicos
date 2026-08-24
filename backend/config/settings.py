@@ -11,6 +11,7 @@ modo que el proyecto arranca recién clonado sin configurar nada.
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 # backend/config/settings.py -> backend/ -> raíz del repositorio
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -198,6 +199,12 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+
+# El login resuelve el inquilino por el encabezado `X-Organization` (ver
+# tenancy/middleware.py). No viene en la lista por omisión de django-cors-headers,
+# y sin declararlo el navegador rechaza la petición en el preflight —antes de
+# que salga—. Las pruebas no lo detectan: el cliente de Django no hace preflight.
+CORS_ALLOW_HEADERS = (*default_headers, "x-organization")
 
 
 # --------------------------------------------------------------------------
