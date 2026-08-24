@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { InicioSesion } from '@/paginas/InicioSesion'
+import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
 import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
@@ -18,6 +19,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/ingresar" element={<InicioSesion />} />
+          <Route path="/registro" element={<RegistroPaciente />} />
           <Route
             path="/panel"
             element={
