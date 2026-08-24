@@ -9,11 +9,16 @@ Convencion del prefijo y de los nombres de ruta en
 `docs/convenciones-de-codigo.md`.
 """
 
+from django.urls import path
 from rest_framework.routers import DefaultRouter
+
+from . import views
 
 app_name = "tenancy"
 
 router = DefaultRouter()
-# router.register("recurso", RecursoViewSet, basename="recurso")
+router.register("alerts", views.IsolationAlertViewSet, basename="alert")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("dashboard/", views.dashboard, name="dashboard"),
+] + router.urls
