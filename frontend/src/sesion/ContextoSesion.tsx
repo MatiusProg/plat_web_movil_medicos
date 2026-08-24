@@ -128,7 +128,13 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   )
 
   const valor = useMemo<EstadoSesion>(
-    () => ({ usuario: sesion?.usuario ?? null, entrar, salir, puede }),
+    () => ({
+      usuario: sesion?.usuario ?? null,
+      token: sesion?.access ?? null,
+      entrar,
+      salir,
+      puede,
+    }),
     [sesion, entrar, salir, puede],
   )
 

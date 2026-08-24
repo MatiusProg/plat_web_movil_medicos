@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
+import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
 import { InicioSesion } from '@/paginas/InicioSesion'
+import { Organizaciones } from '@/paginas/Organizaciones'
 import { Panel } from '@/paginas/Panel'
 import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
@@ -8,21 +10,41 @@ import { ProveedorSesion } from '@/sesion/ContextoSesion'
 /**
  * Las rutas de la aplicación web.
  *
- * En el Sprint 0 son dos: la de entrar y la de después de entrar. Cada
- * historia de los sprints siguientes agrega la suya acá adentro de
- * `<RutaProtegida>`.
+ * Están agrupadas por historia y con un bloque de comentario cada una: es el
+ * único archivo del frontend que todas comparten, así que conviene que cada
+ * una toque su bloque y no la línea de al lado. Es la misma regla que
+ * `urls.py` en el backend.
  */
 export default function App() {
   return (
     <ProveedorSesion>
       <BrowserRouter>
         <Routes>
+          {/* ---------- US-02 (Karen): sesión ---------- */}
           <Route path="/ingresar" element={<InicioSesion />} />
           <Route
             path="/panel"
             element={
               <RutaProtegida>
                 <Panel />
+              </RutaProtegida>
+            }
+          />
+
+          {/* ---------- US-43 (Luis Mateo): organizaciones ---------- */}
+          <Route
+            path="/organizaciones"
+            element={
+              <RutaProtegida>
+                <Organizaciones />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/organizaciones/nueva"
+            element={
+              <RutaProtegida>
+                <AltaOrganizacion />
               </RutaProtegida>
             }
           />
