@@ -29,7 +29,7 @@ from .context import set_context
 
 logger = logging.getLogger(__name__)
 
-ENCABEZADO_ORGANIZACION = "HTTP_X_ORGANIZATION"
+ORGANIZATION_HEADER = "HTTP_X_ORGANIZATION"
 
 
 class TenantMiddleware(MiddlewareMixin):
@@ -42,25 +42,25 @@ class TenantMiddleware(MiddlewareMixin):
 
         # Sólo sirve para las peticiones sin autenticar (el login). Para las
         # demás, la clase de autenticación lo va a sobrescribir enseguida.
-        organizacion = self._organizacion_por_slug(request)
-        request.tenant_id_por_slug = organizacion
-        if organizacion is not None:
-            set_context(organization_id=organizacion)
+        organization = self._organization_from_slug(request)
+        request.tenant_id_from_slug = organization
+        if organization is not None:
+            set_context(organization_id=organization)
 
         return None
 
     def process_response(self, request, response):
-        self._cerrar(request, None)
-        self._guardar_alertas(request)
+        self._close(request, None)
+        self._persist_alerts(request)
         return response
 
     def process_exception(self, request, exception):
-        self._cerrar(request, exception)
-        self._guardar_alertas(request)
+        self._close(request, exception)
+        self._persist_alerts(request)
         return None
 
     @staticmethod
-    def _cerrar(request, exception):
+    def _close(request, exception):
         atomic = getattr(request, "_tenant_atomic", None)
         if atomic is None:
             return
@@ -83,7 +83,7 @@ class TenantMiddleware(MiddlewareMixin):
             logger.exception("No se pudo limpiar el contexto de inquilino")
 
     @staticmethod
-    def _guardar_alertas(request):
+    def _persist_alerts(request):
         """Persiste las alertas que dejó pendientes la autenticación.
 
         Va después de cerrar la transacción de la petición, porque cuando DRF
@@ -91,27 +91,27 @@ class TenantMiddleware(MiddlewareMixin):
         durante el rechazo se descarta. Estas alertas tienen que sobrevivir
         justamente a los rechazos: son el registro de los intentos.
         """
-        pendientes = getattr(request, "alertas_pendientes", None)
-        if not pendientes:
+        pending = getattr(request, "pending_alerts", None)
+        if not pending:
             return
-        request.alertas_pendientes = []
+        request.pending_alerts = []
 
         from django.db import transaction as tx
 
         from .models import IsolationAlert
 
-        for datos in pendientes:
+        for data in pending:
             try:
                 with tx.atomic():
                     set_context(platform_admin=True)
-                    IsolationAlert.objects.create(**datos)
+                    IsolationAlert.objects.create(**data)
             except Exception:  # noqa: BLE001
-                logger.exception("No se pudo registrar la alerta de aislamiento")
+                logger.exception("No se pudo registrar la alert de aislamiento")
             finally:
                 set_context(organization_id=None, platform_admin=False)
 
     @staticmethod
-    def _organizacion_por_slug(request):
+    def _organization_from_slug(request):
         """Resuelve el inquilino por slug, para las peticiones sin autenticar.
 
         Problema del huevo y la gallina: en este punto no hay contexto, así que
@@ -126,11 +126,11 @@ class TenantMiddleware(MiddlewareMixin):
         """
         from django.db import connection
 
-        slug = request.META.get(ENCABEZADO_ORGANIZACION) or request.GET.get("organization")
+        slug = request.META.get(ORGANIZATION_HEADER) or request.GET.get("organization")
         if not slug:
             return None
 
         with connection.cursor() as cursor:
             cursor.execute("SELECT app_resolve_tenant(%s)", [slug])
-            fila = cursor.fetchone()
-        return fila[0] if fila and fila[0] else None
+            row = cursor.fetchone()
+        return row[0] if row and row[0] else None

@@ -191,7 +191,9 @@ docs/
 | montarlo en una máquina que no corre Docker | [docs/entorno/sin-docker.md](docs/entorno/sin-docker.md) |
 | entender por qué Python 3.13 y no 3.14 | [docs/entorno/versiones.md](docs/entorno/versiones.md) |
 | conectarte a Supabase o traerte datos | [docs/entorno/supabase.md](docs/entorno/supabase.md) |
+| **escribir código del backend** | **[docs/convenciones-de-codigo.md](docs/convenciones-de-codigo.md)** — dónde va cada cosa, y las reglas que no se rompen |
 | tocar la base de datos | [docs/modelo-datos/sprint-0.md](docs/modelo-datos/sprint-0.md) |
+| saber qué se rompió y por qué | [docs/registro-de-defectos.md](docs/registro-de-defectos.md) |
 | instalar Flutter | [docs/entorno/setup-movil.md](docs/entorno/setup-movil.md) |
 
 ---

@@ -28,12 +28,12 @@ from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 from tenancy.context import set_context
 
-from .tokens import CLAIM_ADMIN_PLATAFORMA, CLAIM_ORGANIZACION
+from .tokens import CLAIM_PLATFORM_ADMIN, CLAIM_ORGANIZATION
 
 logger = logging.getLogger(__name__)
 
 
-class AutenticacionDeInquilino(JWTAuthentication):
+class TenantJWTAuthentication(JWTAuthentication):
     """La clase de autenticación por omisión del proyecto."""
 
     def authenticate(self, request):
@@ -44,17 +44,17 @@ class AutenticacionDeInquilino(JWTAuthentication):
         durante el rechazo se descarta. Las alertas se guardan en la petición y
         las persiste el middleware **después** de cerrar la transacción.
         """
-        self._peticion = request
+        self._current_request = request
         try:
             return super().authenticate(request)
         finally:
-            self._peticion = None
+            self._current_request = None
 
     def get_user(self, validated_token):
-        organizacion = validated_token.get(CLAIM_ORGANIZACION)
-        es_admin_plataforma = bool(validated_token.get(CLAIM_ADMIN_PLATAFORMA, False))
+        organization = validated_token.get(CLAIM_ORGANIZATION)
+        is_platform_admin_claim = bool(validated_token.get(CLAIM_PLATFORM_ADMIN, False))
 
-        if organizacion is None and not es_admin_plataforma:
+        if organization is None and not is_platform_admin_claim:
             # Token emitido sin los claims del proyecto: o es anterior al
             # cambio, o alguien lo genero con AccessToken.for_user() a mano.
             # No se puede resolver el usuario sin contexto, asi que se rechaza
@@ -65,7 +65,7 @@ class AutenticacionDeInquilino(JWTAuthentication):
             )
 
         # Paso 2: el contexto, ANTES de tocar la base.
-        set_context(organization_id=organizacion, platform_admin=es_admin_plataforma)
+        set_context(organization_id=organization, platform_admin=is_platform_admin_claim)
 
         # Paso 3: ahora el usuario es visible bajo RLS.
         #
@@ -76,12 +76,12 @@ class AutenticacionDeInquilino(JWTAuthentication):
         # dejar constancia: sin esto el intento pasa en silencio y el panel de
         # US-45 nunca lo ve.
         try:
-            usuario = super().get_user(validated_token)
+            user = super().get_user(validated_token)
         except AuthenticationFailed:
-            self._alertar(
-                usuario_id=validated_token.get("user_id"),
-                reclamada=organizacion,
-                motivo="El token declara una organización en la que el usuario no existe.",
+            self._flag_mismatch(
+                user_id_claim=validated_token.get("user_id"),
+                claimed=organization,
+                reason="El token declara una organización en la que el user no existe.",
             )
             raise
 
@@ -89,52 +89,52 @@ class AutenticacionDeInquilino(JWTAuthentication):
         #
         # Un token cuya organización coincide pero que se atribuye nivel de
         # plataforma pasaría el filtro de la base, porque la fila es visible.
-        if bool(usuario.is_platform_admin) != es_admin_plataforma:
-            self._alertar(
-                usuario_id=usuario.pk,
-                reclamada=organizacion,
-                motivo="El token no corresponde al nivel de acceso del usuario.",
-                organizacion_real=usuario.organization_id,
+        if bool(user.is_platform_admin) != is_platform_admin_claim:
+            self._flag_mismatch(
+                user_id_claim=user.pk,
+                claimed=organization,
+                reason="El token no corresponde al nivel de access_token_for del user.",
+                actual_organization=user.organization_id,
             )
             raise AuthenticationFailed(
-                "El token no corresponde al nivel de acceso del usuario.",
+                "El token no corresponde al nivel de access_token_for del user.",
                 code="nivel_no_coincide",
             )
 
-        return usuario
+        return user
 
-    def _alertar(self, usuario_id, reclamada, motivo, organizacion_real=None):
+    def _flag_mismatch(self, user_id_claim, claimed, reason, actual_organization=None):
         """Deja la alerta pendiente para que el middleware la persista.
 
         No se escribe acá: enseguida se lanza AuthenticationFailed, DRF llama a
         ``set_rollback()`` y la fila se perdería. El middleware la guarda una
         vez cerrada la transacción de la petición.
         """
-        logger.warning("%s (reclamada: %s, usuario: %s)", motivo, reclamada, usuario_id)
-        peticion = getattr(self, "_peticion", None)
-        if peticion is None:
+        logger.warning("%s (claimed: %s, user: %s)", reason, claimed, user_id_claim)
+        request = getattr(self, "_current_request", None)
+        if request is None:
             return
         # DRF envuelve el HttpRequest de Django en su propio objeto Request, y
         # los atributos que se le asignan quedan en el envoltorio. El
         # middleware ve el de abajo, así que hay que desenvolverlo.
-        peticion = getattr(peticion, "_request", peticion)
+        request = getattr(request, "_request", request)
 
-        pendientes = getattr(peticion, "alertas_pendientes", None)
-        if pendientes is None:
-            pendientes = peticion.alertas_pendientes = []
-        pendientes.append({
+        pending = getattr(request, "pending_alerts", None)
+        if pending is None:
+            pending = request.pending_alerts = []
+        pending.append({
             # user_id se deja en None a propósito: la fila del usuario puede no
             # ser visible bajo el contexto reclamado, y la clave foránea
             # fallaría. El uuid queda en `detail`, que basta para investigar.
             "user_id": None,
-            "source_organization_id": organizacion_real,
+            "source_organization_id": actual_organization,
             "alert_type": "jwt_tenant_mismatch",
             "severity": "critical",
-            "description": motivo[:300],
-            "endpoint": peticion.path[:200],
-            "http_method": peticion.method[:10],
+            "description": reason[:300],
+            "endpoint": request.path[:200],
+            "http_method": request.method[:10],
             "detail": {
-                "organizacion_reclamada": str(reclamada),
-                "usuario": str(usuario_id),
+                "organizacion_reclamada": str(claimed),
+                "user": str(user_id_claim),
             },
         })

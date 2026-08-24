@@ -64,7 +64,7 @@ INSTALLED_APPS = [
 # construir el aislamiento sobre algo que nunca se completa.
 #
 # La autenticación la hace DRF dentro de la vista, con
-# accounts.authentication.AutenticacionDeInquilino, que es también donde se
+# accounts.authentication.TenantJWTAuthentication, que es también donde se
 # fija el contexto de inquilino.
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -167,7 +167,7 @@ REST_FRAMEWORK = {
     # secas: no fija el contexto de inquilino, y sin contexto la propia
     # búsqueda del usuario devuelve cero filas por RLS ("User not found").
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "accounts.authentication.AutenticacionDeInquilino",
+        "accounts.authentication.TenantJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",

@@ -17,16 +17,16 @@ Por eso todo token emitido por este proyecto lleva dos claims adicionales:
     is_platform_admin   true sólo para el Superadministrador de Plataforma
 
 Nunca se emiten tokens con ``AccessToken.for_user()`` ni con
-``RefreshToken.for_user()`` directamente: usar ``tokens_para()``.
+``RefreshToken.for_user()`` directamente: usar ``tokens_for_user()``.
 """
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-CLAIM_ORGANIZACION = "organization_id"
-CLAIM_ADMIN_PLATAFORMA = "is_platform_admin"
+CLAIM_ORGANIZATION = "organization_id"
+CLAIM_PLATFORM_ADMIN = "is_platform_admin"
 
 
-class TokenDeInquilino(RefreshToken):
+class TenantRefreshToken(RefreshToken):
     """Token de refresco que arrastra el contexto de inquilino.
 
     El token de acceso derivado (``.access_token``) hereda los claims, así que
@@ -36,21 +36,21 @@ class TokenDeInquilino(RefreshToken):
     @classmethod
     def for_user(cls, user):
         token = super().for_user(user)
-        token[CLAIM_ORGANIZACION] = (
+        token[CLAIM_ORGANIZATION] = (
             str(user.organization_id) if user.organization_id else None
         )
-        token[CLAIM_ADMIN_PLATAFORMA] = bool(user.is_platform_admin)
+        token[CLAIM_PLATFORM_ADMIN] = bool(user.is_platform_admin)
         return token
 
 
-def tokens_para(user) -> dict[str, str]:
+def tokens_for_user(user) -> dict[str, str]:
     """Par de tokens para un usuario recién autenticado.
 
     Es lo que devuelve el endpoint de inicio de sesión (US-02)::
 
-        return Response(tokens_para(usuario))
+        return Response(tokens_for_user(user))
     """
-    refresh = TokenDeInquilino.for_user(user)
+    refresh = TenantRefreshToken.for_user(user)
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token),
