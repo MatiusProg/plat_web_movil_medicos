@@ -1,4 +1,4 @@
-"""Serializers de cuentas y registro de pacientes."""
+"""US-01 — Registro de un paciente: cuenta de acceso y ficha demográfica."""
 
 from django.db import transaction
 from rest_framework import serializers
@@ -7,7 +7,7 @@ from patients.models import Patient
 from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization
 
-from .models import Role, User, UserRole
+from ..models import Role, User, UserRole
 
 
 class PatientRegistrationSerializer(serializers.Serializer):
