@@ -2,6 +2,8 @@
 
 from rest_framework import serializers
 
+from accounts.models import User
+
 from ..models import Organization, SubscriptionPlan
 from ..services import create_organization
 
@@ -19,8 +21,8 @@ class OrganizationAdminSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=80)
     document_number = serializers.CharField(max_length=20)
     document_type = serializers.ChoiceField(
-        choices=[("CI", "CI"), ("PAS", "PAS"), ("NIT", "NIT"), ("OTRO", "OTRO")],
-        required=False, default="CI",
+        choices=User.DocumentType.choices,
+        required=False, default=User.DocumentType.CI,
     )
     phone = serializers.CharField(max_length=30, required=False, allow_blank=True,
                                   default="")

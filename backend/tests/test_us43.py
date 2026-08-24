@@ -6,6 +6,7 @@ filas y la prueba pasaría aunque el alta no hubiera hecho nada.
 """
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -201,6 +202,30 @@ def test_un_slug_con_formato_invalido_se_rechaza(api_client, platform_admin):
     )
     assert response.status_code == 400
     assert "slug" in response.data
+
+
+def test_sin_la_plantilla_org_admin_el_alta_falla_entera(api_client, platform_admin):
+    """Un administrador sin rol no puede hacer nada: la organización nacería
+    rota. Que falte la plantilla no lo arregla el superadministrador cambiando
+    el formulario —significa que la migración semilla no corrió—, así que el
+    alta revienta y no deja nada."""
+    with platform_admin_context():
+        Role.objects.filter(organization__isnull=True, code="org_admin").delete()
+
+    authed(api_client, platform_admin)
+    with pytest.raises(ImproperlyConfigured):
+        api_client.post(
+            reverse("tenancy:organization-list"), alta(), format="json",
+        )
+
+    # La transacción entera se deshizo: ni organización, ni suscripción, ni
+    # usuario. Se consulta con contexto, si no RLS devuelve cero filas y la
+    # aserción no probaría nada.
+    with platform_admin_context():
+        assert not Organization.objects.filter(slug="nuevo-centro").exists()
+        assert not Subscription.objects.filter(
+            organization__slug="nuevo-centro",
+        ).exists()
 
 
 def test_un_plan_inexistente_se_rechaza(api_client, platform_admin):

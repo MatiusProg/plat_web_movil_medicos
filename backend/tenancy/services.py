@@ -23,6 +23,7 @@ alguien lo devuelva a su lugar. Ver la decisión D-06 en el registro de
 defectos.
 """
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -144,14 +145,24 @@ def create_organization(*, organization_data, admin_data, plan, created_by):
                 **admin_data,
             )
 
-            admin_role = roles.get(ADMIN_ROLE_CODE)
-            if admin_role is not None:
-                UserRole.objects.create(
-                    user=admin_user,
-                    role=admin_role,
-                    organization=organization,
-                    assigned_by=created_by,
+            # Sin rol, el administrador no puede hacer nada y la
+            # organizacion nace rota. Que falte la plantilla significa que la
+            # migracion semilla no corrio o que alguien borro el catalogo del
+            # sistema: no es algo que el superadministrador pueda arreglar
+            # cambiando el formulario, asi que revienta fuerte y la
+            # transaccion entera se deshace.
+            if ADMIN_ROLE_CODE not in roles:
+                raise ImproperlyConfigured(
+                    f"No existe la plantilla de rol '{ADMIN_ROLE_CODE}'. "
+                    "Sin ella la organizacion queda sin administrador: "
+                    "revisar la migracion tenancy/0003_seed_catalog."
                 )
+            UserRole.objects.create(
+                user=admin_user,
+                role=roles[ADMIN_ROLE_CODE],
+                organization=organization,
+                assigned_by=created_by,
+            )
 
         # ---- Nivel plataforma otra vez: la bitácora -----------------------
         # organization=None a propósito: es una acción del superadministrador

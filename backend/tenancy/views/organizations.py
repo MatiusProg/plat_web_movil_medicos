@@ -9,8 +9,7 @@ antes de que corra la vista. El alta sí alterna contextos, pero eso pasa
 dentro de ``tenancy.services.create_organization``, que es su lugar.
 """
 
-from rest_framework import mixins, status
-from rest_framework.response import Response
+from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 
 from ..models import Organization
@@ -45,9 +44,3 @@ class OrganizationViewSet(
         if self.action == "create":
             return OrganizationCreateSerializer
         return OrganizationSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
