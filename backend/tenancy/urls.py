@@ -7,46 +7,43 @@ conflicto.
 
 Convención del prefijo y de los nombres de ruta en
 `docs/convenciones-de-codigo.md`.
+
+Está agrupado por historia y con las importaciones separadas a propósito: es
+el único archivo de la app que las tres historias tienen que compartir, así
+que cada una toca su bloque y no la línea de al lado.
 """
 
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from tenancy.views import (
+from .views.metrics import IsolationAlertViewSet, dashboard
+from .views.plans import (
     OrganizationSubscriptionViewSet,
     SubscriptionPlanViewSet,
     SubscriptionViewSet,
 )
 
-
 app_name = "tenancy"
 
 router = DefaultRouter()
 
+# ---------- US-44 (Daniel): planes y suscripciones ------------------------
+router.register("plans", SubscriptionPlanViewSet, basename="platform-plan")
 router.register(
-    "plans",
-    SubscriptionPlanViewSet,
-    basename="platform-plan",
+    "subscriptions", SubscriptionViewSet, basename="platform-subscription",
 )
 
-router.register(
-    "subscriptions",
-    SubscriptionViewSet,
-    basename="platform-subscription",
-)
-
-
-organization_subscription_list = (
-    OrganizationSubscriptionViewSet.as_view({
-        "get": "list",
-    })
-)
+# ---------- US-45 (Luis Miguel): panel del superadministrador -------------
+router.register("alerts", IsolationAlertViewSet, basename="alert")
 
 
 urlpatterns = router.urls + [
+    # ---------- US-44 -----------------------------------------------------
     path(
         "organizations/<uuid:organization_id>/subscriptions/",
-        organization_subscription_list,
+        OrganizationSubscriptionViewSet.as_view({"get": "list"}),
         name="organization-subscriptions",
     ),
+    # ---------- US-45 -----------------------------------------------------
+    path("dashboard/", dashboard, name="dashboard"),
 ]

@@ -1,17 +1,19 @@
+"""Clases de permiso de la app `tenancy`."""
+
 from rest_framework.permissions import BasePermission
 
 
 class IsPlatformAdmin(BasePermission):
-    message = (
-        "Esta operación es exclusiva del "
-        "Superadministrador de Plataforma."
-    )
+    """Sólo el Superadministrador de Plataforma.
+
+    No delega en RLS: aunque la base ya filtra las tablas de nivel plataforma,
+    esta clase evita que un inquilino autenticado reciba un 200 con datos
+    vacíos en vez de un 403 explícito.
+    """
 
     def has_permission(self, request, view):
-        user = request.user
-
         return bool(
-            user
-            and user.is_authenticated
-            and user.is_platform_admin
+            request.user
+            and request.user.is_authenticated
+            and request.user.is_platform_admin
         )

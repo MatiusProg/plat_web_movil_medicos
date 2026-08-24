@@ -1,3 +1,5 @@
+"""US-44 — Planes de suscripción: catálogo, historial y asignación."""
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -9,7 +11,7 @@ from tenancy.models import (
     SubscriptionPlan,
 )
 from tenancy.permissions import IsPlatformAdmin
-from tenancy.serializers import (
+from tenancy.serializers.plans import (
     AssignPlanSerializer,
     SubscriptionPlanSerializer,
     SubscriptionSerializer,

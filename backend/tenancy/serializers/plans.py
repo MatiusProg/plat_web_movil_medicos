@@ -1,3 +1,5 @@
+"""US-44 — Planes de suscripción y su asignación a una organización."""
+
 from datetime import date
 
 from django.db import transaction
