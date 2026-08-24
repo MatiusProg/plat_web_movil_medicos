@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
 import { InicioSesion } from '@/paginas/InicioSesion'
 import { Organizaciones } from '@/paginas/Organizaciones'
+import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
 import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
@@ -22,6 +23,7 @@ export default function App() {
         <Routes>
           {/* ---------- US-02 (Karen): sesión ---------- */}
           <Route path="/ingresar" element={<InicioSesion />} />
+          <Route path="/registro" element={<RegistroPaciente />} />
           <Route
             path="/panel"
             element={
