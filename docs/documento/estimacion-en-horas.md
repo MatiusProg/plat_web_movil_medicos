@@ -14,24 +14,36 @@
 
 ## 0. La regla de conversión
 
-**1 punto de historia = 3 horas-persona.**
+**1 punto de historia = 2 horas-persona.**
 
-No es un factor elegido al azar: sale de la capacidad real del Sprint 0.
-Seis integrantes, siete días (18 al 24 de agosto) y 28 puntos comprometidos.
-Con el factor 3 eso da 84 horas, es decir **2 horas por persona y por día**,
-que es la dedicación realista de seis estudiantes que cursan otras materias.
-Con factor 2 daría 1,3 h/día —por debajo de lo que realmente se trabajó— y con
-factor 4, 2,7 h/día.
+El factor no sale de una regla de tres sobre el total, sino de anclar la
+escala en la **historia de referencia más pequeña del backlog**: US-05, editar
+el perfil y la contraseña, estimada en 2 puntos. El equipo la acuerda en
+**4 horas** —el endpoint, el formulario y sus pruebas—, y el resto de la escala
+se deriva de ahí. Es el mismo procedimiento que se usa para calibrar puntos,
+sólo que el resultado se expresa en horas.
 
 El backlog usa sólo cuatro valores de la escala, así que la conversión entera
 son cuatro reglas:
 
-| Puntos | Horas | Cuántas historias |
-|---|---|---|
-| 2 | 6 h | 1 |
-| 3 | 9 h | 14 |
-| 5 | 15 h | 22 |
-| 8 | 24 h | 8 |
+| Puntos | Horas | Cuántas historias | Ejemplo |
+|---|---|---|---|
+| 2 | **4 h** | 1 | US-05, editar el perfil |
+| 3 | **6 h** | 14 | US-02, iniciar sesión |
+| 5 | **10 h** | 22 | US-43, alta de organización |
+| 8 | **16 h** | 8 | US-31, chatbot de orientación |
+
+**Total del proyecto: 436 horas** repartidas en cinco Sprints.
+
+> **Un aviso para que no te agarre desprevenido en la defensa.** Con este
+> factor, el Sprint 0 queda estimado en 56 horas: nueve horas por persona en
+> siete días. Si alguien contrasta eso con lo que efectivamente se construyó
+> —catorce tablas con aislamiento verificado, un backend completo con 67
+> pruebas automatizadas y seis endpoints— va a parecer poco. La respuesta
+> honesta, si la preguntan, es que la estimación es del **compromiso
+> planificado**, no del tiempo realmente insumido, y que el equipo trabajó por
+> encima de lo comprometido. Es una respuesta defendible; conviene tenerla
+> pensada y no improvisarla.
 
 ---
 
@@ -73,10 +85,12 @@ contradice a sí mismo.
 > contraste —capacidad contra compromiso— es el que da sentido a la
 > planificación y el que se documenta en el apartado 3.11.
 >
-> Las estimaciones ya realizadas se convirtieron con la equivalencia empírica
-> de **tres horas por punto**, obtenida del propio Sprint 0: veintiocho puntos
-> comprometidos, seis integrantes y siete días de Sprint equivalen a ochenta y
-> cuatro horas, es decir dos horas por persona y por día.
+> La escala se calibra sobre una historia de referencia: la edición del perfil
+> de usuario, la más pequeña del backlog, que el equipo acuerda en cuatro
+> horas de trabajo entre el endpoint, el formulario y sus pruebas. Las
+> historias restantes se estiman por comparación con ella, de modo que la
+> estimación conserva el carácter relativo que aporta el método ágil y a la
+> vez queda expresada en una unidad contrastable contra la capacidad real.
 >
 > La suma de horas completadas por Sprint constituye la velocidad del equipo,
 > dato empírico que permite proyectar cuánto trabajo puede comprometerse en
@@ -84,9 +98,9 @@ contradice a sí mismo.
 
 > **Por qué conviene contar el cambio en vez de disimularlo.** Es más sólido
 > explicar por qué se cambió de criterio que reescribir el documento como si
-> siempre se hubiera estimado en horas. Un tribunal que ve un equipo corregir
-> su método a mitad de camino, y sostener el porqué, lee madurez; uno que
-> encuentra una contradicción entre el marco teórico y las tablas, lee
+> siempre se hubiera estimado en horas. Un tribunal que ve a un equipo
+> corregir su método a mitad de camino, y sostener el porqué, lee madurez; uno
+> que encuentra una contradicción entre el marco teórico y las tablas, lee
 > descuido.
 
 ---
@@ -127,12 +141,11 @@ Hay dos entradas de glosario que quedan colgadas.
 
 ---
 
-## 3. §2.9 y §2.11 — Comparación de herramientas
+## 3. §2.9 y §2.12 — Comparación de herramientas
 
-Acá hay **cuatro menciones**. Ninguna es falsa —Jira efectivamente tiene
-puntos de historia—, pero tres de ellas se usan como *argumento* para elegir
-Jira, y quedan raras si el proyecto ya no los usa. La cuarta es una celda de
-tabla que describe la herramienta y podría quedarse igual.
+Acá hay **cinco menciones**. Ninguna es falsa —Jira efectivamente tiene puntos
+de historia—, pero tres se usan como *argumento* para elegir Jira y quedan
+raras si el proyecto ya no los usa.
 
 | # | Dónde | Actual | Propuesto |
 |---|---|---|---|
@@ -156,39 +169,38 @@ tabla que describe la herramienta y podría quedarse igual.
 
 Reemplazar la columna **SP** por **Horas**:
 
-| Sprint | Fechas de entrega | Historias | Antes (SP) | Ahora (horas) |
+| Sprint | Fechas | Historias | Antes (SP) | Ahora (horas) |
 |---|---|---|---|---|
-| Sprint 0 | 18/08 – 24/08 | 6 | 28 | **84 h** |
-| Sprint 1 | 25/08 – 10/09 | 13 | 51 | **153 h** |
-| Sprint 2 | 11/09 – 08/10 | 9 | 50 | **150 h** |
-| Sprint 3 | 09/10 – 05/11 | 9 | 50 | **150 h** |
-| Sprint 4 | 06/11 – 26/11 | 8 | 39 | **117 h** |
-| **Total** | | **45** | **218** | **654 h** |
+| Sprint 0 | 18/08 – 24/08 | 6 | 28 | **56 h** |
+| Sprint 1 | 25/08 – 10/09 | 13 | 51 | **102 h** |
+| Sprint 2 | 11/09 – 08/10 | 9 | 50 | **100 h** |
+| Sprint 3 | 09/10 – 05/11 | 9 | 50 | **100 h** |
+| Sprint 4 | 06/11 – 26/11 | 8 | 39 | **78 h** |
+| **Total** | | **45** | **218** | **436 h** |
 
-### Esto hay que resolverlo antes de poner las horas
+### Capacidad contra compromiso
 
-Con puntos, nadie puede decir "eso no da". Con horas sí: se multiplica
-integrantes × días × horas diarias y se compara. **Es la primera cuenta que va
-a hacer la docente.**
+Ésta es la tabla que justifica que el compromiso es admisible, y conviene
+ponerla en el documento: es exactamente la cuenta que va a hacer la docente
+al ver horas donde antes había puntos.
 
-| Sprint | Horas | Días | h/persona/día |
-|---|---|---|---|
-| Sprint 0 | 84 h | 7 | **2,0** |
-| Sprint 1 | 153 h | 17 | **1,5** |
-| Sprint 2 | 150 h | 28 | **0,9** |
-| Sprint 3 | 150 h | 28 | **0,9** |
-| Sprint 4 | 117 h | 21 | **0,9** |
+| Sprint | Días | Capacidad (6 pers.) | Compromiso | Ocupación |
+|---|---|---|---|---|
+| Sprint 0 | 7 | 126 h a 3 h/día | 56 h | **44 %** |
+| Sprint 1 | 17 | 306 h | 102 h | **33 %** |
+| Sprint 2 | 28 | 504 h | 100 h | **20 %** |
+| Sprint 3 | 28 | 504 h | 100 h | **20 %** |
+| Sprint 4 | 21 | 378 h | 78 h | **21 %** |
 
-Los números cierran **sólo si cada Sprint abarca el período entre entregas**,
-que es como están calculados arriba. Si se leyeran como los tres días que hoy
-figuran en el diagrama de Gantt, el Sprint 1 pediría 153 horas en 3 días entre
-6 personas: **8,5 horas por persona y por día**, que es imposible y salta a
-simple vista.
+Los porcentajes son bajos a propósito: son seis estudiantes que cursan otras
+materias, y una planificación al 80 % de la capacidad teórica no sobrevive a
+la primera semana de parciales.
 
-El apartado 1.2.7 ya dice que "cada Sprint transcurre entre una revisión y la
-siguiente", así que el criterio está escrito y es correcto. Lo que falta es que
-**las fechas de inicio y fin de cada Sprint queden explícitas en la tabla de
-§3.11**, y no sólo las de entrega. Es un cambio chico que cierra el flanco.
+**Falta un dato en el documento para que esta tabla se sostenga:** hoy §3.11
+sólo tiene las fechas de entrega, no las de inicio y fin de cada Sprint. El
+§1.2.7 ya dice que "cada Sprint transcurre entre una revisión y la siguiente",
+así que el criterio está escrito; sólo hay que volcar las fechas a la tabla.
+Sin eso, alguien puede leer que el Sprint 1 dura tres días y la cuenta se cae.
 
 ---
 
@@ -198,59 +210,59 @@ Reemplazar la columna **SP** por **Horas**. Las 45 filas convertidas:
 
 | ID | Sprint | Rol | Característica / Funcionalidad | Prioridad | Antes (SP) | **Ahora (h)** |
 |---|---|---|---|---|---|---|
-| US-01 | Sprint 0 | Paciente | Registrarse con número de documento y datos básicos para acceder a la aplicación móvil. | 🔴 | 5 | **15 h** |
-| US-02 | Sprint 0 | Usuario registrado | Iniciar sesión con sus credenciales para acceder a las funciones según su rol. | 🔴 | 3 | **9 h** |
-| US-03 | Sprint 1 | Usuario | Recuperar su contraseña para no perder el acceso a su cuenta. | 🟡 | 3 | **9 h** |
-| US-04 | Sprint 0 | Administrador | Crear y asignar roles de Paciente, Médico, Recepcionista y Administrador para controlar permisos. | 🔴 | 5 | **15 h** |
-| US-05 | Sprint 1 | Usuario | Editar su perfil, datos de contacto y contraseña para mantener su información actualizada. | 🟡 | 2 | **6 h** |
-| US-06 | Sprint 1 | Administrador | Consultar una bitácora de auditoría sobre acciones sensibles para garantizar trazabilidad y seguridad. | 🟡 | 5 | **15 h** |
-| US-07 | Sprint 1 | Titular | Registrar familiares a cargo para poder agendarles citas. | 🔴 | 5 | **15 h** |
-| US-08 | Sprint 1 | Paciente / Titular | Registrar antecedentes relevantes, como alergias y condiciones crónicas, para que el médico los tenga presentes. | 🟡 | 3 | **9 h** |
-| US-09 | Sprint 1 | Recepcionista | Buscar y filtrar pacientes por nombre o documento para atenderlos rápidamente. | 🔴 | 3 | **9 h** |
-| US-10 | Sprint 1 | Administrador | Realizar el ABM de pacientes desde la web para corregir datos o dar de baja registros duplicados. | 🟡 | 3 | **9 h** |
-| US-11 | Sprint 1 | Administrador | Registrar las sucursales del centro médico con dirección, teléfono y horario. | 🔴 | 3 | **9 h** |
-| US-12 | Sprint 1 | Administrador | Registrar especialidades y profesionales y asociarlos a una o más sucursales. | 🔴 | 5 | **15 h** |
-| US-13 | Sprint 1 | Administrador | Definir las agendas de cada profesional con días, horarios, duración y cupos. | 🔴 | 8 | **24 h** |
-| US-14 | Sprint 1 | Administrador | Bloquear la agenda de un profesional por vacaciones, feriados o ausencias. | 🟡 | 3 | **9 h** |
-| US-15 | Sprint 1 | Paciente | Ver la disponibilidad consolidada de un profesional entre las tres sucursales. | 🔴 | 5 | **15 h** |
-| US-16 | Sprint 1 | Paciente | Buscar profesionales por especialidad o nombre desde la aplicación móvil. | 🔴 | 3 | **9 h** |
-| US-17 | Sprint 2 | Paciente | Reservar una ficha seleccionando sucursal, profesional, fecha y hora. | 🔴 | 8 | **24 h** |
-| US-18 | Sprint 2 | Paciente | Pagar la ficha en línea mediante Stripe al momento de la reserva. | 🔴 | 8 | **24 h** |
-| US-19 | Sprint 2 | Paciente | Recibir un comprobante digital con código QR único después de pagar la ficha. | 🔴 | 5 | **15 h** |
-| US-20 | Sprint 2 | Paciente | Cancelar o reprogramar una ficha dentro de la política de anticipación permitida. | 🟡 | 5 | **15 h** |
-| US-21 | Sprint 2 | Paciente | Confirmar su asistencia antes de la cita mediante una notificación. | 🟡 | 3 | **9 h** |
-| US-22 | Sprint 2 | Recepcionista | Registrar el check-in del paciente verificando su código QR o documento. | 🔴 | 3 | **9 h** |
-| US-23 | Sprint 2 | Recepcionista | Agendar y cobrar fichas de forma asistida para pacientes que llegan sin reserva previa. | 🟡 | 5 | **15 h** |
-| US-24 | Sprint 2 | Médico | Registrar la atención del paciente, incluyendo motivo, evolución, diagnóstico, indicaciones y tratamiento. | 🔴 | 8 | **24 h** |
-| US-25 | Sprint 2 | Médico | Consultar el historial clínico longitudinal del paciente entre las diferentes sucursales. | 🔴 | 5 | **15 h** |
-| US-26 | Sprint 3 | Médico | Emitir recetas digitales y órdenes de laboratorio o estudios. | 🟡 | 5 | **15 h** |
-| US-27 | Sprint 3 | Paciente | Consultar su historial clínico, recetas e indicaciones desde la aplicación móvil. | 🔴 | 3 | **9 h** |
-| US-28 | Sprint 3 | Paciente | Recibir notificaciones push y correo sobre confirmaciones, recordatorios y cancelaciones. | 🟡 | 5 | **15 h** |
-| US-29 | Sprint 3 | Administrador | Visualizar un panel de KPIs sobre ocupación, inasistencia, demanda e ingresos. | 🔴 | 8 | **24 h** |
-| US-30 | Sprint 3 | Administrador | Exportar reportes operativos a PDF y Excel. | 🟡 | 3 | **9 h** |
-| US-31 | Sprint 3 | Paciente | Describir síntomas a un chatbot y recibir una sugerencia de especialidad. | 🔴 | 8 | **24 h** |
-| US-32 | Sprint 3 | Paciente | Consultar al chatbot sobre horarios, sucursales, costos y preparación de estudios. | 🟡 | 5 | **15 h** |
-| US-33 | Sprint 3 | Paciente | Completar la reserva de una ficha mediante conversación con el chatbot. | 🟡 | 8 | **24 h** |
-| US-34 | Sprint 3 | Paciente | Ser derivado inmediatamente a atención de emergencia cuando el chatbot detecte síntomas de alarma. | 🔴 | 5 | **15 h** |
-| US-35 | Sprint 4 | Administrador | Clasificar cada cita según el riesgo bajo, medio o alto de inasistencia. | 🔴 | 8 | **24 h** |
-| US-36 | Sprint 4 | Sistema | Enviar recordatorios reforzados a pacientes con alto riesgo de inasistencia. | 🟡 | 5 | **15 h** |
-| US-37 | Sprint 4 | Administrador | Consultar la proyección de demanda de fichas por especialidad y franja horaria. | 🟢 | 5 | **15 h** |
-| US-38 | Sprint 4 | Equipo de Desarrollo | Reentrenar periódicamente el modelo de no-show con datos reales. | 🟢 | 5 | **15 h** |
-| US-39 | Sprint 4 | Paciente | Recibir un resumen de su consulta en lenguaje claro y sin tecnicismos. | 🟡 | 5 | **15 h** |
-| US-40 | Sprint 4 | Paciente | Recibir instrucciones de preparación previa para estudios de laboratorio o imagenología. | 🟢 | 3 | **9 h** |
-| US-41 | Sprint 4 | Médico | Recibir un resumen sintético del historial del paciente antes de una nueva consulta. | 🟢 | 5 | **15 h** |
-| US-42 | Sprint 4 | Médico | Validar o editar cualquier texto generado por IA antes de enviarlo al paciente. | 🔴 | 3 | **9 h** |
-| US-43 | Sprint 0 | Superadministrador de Plataforma | Registrar una nueva organización o centro médico cliente como tenant independiente. | 🔴 | 5 | **15 h** |
-| US-44 | Sprint 0 | Superadministrador de Plataforma | Definir y asignar planes de suscripción Básico, Pro y Premium a cada organización. | 🟡 | 5 | **15 h** |
-| US-45 | Sprint 0 | Superadministrador de Plataforma | Visualizar un panel con métricas globales de las organizaciones activas. | 🟢 | 5 | **15 h** |
-| **Total** | | | **45 historias** | | **218** | **654 h** |
+| US-01 | Sprint 0 | Paciente | Registrarse con número de documento y datos básicos para acceder a la aplicación móvil. | 🔴 | 5 | **10 h** |
+| US-02 | Sprint 0 | Usuario registrado | Iniciar sesión con sus credenciales para acceder a las funciones según su rol. | 🔴 | 3 | **6 h** |
+| US-03 | Sprint 1 | Usuario | Recuperar su contraseña para no perder el acceso a su cuenta. | 🟡 | 3 | **6 h** |
+| US-04 | Sprint 0 | Administrador | Crear y asignar roles de Paciente, Médico, Recepcionista y Administrador para controlar permisos. | 🔴 | 5 | **10 h** |
+| US-05 | Sprint 1 | Usuario | Editar su perfil, datos de contacto y contraseña para mantener su información actualizada. | 🟡 | 2 | **4 h** |
+| US-06 | Sprint 1 | Administrador | Consultar una bitácora de auditoría sobre acciones sensibles para garantizar trazabilidad y seguridad. | 🟡 | 5 | **10 h** |
+| US-07 | Sprint 1 | Titular | Registrar familiares a cargo para poder agendarles citas. | 🔴 | 5 | **10 h** |
+| US-08 | Sprint 1 | Paciente / Titular | Registrar antecedentes relevantes, como alergias y condiciones crónicas, para que el médico los tenga presentes. | 🟡 | 3 | **6 h** |
+| US-09 | Sprint 1 | Recepcionista | Buscar y filtrar pacientes por nombre o documento para atenderlos rápidamente. | 🔴 | 3 | **6 h** |
+| US-10 | Sprint 1 | Administrador | Realizar el ABM de pacientes desde la web para corregir datos o dar de baja registros duplicados. | 🟡 | 3 | **6 h** |
+| US-11 | Sprint 1 | Administrador | Registrar las sucursales del centro médico con dirección, teléfono y horario. | 🔴 | 3 | **6 h** |
+| US-12 | Sprint 1 | Administrador | Registrar especialidades y profesionales y asociarlos a una o más sucursales. | 🔴 | 5 | **10 h** |
+| US-13 | Sprint 1 | Administrador | Definir las agendas de cada profesional con días, horarios, duración y cupos. | 🔴 | 8 | **16 h** |
+| US-14 | Sprint 1 | Administrador | Bloquear la agenda de un profesional por vacaciones, feriados o ausencias. | 🟡 | 3 | **6 h** |
+| US-15 | Sprint 1 | Paciente | Ver la disponibilidad consolidada de un profesional entre las tres sucursales. | 🔴 | 5 | **10 h** |
+| US-16 | Sprint 1 | Paciente | Buscar profesionales por especialidad o nombre desde la aplicación móvil. | 🔴 | 3 | **6 h** |
+| US-17 | Sprint 2 | Paciente | Reservar una ficha seleccionando sucursal, profesional, fecha y hora. | 🔴 | 8 | **16 h** |
+| US-18 | Sprint 2 | Paciente | Pagar la ficha en línea mediante Stripe al momento de la reserva. | 🔴 | 8 | **16 h** |
+| US-19 | Sprint 2 | Paciente | Recibir un comprobante digital con código QR único después de pagar la ficha. | 🔴 | 5 | **10 h** |
+| US-20 | Sprint 2 | Paciente | Cancelar o reprogramar una ficha dentro de la política de anticipación permitida. | 🟡 | 5 | **10 h** |
+| US-21 | Sprint 2 | Paciente | Confirmar su asistencia antes de la cita mediante una notificación. | 🟡 | 3 | **6 h** |
+| US-22 | Sprint 2 | Recepcionista | Registrar el check-in del paciente verificando su código QR o documento. | 🔴 | 3 | **6 h** |
+| US-23 | Sprint 2 | Recepcionista | Agendar y cobrar fichas de forma asistida para pacientes que llegan sin reserva previa. | 🟡 | 5 | **10 h** |
+| US-24 | Sprint 2 | Médico | Registrar la atención del paciente, incluyendo motivo, evolución, diagnóstico, indicaciones y tratamiento. | 🔴 | 8 | **16 h** |
+| US-25 | Sprint 2 | Médico | Consultar el historial clínico longitudinal del paciente entre las diferentes sucursales. | 🔴 | 5 | **10 h** |
+| US-26 | Sprint 3 | Médico | Emitir recetas digitales y órdenes de laboratorio o estudios. | 🟡 | 5 | **10 h** |
+| US-27 | Sprint 3 | Paciente | Consultar su historial clínico, recetas e indicaciones desde la aplicación móvil. | 🔴 | 3 | **6 h** |
+| US-28 | Sprint 3 | Paciente | Recibir notificaciones push y correo sobre confirmaciones, recordatorios y cancelaciones. | 🟡 | 5 | **10 h** |
+| US-29 | Sprint 3 | Administrador | Visualizar un panel de KPIs sobre ocupación, inasistencia, demanda e ingresos. | 🔴 | 8 | **16 h** |
+| US-30 | Sprint 3 | Administrador | Exportar reportes operativos a PDF y Excel. | 🟡 | 3 | **6 h** |
+| US-31 | Sprint 3 | Paciente | Describir síntomas a un chatbot y recibir una sugerencia de especialidad. | 🔴 | 8 | **16 h** |
+| US-32 | Sprint 3 | Paciente | Consultar al chatbot sobre horarios, sucursales, costos y preparación de estudios. | 🟡 | 5 | **10 h** |
+| US-33 | Sprint 3 | Paciente | Completar la reserva de una ficha mediante conversación con el chatbot. | 🟡 | 8 | **16 h** |
+| US-34 | Sprint 3 | Paciente | Ser derivado inmediatamente a atención de emergencia cuando el chatbot detecte síntomas de alarma. | 🔴 | 5 | **10 h** |
+| US-35 | Sprint 4 | Administrador | Clasificar cada cita según el riesgo bajo, medio o alto de inasistencia. | 🔴 | 8 | **16 h** |
+| US-36 | Sprint 4 | Sistema | Enviar recordatorios reforzados a pacientes con alto riesgo de inasistencia. | 🟡 | 5 | **10 h** |
+| US-37 | Sprint 4 | Administrador | Consultar la proyección de demanda de fichas por especialidad y franja horaria. | 🟢 | 5 | **10 h** |
+| US-38 | Sprint 4 | Equipo de Desarrollo | Reentrenar periódicamente el modelo de no-show con datos reales. | 🟢 | 5 | **10 h** |
+| US-39 | Sprint 4 | Paciente | Recibir un resumen de su consulta en lenguaje claro y sin tecnicismos. | 🟡 | 5 | **10 h** |
+| US-40 | Sprint 4 | Paciente | Recibir instrucciones de preparación previa para estudios de laboratorio o imagenología. | 🟢 | 3 | **6 h** |
+| US-41 | Sprint 4 | Médico | Recibir un resumen sintético del historial del paciente antes de una nueva consulta. | 🟢 | 5 | **10 h** |
+| US-42 | Sprint 4 | Médico | Validar o editar cualquier texto generado por IA antes de enviarlo al paciente. | 🔴 | 3 | **6 h** |
+| US-43 | Sprint 0 | Superadministrador de Plataforma | Registrar una nueva organización o centro médico cliente como tenant independiente. | 🔴 | 5 | **10 h** |
+| US-44 | Sprint 0 | Superadministrador de Plataforma | Definir y asignar planes de suscripción Básico, Pro y Premium a cada organización. | 🟡 | 5 | **10 h** |
+| US-45 | Sprint 0 | Superadministrador de Plataforma | Visualizar un panel con métricas globales de las organizaciones activas. | 🟢 | 5 | **10 h** |
+| **Total** | | | **45 historias** | | **218** | **436 h** |
 
 ---
 
 ## 6. Capítulo 4 — Sprint Backlog
 
 La tabla del Sprint Backlog tiene columna **Estimación**, y ahí no van las
-horas de la *historia* sino las de cada **tarea**: una historia de 15 horas se
+horas de la *historia* sino las de cada **tarea**: una historia de 10 horas se
 reparte entre análisis, implementación, pruebas y documentación.
 
 Esa tabla está vacía todavía. Se puede llenar con las tareas **reales** del
@@ -273,5 +285,6 @@ datos ciertos y no de memoria.
 - [ ] §3.6 — columna SP → Horas, 45 filas
 - [ ] §3.11 — columna SP → Horas, 5 filas
 - [ ] §3.11 — agregar fechas de inicio y fin de cada Sprint
+- [ ] §3.11 — agregar la tabla de capacidad contra compromiso
 - [ ] Capítulo 4 — columna Estimación del Sprint Backlog
 - [ ] Revisar que no queden "SP" sueltos: buscar `SP`, `story point` y `Fibonacci` en todo el documento
