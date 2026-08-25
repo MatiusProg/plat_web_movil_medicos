@@ -9,48 +9,21 @@
  * backend, que es exactamente lo que va a decidir qué menú se dibuja.
  */
 
-import { useState } from 'react'
-
-import { Boton } from '@/componentes/Boton'
-import { IconoEscudo, IconoPulso, IconoSalir } from '@/componentes/iconos'
+import { Cabecera } from '@/componentes/Cabecera'
+import { IconoEscudo } from '@/componentes/iconos'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 
 export function Panel() {
-  const { usuario, salir } = useSesion()
-  const [saliendo, setSaliendo] = useState(false)
+  const { usuario } = useSesion()
   useTitulo('Panel')
 
   if (!usuario) return null
 
-  const alSalir = async () => {
-    setSaliendo(true)
-    await salir()
-  }
 
   return (
     <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-      <header className="border-tinta-200 dark:border-tinta-800 dark:bg-tinta-900/50 border-b bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-3.5">
-          <div className="flex items-center gap-2.5">
-            <span className="bg-marca-600 grid size-8 place-items-center rounded-lg text-white">
-              <IconoPulso className="size-4.5" />
-            </span>
-            <span className="text-tinta-800 dark:text-tinta-100 text-[0.9375rem] font-semibold">
-              Centro Médico
-            </span>
-          </div>
-
-          <button
-            onClick={alSalir}
-            disabled={saliendo}
-            className="text-tinta-600 hover:bg-tinta-100 hover:text-tinta-900 dark:text-tinta-400 dark:hover:bg-tinta-800 dark:hover:text-tinta-100 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:opacity-50"
-          >
-            <IconoSalir className="size-4.5" />
-            {saliendo ? 'Saliendo…' : 'Cerrar sesión'}
-          </button>
-        </div>
-      </header>
+      <Cabecera />
 
       <main className="mx-auto max-w-4xl space-y-6 px-5 py-10">
         <div className="surgir">
@@ -118,12 +91,6 @@ export function Panel() {
             />
           </dl>
         </Tarjeta>
-
-        <div className="max-w-xs">
-          <Boton onClick={alSalir} cargando={saliendo} textoCargando="Cerrando sesión…">
-            Cerrar sesión
-          </Boton>
-        </div>
       </main>
     </div>
   )

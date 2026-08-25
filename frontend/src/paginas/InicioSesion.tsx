@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
@@ -196,7 +196,14 @@ export function InicioSesion() {
             </Boton>
           </form>
 
-          <p className="text-tinta-400 mt-8 text-center text-xs">
+          <p className="text-tinta-500 dark:text-tinta-400 mt-8 text-center text-sm">
+            ¿No tenés una cuenta?{' '}
+            <Link to="/registro" className="text-marca-600 dark:text-marca-400 font-semibold hover:underline">
+              Registrate acá
+            </Link>
+          </p>
+
+          <p className="text-tinta-400 mt-4 text-center text-xs">
             Tu contraseña se guarda cifrada y nunca viaja en texto plano.
           </p>
         </div>

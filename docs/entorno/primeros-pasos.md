@@ -319,6 +319,18 @@ permiso que necesita se otorga al crear el volumen.
 
 ---
 
+## 8. Entrar por primera vez y registrar tu organización
+
+Con las pruebas en verde ya tenés el entorno, pero todavía no podés entrar al
+sistema: hace falta un Superadministrador de Plataforma —que se crea por
+consola, una sola vez— y con él, registrar la organización contra la cual vas
+a probar tu historia.
+
+Está en **[primera-organizacion.md](primera-organizacion.md)**. Son cinco
+minutos.
+
+---
+
 ## Qué leer según tu historia
 
 | Historia | Quién | Leé antes de empezar |
