@@ -19,12 +19,18 @@ sitio estático y va aparte.
 | `Procfile` · `railway.json` | le dicen a Railway que use ese script |
 | `requirements.txt` | `gunicorn` y `whitenoise` |
 | `config/settings.py` | `STATIC_ROOT`, WhiteNoise, `CSRF_TRUSTED_ORIGINS`, HTTPS y HSTS bajo `DEBUG=False` |
+| `frontend/railway.json` | sirve `frontend/dist` como sitio estático, con la ruta de reserva del enrutador |
 
 Está **probado en local con `DEBUG=False`**: `collectstatic` procesa los
 archivos, `check --deploy` queda limpio salvo dos avisos deliberados, y la API
 responde correctamente detrás de un proxy simulado. Lo único que no se puede
 probar acá es gunicorn: **no corre en Windows** (necesita `fcntl`), sólo en el
 contenedor Linux de Railway.
+
+> **Vuelto a verificar el 2026-08-24**, sobre `main` con US-01, US-43 y US-44 ya
+> integradas: 101 pruebas en verde, `check --deploy` con los mismos dos avisos,
+> `collectstatic` con 27 archivos y 63 post-procesados, y `serve -s dist`
+> respondiendo 200 en una ruta profunda del enrutador.
 
 ---
 
@@ -104,24 +110,45 @@ organización, igual que en local ([primera-organizacion.md](primera-organizacio
 
 ---
 
-## 4. El frontend
+## 4. El frontend — segundo servicio en Railway
 
-Es un sitio estático: `npm run build` deja todo en `frontend/dist`. Puede ir en
-Railway como un servicio aparte, o en Vercel o Netlify, que para un sitio
-estático son más simples y gratuitos.
+Es un sitio estático: `npm run build` deja todo en `frontend/dist`. Va en el
+**mismo proyecto de Railway que el backend, como un servicio aparte**. Se
+decidió así para tener un solo panel, un solo lugar donde mirar los registros y
+una sola cuenta que administrar; Vercel o Netlify también servirían.
+
+En el panel: *New → GitHub Repo*, el mismo repositorio, y después
+**Settings → Root Directory → `frontend`**. Ese ajuste es lo que separa los dos
+servicios: sin él, Railway construye el backend dos veces.
+
+Con el *Root Directory* puesto, Railway usa `frontend/railway.json` en lugar
+del de la raíz, y ahí ya está resuelto lo que un sitio estático necesita:
+
+| Archivo | Qué aporta |
+|---|---|
+| `frontend/railway.json` | arranca `serve -s dist` en el `$PORT` que asigna Railway |
+| `frontend/package.json` | `serve` como dependencia y el script `start` |
+
+**La bandera `-s` no es opcional.** La aplicación usa `BrowserRouter`, así que
+`/organizaciones` es una ruta del navegador y no un archivo en el disco. Sin
+`-s`, cualquier recarga fuera de la raíz devuelve 404: la aplicación funciona
+mientras se navega y se rompe al apretar F5, que es exactamente lo que va a
+hacer el docente.
 
 Necesita **una** variable, en tiempo de compilación:
 
 ```env
-VITE_API_BASE_URL=https://<tu-servicio>.up.railway.app/api
+VITE_API_BASE_URL=https://<servicio-backend>.up.railway.app/api
 ```
 
-Vite incrusta el valor al compilar, así que **cambiarla exige recompilar**: no
-alcanza con editarla en el panel y reiniciar.
+Vite incrusta el valor al compilar, así que **cambiarla exige volver a
+desplegar**: no alcanza con editarla en el panel y reiniciar.
 
 Y su origen tiene que estar en `CORS_ALLOWED_ORIGINS` del backend. Son dos
 variables que se apuntan mutuamente, y es donde falla el primer intento de
-todos.
+todos: el frontend no existe cuando se configura el backend, así que
+`CORS_ALLOWED_ORIGINS` se completa **después**, cuando Railway ya dio el
+dominio del segundo servicio.
 
 ---
 
@@ -134,7 +161,7 @@ curl -i https://<tu-servicio>.up.railway.app/api/platform/organizations/   # 401
 # 2. El login funciona
 curl -X POST https://<tu-servicio>.up.railway.app/api/accounts/login/ \
      -H 'Content-Type: application/json' \
-     -d '{"organizacion":"","email":"<superadmin>","password":"<clave>"}'   # 200
+     -d '{"organization":"","email":"<superadmin>","password":"<clave>"}'   # 200
 
 # 3. CORS acepta el origen del frontend
 curl -i -X OPTIONS https://<tu-servicio>.up.railway.app/api/accounts/login/ \
@@ -168,5 +195,7 @@ es `up.railway.app`, que no es nuestro, así que activarlo no haría nada.
 | El frontend no recibe respuesta y la consola dice CORS | el origen no está en `CORS_ALLOWED_ORIGINS`, o le sobra la barra final |
 | Todo redirige a HTTPS en un bucle | el proxy no manda `X-Forwarded-Proto`; se resuelve con `SECURE_PROXY_SSL_HEADER`, que ya está puesto |
 | `collectstatic` falla en el despliegue | un archivo estático referencia a otro que no existe. Es a propósito que falle: mejor que no levante a que sirva un 404 en la demostración |
+| El frontend anda navegando pero da 404 al recargar | falta la bandera `-s` de `serve`, o Railway está usando el `railway.json` de la raíz porque el *Root Directory* del servicio no dice `frontend` |
+| El frontend construye pero apunta a `localhost:8000` | `VITE_API_BASE_URL` se agregó después de construir. Vite la incrusta al compilar: hay que volver a desplegar, no reiniciar |
 | Toda consulta devuelve cero filas | se migró como `postgres` en vez de `app_user`, o falta el contexto de inquilino |
 | "User not found" al iniciar sesión con un token válido | el token se firmó con otra `SECRET_KEY` |
