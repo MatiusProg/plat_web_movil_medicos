@@ -1,13 +1,40 @@
 # Despliegue — Railway y Supabase
 
-El backend corre en **Railway** y la base en **Supabase**. El frontend es un
-sitio estático y va aparte.
+El backend corre en **Railway** y la base en **Supabase**. El frontend es otro
+servicio del mismo proyecto de Railway.
 
 > **Por qué desplegar temprano y con poco.** El primer despliegue siempre falla,
 > y falla por cosas del entorno que no se ven leyendo código: una variable mal
 > escrita, un dominio que falta, `collectstatic` que revienta, CORS que rechaza
 > el origen de producción. Descubrirlo con seis endpoints cuesta una tarde;
 > descubrirlo la noche anterior a la defensa cuesta la defensa.
+>
+> Se cumplió al pie de la letra: el primer intento murió porque faltaba
+> `DATABASE_URL`, el segundo porque el constructor eligió Node 18, y el tercero
+> construyó un frontend que le hablaba a `localhost`. Ninguna de las tres se ve
+> leyendo el código.
+
+---
+
+## Dónde está desplegado, hoy
+
+| | URL |
+|---|---|
+| Backend | <https://web-production-872fa.up.railway.app> |
+| Frontend | <https://platwebmovilmedicos-production-ae19.up.railway.app> |
+| Base | Supabase, `us-east-1`, *Session pooler* |
+
+Los dos servicios viven en el **mismo proyecto de Railway**. El backend expone
+el puerto `8000` y el frontend el `4173`.
+
+El superadministrador de producción es **uno solo para los seis**; la
+contraseña está en el gestor del equipo. No se crean más: seis cuentas
+creando organizaciones de prueba sobre la misma base es exactamente cómo se
+llega a la defensa con datos basura.
+
+> **Supabase gratuito se pausa a los 7 días sin actividad.** Antes de una
+> defensa o una demo, entrar al panel el día anterior y verificar que está
+> activo. Es el único mantenimiento que pide este despliegue.
 
 ---
 
@@ -170,9 +197,36 @@ curl -i -X OPTIONS https://<tu-servicio>.up.railway.app/api/accounts/login/ \
      -H 'Access-Control-Request-Method: POST'   # debe traer access-control-allow-origin
 ```
 
+Una cuarta que conviene agregar, y que no es obvia: **el preflight tiene que
+rechazar un origen ajeno**.
+
+```bash
+curl -i -X OPTIONS https://<backend>/api/accounts/login/ \
+     -H 'Origin: https://sitio-cualquiera.example' \
+     -H 'Access-Control-Request-Method: POST'   # SIN access-control-allow-origin
+```
+
+Si un origen inventado también recibe la cabecera, `CORS_ALLOWED_ORIGINS` no se
+está aplicando —quedó vacía, o alguien puso un comodín— y la comprobación 3
+estaría pasando por el motivo equivocado.
+
+### Y una que no se ve con `curl`: qué backend quedó dentro del bundle
+
+Vite incrusta `VITE_API_BASE_URL` al compilar, así que el frontend puede quedar
+desplegado, servir 200 y apuntar igual a `localhost`. No lo dice ningún log: se
+descubre cuando alguien aprieta *Iniciar sesión* y no pasa nada.
+
+```bash
+JS=$(curl -s https://<frontend>/ | grep -oE '/assets/[^"]+\.js' | head -1)
+curl -s "https://<frontend>$JS" | grep -c 'localhost:8000'   # tiene que dar 0
+```
+
 Y la comprobación que de verdad importa, la del criterio 4 de la Definición de
 Terminado: registrar **dos** organizaciones, entrar con el administrador de
 una y verificar que no ve absolutamente nada de la otra.
+
+> **Estado al 2026-08-25.** Las cuatro comprobaciones de arriba, más la del
+> bundle, pasan contra los dominios de producción. Falta la del criterio 4.
 
 ---
 
