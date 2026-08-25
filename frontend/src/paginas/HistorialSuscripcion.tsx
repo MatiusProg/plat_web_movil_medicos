@@ -3,9 +3,10 @@ import {
     useMemo,
     useState,
 } from 'react'
+
 import {
-    Link,
     useLocation,
+    useNavigate,
     useParams,
 } from 'react-router-dom'
 
@@ -15,12 +16,6 @@ import {
 } from '@/api/suscripciones'
 
 import { useTitulo } from '@/rutas/useTitulo'
-
-
-type EstadoUbicacion = {
-    organization?: string
-    slug?: string
-}
 
 
 function textoError(
@@ -41,14 +36,15 @@ function fechaVisual(
     fecha: string | null,
 ): string {
     if (!fecha) {
-        return 'Actualidad'
+        return 'Vigente'
     }
 
     const [
         anio,
         mes,
         dia,
-    ] = fecha.split('-')
+    ] =
+        fecha.split('-')
 
     if (
         !anio
@@ -59,6 +55,37 @@ function fechaVisual(
     }
 
     return `${dia}/${mes}/${anio}`
+}
+
+
+function fechaHoraVisual(
+    fecha: string | null,
+): string {
+    if (!fecha) {
+        return '—'
+    }
+
+    const valor =
+        new Date(fecha)
+
+    if (
+        Number.isNaN(
+            valor.getTime(),
+        )
+    ) {
+        return fecha
+    }
+
+    return valor.toLocaleString(
+        'es-BO',
+        {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        },
+    )
 }
 
 
@@ -74,14 +101,14 @@ function estiloPlan(
         || normalizado.includes('básico')
     ) {
         return {
-            borde:
-                'border-blue-200',
-            fondo:
-                'bg-blue-50',
-            texto:
-                'text-blue-700',
-            punto:
+            badge:
+                'border-blue-900 bg-blue-950 text-blue-400',
+
+            dot:
                 'bg-blue-500',
+
+            linea:
+                'bg-blue-700',
         }
     }
 
@@ -89,35 +116,37 @@ function estiloPlan(
         normalizado.includes('premium')
     ) {
         return {
-            borde:
-                'border-violet-200',
-            fondo:
-                'bg-violet-50',
-            texto:
-                'text-violet-700',
-            punto:
+            badge:
+                'border-violet-900 bg-violet-950 text-violet-400',
+
+            dot:
                 'bg-violet-500',
+
+            linea:
+                'bg-violet-700',
         }
     }
 
     return {
-        borde:
-            'border-cyan-200',
-        fondo:
-            'bg-cyan-50',
-        texto:
-            'text-cyan-700',
-        punto:
-            'bg-cyan-500',
+        badge:
+            'border-marca-900 bg-marca-950 text-marca-400',
+
+        dot:
+            'bg-marca-500',
+
+        linea:
+            'bg-marca-700',
     }
 }
 
 
-export function HistorialSuscripcion() {
-    useTitulo(
-        'Historial de suscripción',
-    )
+type EstadoNavegacion = {
+    organization?: string
+    slug?: string
+}
 
+
+export function HistorialSuscripcion() {
     const {
         organizationId,
     } =
@@ -125,13 +154,13 @@ export function HistorialSuscripcion() {
             organizationId: string
         }>()
 
+    const navigate =
+        useNavigate()
+
     const location =
         useLocation()
 
-    const estado =
-        location.state as
-            | EstadoUbicacion
-            | null
+    const estado = location.state as EstadoNavegacion | null
 
     const [
         historial,
@@ -153,18 +182,24 @@ export function HistorialSuscripcion() {
             null,
         )
 
+    useTitulo(
+        'Historial de suscripción',
+    )
+
 
     useEffect(() => {
+        if (!organizationId) {
+            setError(
+                'No se recibió una organización válida.',
+            )
+
+            setCargando(false)
+
+            return
+        }
+
         const cargar =
             async () => {
-                if (!organizationId) {
-                    setError(
-                        'No se encontró la organización.',
-                    )
-                    setCargando(false)
-                    return
-                }
-
                 setCargando(true)
                 setError(null)
 
@@ -187,116 +222,145 @@ export function HistorialSuscripcion() {
             }
 
         void cargar()
-    }, [organizationId])
+    }, [
+        organizationId,
+    ])
 
 
-    const historialOrdenado =
+    const ordenado =
         useMemo(
             () =>
                 [...historial].sort(
-                    (
-                        primero,
-                        segundo,
-                    ) =>
-                        segundo.starts_at.localeCompare(
-                            primero.starts_at,
-                        ),
+                    (a, b) =>
+                        new Date(
+                            b.starts_at,
+                        ).getTime()
+                        -
+                        new Date(
+                            a.starts_at,
+                        ).getTime(),
                 ),
             [historial],
         )
 
 
-    const vigente =
-        historialOrdenado.find(
-            (suscripcion) =>
-                suscripcion.ends_at
-                === null,
-        )
-        ?? historialOrdenado[0]
-        ?? null
-
-
-    const nombreOrganizacion =
+    const organizacion =
         estado?.organization
-        ?? vigente?.organization_name
+        ?? ordenado[0]
+            ?.organization_name
         ?? 'Organización'
 
 
-    const slugOrganizacion =
+    const slug =
         estado?.slug
-        ?? vigente?.organization_slug
+        ?? ordenado[0]
+            ?.organization_slug
         ?? ''
 
 
     return (
-        <div className="mx-auto w-full max-w-[1200px] px-8 py-8 xl:px-10">
+        <main className="mx-auto w-full max-w-5xl px-8 py-10">
 
-            <div className="mb-8">
+            {/* Volver */}
 
-                <Link
-                    to="/suscripciones"
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-blue-600"
-                >
-                    <IconoAtras />
+            <button
+                type="button"
+                onClick={() =>
+                    navigate(
+                        '/suscripciones',
+                    )
+                }
+                className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-tinta-400 transition hover:text-marca-400"
+            >
+                <IconoVolver />
 
-                    Volver a suscripciones
-                </Link>
+                Volver a suscripciones
+            </button>
 
 
-                <div className="mt-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            {/* Encabezado */}
 
-                    <div>
+            <header className="mb-8">
 
-                        <div className="mb-2">
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
-                Administración
-              </span>
+                <p className="text-sm font-medium text-marca-400">
+                    Plataforma
+                </p>
+
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-50">
+                    Historial de suscripción
+                </h1>
+
+                <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-6 text-tinta-500">
+                    Consulta todos los cambios de plan realizados
+                    para esta organización.
+                </p>
+
+            </header>
+
+
+            {/* Organización */}
+
+            <section className="mb-7 rounded-2xl border border-tinta-800 bg-tinta-900/60 p-5">
+
+                <div className="flex flex-wrap items-center justify-between gap-4">
+
+                    <div className="flex items-center gap-4">
+
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-marca-950 text-marca-400">
+
+                            <IconoEdificio />
+
                         </div>
 
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                            Historial de suscripción
-                        </h1>
 
-                        <p className="mt-2 text-sm text-slate-500">
-                            Consulta todos los cambios
-                            de plan realizados para
-                            esta organización.
-                        </p>
+                        <div>
+
+                            <p className="text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                Organización
+                            </p>
+
+                            <h2 className="mt-1 text-lg font-semibold text-tinta-50">
+                                {organizacion}
+                            </h2>
+
+                            {slug && (
+                                <p className="mt-0.5 text-sm text-tinta-500">
+                                    {slug}
+                                </p>
+                            )}
+
+                        </div>
 
                     </div>
 
 
-                    <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                    <div className="rounded-xl border border-tinta-800 bg-tinta-950 px-4 py-3 text-right">
 
-                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                            Organización
+                        <p className="text-xs text-tinta-500">
+                            Cambios registrados
                         </p>
 
-                        <p className="mt-1 font-bold text-slate-900">
-                            {nombreOrganizacion}
+                        <p className="mt-1 text-xl font-bold text-tinta-100">
+                            {historial.length}
                         </p>
-
-                        {slugOrganizacion && (
-                            <p className="mt-1 text-xs text-slate-400">
-                                {slugOrganizacion}
-                            </p>
-                        )}
 
                     </div>
 
                 </div>
 
-            </div>
+            </section>
 
+
+            {/* Error */}
 
             {error && (
-                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+                <div className="mb-6 rounded-2xl border border-red-900 bg-red-950/40 px-5 py-4">
 
-                    <p className="font-semibold text-red-700">
+                    <p className="font-semibold text-red-300">
                         No se pudo cargar el historial
                     </p>
 
-                    <p className="mt-1 text-sm text-red-600">
+                    <p className="mt-1 text-sm text-red-400">
                         {error}
                     </p>
 
@@ -304,275 +368,263 @@ export function HistorialSuscripcion() {
             )}
 
 
-            {cargando ? (
-                <EstadoCargando />
-            ) : historialOrdenado.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+            {/* Contenido */}
 
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                        <IconoHistorial />
+            {cargando ? (
+
+                <EstadoCargando />
+
+            ) : ordenado.length === 0
+            && !error ? (
+
+                <EstadoVacio />
+
+            ) : (
+
+                <section className="rounded-2xl border border-tinta-800 bg-tinta-900/60">
+
+                    <div className="border-b border-tinta-800 px-6 py-5">
+
+                        <h2 className="font-semibold text-tinta-50">
+                            Línea de tiempo
+                        </h2>
+
+                        <p className="mt-1 text-sm text-tinta-500">
+                            Los cambios más recientes aparecen primero.
+                        </p>
+
                     </div>
 
-                    <h2 className="mt-5 text-xl font-bold text-slate-900">
-                        Sin historial
-                    </h2>
 
-                    <p className="mt-2 text-sm text-slate-500">
-                        Esta organización todavía no
-                        tiene registros de suscripción.
-                    </p>
-
-                </div>
-            ) : (
-                <>
-                    {vigente && (
-                        <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-                                <div>
-
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                        Plan vigente
-                                    </p>
-
-                                    <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                                        {vigente.plan_name}
-                                    </h2>
-
-                                    <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
-
-                                        <IconoCalendario />
-
-                                        Desde{' '}
-                                        {fechaVisual(
-                                            vigente.starts_at,
-                                        )}
-
-                                    </div>
-
-                                </div>
-
-
-                                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-
-                  Suscripción activa
-
-                </span>
-
-                            </div>
-
-                        </section>
-                    )}
-
-
-                    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                        <div className="mb-7">
-
-                            <h2 className="text-lg font-bold text-slate-900">
-                                Línea de tiempo
-                            </h2>
-
-                            <p className="mt-1 text-sm text-slate-500">
-                                {historialOrdenado.length}{' '}
-                                {historialOrdenado.length === 1
-                                    ? 'registro'
-                                    : 'registros'}
-                            </p>
-
-                        </div>
-
+                    <div className="p-6">
 
                         <div className="relative">
 
-                            <div className="absolute bottom-3 left-[19px] top-3 w-px bg-slate-200" />
+                            {ordenado.map(
+                                (
+                                    suscripcion,
+                                    indice,
+                                ) => {
+                                    const estilos =
+                                        estiloPlan(
+                                            suscripcion.plan_code,
+                                        )
+
+                                    const vigente =
+                                        suscripcion.status
+                                        === 'active'
+                                        && !suscripcion.ends_at
+
+                                    const ultimo =
+                                        indice
+                                        === ordenado.length
+                                        - 1
+
+                                    return (
+                                        <div
+                                            key={
+                                                suscripcion.id
+                                            }
+                                            className="relative flex gap-5 pb-8 last:pb-0"
+                                        >
+
+                                            {/* Línea */}
+
+                                            {!ultimo && (
+                                                <div className="absolute left-[17px] top-9 h-[calc(100%-18px)] w-px bg-tinta-700" />
+                                            )}
 
 
-                            <div className="space-y-8">
+                                            {/* Punto */}
 
-                                {historialOrdenado.map(
-                                    (
-                                        suscripcion,
-                                        indice,
-                                    ) => {
-                                        const estilos =
-                                            estiloPlan(
-                                                suscripcion.plan_code,
-                                            )
-
-                                        const activa =
-                                            suscripcion.ends_at
-                                            === null
-
-                                        return (
-                                            <article
-                                                key={
-                                                    suscripcion.id
-                                                }
-                                                className="relative flex gap-5"
+                                            <div
+                                                className={[
+                                                    'relative z-10 mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border',
+                                                    vigente
+                                                        ? 'border-emerald-700 bg-emerald-950'
+                                                        : 'border-tinta-700 bg-tinta-900',
+                                                ].join(' ')}
                                             >
 
-                                                <div
-                                                    className={[
-                                                        'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-white shadow-sm',
-                                                        activa
-                                                            ? 'bg-emerald-500 text-white'
-                                                            : 'bg-slate-200 text-slate-500',
-                                                    ].join(' ')}
-                                                >
-                                                    {activa
-                                                        ? <IconoCheck />
-                                                        : indice + 1}
-                                                </div>
+                        <span
+                            className={[
+                                'h-2.5 w-2.5 rounded-full',
+                                vigente
+                                    ? 'bg-emerald-500'
+                                    : estilos.dot,
+                            ].join(' ')}
+                        />
+
+                                            </div>
 
 
-                                                <div className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                                            {/* Tarjeta */}
 
-                                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                            <article className="min-w-0 flex-1 rounded-2xl border border-tinta-800 bg-tinta-950/40 p-5">
 
-                                                        <div>
+                                                <div className="flex flex-wrap items-start justify-between gap-4">
 
-                                                            <div className="flex flex-wrap items-center gap-2">
+                                                    <div>
+
+                                                        <div className="flex flex-wrap items-center gap-2">
+
+                              <span
+                                  className={[
+                                      'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
+                                      estilos.badge,
+                                  ].join(' ')}
+                              >
 
                                 <span
                                     className={[
-                                        'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
-                                        estilos.borde,
-                                        estilos.fondo,
-                                        estilos.texto,
+                                        'h-2 w-2 rounded-full',
+                                        estilos.dot,
                                     ].join(' ')}
-                                >
-                                  <span
-                                      className={[
-                                          'h-2 w-2 rounded-full',
-                                          estilos.punto,
-                                      ].join(' ')}
-                                  />
+                                />
 
-                                    {
-                                        suscripcion.plan_name
-                                    }
+                                  {
+                                      suscripcion
+                                          .plan_name
+                                  }
+
+                              </span>
+
+
+                                                            {vigente && (
+                                                                <span className="rounded-full border border-emerald-900 bg-emerald-950 px-3 py-1 text-xs font-semibold text-emerald-400">
+                                  PLAN VIGENTE
                                 </span>
-
-
-                                                                {activa ? (
-                                                                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                    Activa
-                                  </span>
-                                                                ) : (
-                                                                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
-                                    Finalizada
-                                  </span>
-                                                                )}
-
-                                                            </div>
-
-
-                                                            <div className="mt-4 grid gap-3 text-sm text-slate-500 sm:grid-cols-2">
-
-                                                                <DatoFecha
-                                                                    titulo="Inicio"
-                                                                    valor={
-                                                                        fechaVisual(
-                                                                            suscripcion.starts_at,
-                                                                        )
-                                                                    }
-                                                                />
-
-                                                                <DatoFecha
-                                                                    titulo="Fin"
-                                                                    valor={
-                                                                        fechaVisual(
-                                                                            suscripcion.ends_at,
-                                                                        )
-                                                                    }
-                                                                />
-
-                                                            </div>
+                                                            )}
 
                                                         </div>
 
 
-                                                        {suscripcion.assigned_by_email && (
-                                                            <div className="text-left sm:text-right">
+                                                        <p className="mt-3 text-sm text-tinta-400">
+                                                            Vigencia
+                                                        </p>
 
-                                                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                                                    Asignado por
-                                                                </p>
-
-                                                                <p className="mt-1 text-sm font-medium text-slate-600">
-                                                                    {
-                                                                        suscripcion.assigned_by_email
-                                                                    }
-                                                                </p>
-
-                                                            </div>
-                                                        )}
+                                                        <p className="mt-1 font-medium text-tinta-200">
+                                                            {
+                                                                fechaVisual(
+                                                                    suscripcion
+                                                                        .starts_at,
+                                                                )
+                                                            }
+                                                            {' → '}
+                                                            {
+                                                                fechaVisual(
+                                                                    suscripcion
+                                                                        .ends_at,
+                                                                )
+                                                            }
+                                                        </p>
 
                                                     </div>
 
 
-                                                    {suscripcion.change_reason && (
-                                                        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+                                                    <div className="text-right">
 
-                                                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                                                Motivo del cambio
-                                                            </p>
+                                                        <p className="text-xs text-tinta-500">
+                                                            Estado
+                                                        </p>
 
-                                                            <p className="mt-1 text-sm leading-6 text-slate-600">
-                                                                {
-                                                                    suscripcion.change_reason
-                                                                }
-                                                            </p>
+                                                        <p
+                                                            className={[
+                                                                'mt-1 text-sm font-semibold',
+                                                                vigente
+                                                                    ? 'text-emerald-400'
+                                                                    : 'text-tinta-400',
+                                                            ].join(' ')}
+                                                        >
+                                                            {vigente
+                                                                ? 'Activa'
+                                                                : 'Finalizada'}
+                                                        </p>
 
-                                                        </div>
-                                                    )}
+                                                    </div>
 
                                                 </div>
 
-                                            </article>
-                                        )
-                                    },
-                                )}
 
-                            </div>
+                                                <div className="my-5 h-px bg-tinta-800" />
+
+
+                                                <dl className="grid gap-5 sm:grid-cols-2">
+
+                                                    <Dato
+                                                        titulo="Asignado por"
+                                                        valor={
+                                                            suscripcion
+                                                                .assigned_by_email
+                                                            ?? '—'
+                                                        }
+                                                    />
+
+                                                    <Dato
+                                                        titulo="Fecha del registro"
+                                                        valor={
+                                                            fechaHoraVisual(
+                                                                suscripcion
+                                                                    .created_at,
+                                                            )
+                                                        }
+                                                    />
+
+                                                    <Dato
+                                                        titulo="Motivo del cambio"
+                                                        valor={
+                                                            suscripcion
+                                                                .change_reason
+                                                            || 'Sin motivo registrado'
+                                                        }
+                                                        ancho
+                                                    />
+
+                                                </dl>
+
+                                            </article>
+
+                                        </div>
+                                    )
+                                },
+                            )}
 
                         </div>
 
-                    </section>
-                </>
+                    </div>
+
+                </section>
             )}
 
-        </div>
+        </main>
     )
 }
 
 
-function DatoFecha({
-                       titulo,
-                       valor,
-                   }: {
+function Dato({
+                  titulo,
+                  valor,
+                  ancho = false,
+              }: {
     titulo: string
     valor: string
+    ancho?: boolean
 }) {
     return (
-        <div className="flex items-center gap-2">
+        <div
+            className={
+                ancho
+                    ? 'sm:col-span-2'
+                    : ''
+            }
+        >
+            <dt className="text-xs font-medium uppercase tracking-wider text-tinta-500">
+                {titulo}
+            </dt>
 
-            <IconoCalendario />
-
-            <div>
-                <p className="text-xs text-slate-400">
-                    {titulo}
-                </p>
-
-                <p className="font-medium text-slate-600">
-                    {valor}
-                </p>
-            </div>
-
+            <dd className="mt-1.5 text-sm leading-6 text-tinta-200">
+                {valor}
+            </dd>
         </div>
     )
 }
@@ -580,29 +632,47 @@ function DatoFecha({
 
 function EstadoCargando() {
     return (
-        <div className="space-y-5">
+        <div className="space-y-4">
 
-            <div className="h-32 animate-pulse rounded-3xl bg-slate-100" />
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-
-                {[1, 2, 3].map(
-                    (item) => (
-                        <div
-                            key={item}
-                            className="mb-5 h-28 animate-pulse rounded-2xl bg-slate-100 last:mb-0"
-                        />
-                    ),
-                )}
-
-            </div>
+            {[1, 2, 3].map(
+                (item) => (
+                    <div
+                        key={item}
+                        className="h-40 animate-pulse rounded-2xl border border-tinta-800 bg-tinta-900/60"
+                    />
+                ),
+            )}
 
         </div>
     )
 }
 
 
-function IconoAtras() {
+function EstadoVacio() {
+    return (
+        <div className="rounded-2xl border border-dashed border-tinta-700 bg-tinta-900/50 px-6 py-14 text-center">
+
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-tinta-800 text-tinta-400">
+
+                <IconoHistorial />
+
+            </div>
+
+            <h2 className="mt-4 font-semibold text-tinta-200">
+                Sin historial disponible
+            </h2>
+
+            <p className="mt-1 text-sm text-tinta-500">
+                Esta organización todavía no tiene
+                cambios de suscripción registrados.
+            </p>
+
+        </div>
+    )
+}
+
+
+function IconoVolver() {
     return (
         <svg
             viewBox="0 0 24 24"
@@ -618,24 +688,19 @@ function IconoAtras() {
 }
 
 
-function IconoCalendario() {
+function IconoEdificio() {
     return (
         <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.8"
-            className="h-4 w-4 text-slate-400"
+            className="h-6 w-6"
             aria-hidden="true"
         >
-            <rect
-                x="3"
-                y="5"
-                width="18"
-                height="16"
-                rx="2"
-            />
-            <path d="M8 3v4M16 3v4M3 10h18" />
+            <path d="M4 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
+
+            <path d="M8 7h2M14 7h2M8 11h2M14 11h2M9 21v-5h4v5" />
         </svg>
     )
 }
@@ -648,32 +713,14 @@ function IconoHistorial() {
             fill="none"
             stroke="currentColor"
             strokeWidth="1.8"
-            className="h-6 w-6"
+            className="h-5 w-5"
             aria-hidden="true"
         >
-            <circle
-                cx="12"
-                cy="12"
-                r="9"
-            />
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+
+            <path d="M3 4v5h5" />
+
             <path d="M12 7v5l3 2" />
-            <path d="M3 12H1" />
-        </svg>
-    )
-}
-
-
-function IconoCheck() {
-    return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            className="h-4 w-4"
-            aria-hidden="true"
-        >
-            <path d="m5 12 4 4L19 6" />
         </svg>
     )
 }

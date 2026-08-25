@@ -61,19 +61,19 @@ function temaPlan(
     if (tipo === 'basic') {
         return {
             icono:
-                'bg-blue-50 text-blue-600 ring-blue-100',
+                'bg-blue-950 text-blue-400 ring-blue-900',
 
             precio:
-                'text-blue-600',
+                'text-blue-400',
 
             check:
-                'border-blue-200 bg-blue-50 text-blue-600',
+                'border-blue-900 bg-blue-950 text-blue-400',
 
             boton:
-                'border-blue-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50',
+                'border-blue-900 text-blue-400 hover:bg-blue-950',
 
             seleccionado:
-                'border-blue-500 shadow-blue-200/70',
+                'border-blue-700 shadow-blue-950/40',
 
             insignia:
                 'bg-blue-600',
@@ -83,40 +83,40 @@ function temaPlan(
     if (tipo === 'pro') {
         return {
             icono:
-                'bg-cyan-50 text-cyan-600 ring-cyan-100',
+                'bg-marca-950 text-marca-400 ring-marca-900',
 
             precio:
-                'text-cyan-600',
+                'text-marca-400',
 
             check:
-                'border-cyan-200 bg-cyan-50 text-cyan-600',
+                'border-marca-900 bg-marca-950 text-marca-400',
 
             boton:
-                'border-cyan-200 text-cyan-700 hover:border-cyan-300 hover:bg-cyan-50',
+                'border-marca-900 text-marca-400 hover:bg-marca-950',
 
             seleccionado:
-                'border-cyan-500 shadow-cyan-200/70',
+                'border-marca-700 shadow-marca-950/40',
 
             insignia:
-                'bg-cyan-600',
+                'bg-marca-600',
         }
     }
 
     return {
         icono:
-            'bg-violet-50 text-violet-600 ring-violet-100',
+            'bg-violet-950 text-violet-400 ring-violet-900',
 
         precio:
-            'text-violet-600',
+            'text-violet-400',
 
         check:
-            'border-violet-200 bg-violet-50 text-violet-600',
+            'border-violet-900 bg-violet-950 text-violet-400',
 
         boton:
-            'border-violet-200 text-violet-600 hover:border-violet-300 hover:bg-violet-50',
+            'border-violet-900 text-violet-400 hover:bg-violet-950',
 
         seleccionado:
-            'border-violet-500 shadow-violet-200/70',
+            'border-violet-700 shadow-violet-950/40',
 
         insignia:
             'bg-violet-600',
@@ -771,23 +771,21 @@ export function Planes() {
 
     return (
         <>
-            <div className="mx-auto w-full max-w-[1500px] px-8 py-8 xl:px-10">
+            <main className="mx-auto w-full max-w-6xl px-8 py-10">
 
-                <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
 
                     <div>
 
-                        <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
-                Administración
-              </span>
-                        </div>
+                        <p className="text-sm font-medium text-marca-400">
+                            Plataforma
+                        </p>
 
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-50">
                             Planes de suscripción
                         </h1>
 
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                        <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-6 text-tinta-500">
                             Configura los planes disponibles
                             para las organizaciones y controla
                             sus límites y funcionalidades.
@@ -801,7 +799,7 @@ export function Planes() {
                         onClick={
                             abrirNuevoPlan
                         }
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-marca-600 px-5 text-sm font-semibold text-white transition hover:bg-marca-700"
                     >
                         <IconoMas />
 
@@ -812,14 +810,14 @@ export function Planes() {
 
 
                 {error && (
-                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-900 bg-red-950/40 px-5 py-4 text-sm text-red-300">
 
                         <div>
                             <p className="font-semibold">
                                 No se pudo completar la operación
                             </p>
 
-                            <p className="mt-1">
+                            <p className="mt-1 text-red-400">
                                 {error}
                             </p>
                         </div>
@@ -853,7 +851,7 @@ export function Planes() {
                         valor={String(
                             planesActivos,
                         )}
-                        valorClase="text-emerald-600"
+                        valorClase="text-emerald-400"
                     />
 
                     <TarjetaResumen
@@ -861,7 +859,7 @@ export function Planes() {
                         valor={String(
                             planesInactivos,
                         )}
-                        valorClase="text-slate-500"
+                        valorClase="text-tinta-400"
                     />
 
                 </div>
@@ -870,17 +868,17 @@ export function Planes() {
                 <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
                     <div>
-                        <p className="text-sm font-semibold text-slate-700">
+                        <p className="text-sm font-semibold text-tinta-300">
                             Filtrar planes
                         </p>
 
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-tinta-500">
                             Consulta todos los planes o filtra por su estado.
                         </p>
                     </div>
 
 
-                    <div className="inline-flex w-fit rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+                    <div className="inline-flex w-fit rounded-xl border border-tinta-800 bg-tinta-900 p-1">
 
                         <BotonFiltro
                             activo={
@@ -966,14 +964,14 @@ export function Planes() {
                                             )
                                         }
                                         className={[
-                                            'relative flex min-h-[500px] cursor-pointer flex-col rounded-3xl bg-white p-6 transition-all duration-300 ease-out',
+                                            'relative flex min-h-[500px] cursor-pointer flex-col rounded-3xl bg-tinta-900/60 p-6 transition-all duration-300 ease-out',
 
                                             esSeleccionado
-                                                ? `z-10 -translate-y-3 scale-[1.025] border-2 shadow-2xl ${tema.seleccionado}`
-                                                : 'border border-slate-200 shadow-sm hover:-translate-y-1.5 hover:shadow-lg',
+                                                ? `z-10 -translate-y-2 border-2 shadow-2xl ${tema.seleccionado}`
+                                                : 'border border-tinta-800 hover:-translate-y-1 hover:border-tinta-700',
 
                                             !plan.is_active
-                                                ? 'opacity-90'
+                                                ? 'opacity-80'
                                                 : '',
                                         ].join(' ')}
                                     >
@@ -999,7 +997,7 @@ export function Planes() {
                                             && (
                                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
 
-                                                    <div className="rounded-full bg-cyan-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                                                    <div className="rounded-full bg-marca-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
                                                         Recomendado
                                                     </div>
 
@@ -1027,11 +1025,11 @@ export function Planes() {
 
 
                                             {plan.is_active ? (
-                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-600">
+                                                <span className="rounded-full border border-emerald-900 bg-emerald-950 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-400">
                           ACTIVO
                         </span>
                                             ) : (
-                                                <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-bold tracking-wide text-slate-500">
+                                                <span className="rounded-full border border-tinta-700 bg-tinta-800 px-3 py-1 text-[11px] font-bold tracking-wide text-tinta-400">
                           INACTIVO
                         </span>
                                             )}
@@ -1041,12 +1039,12 @@ export function Planes() {
 
                                         <div className="mb-5">
 
-                                            <h2 className="text-2xl font-bold text-slate-900">
+                                            <h2 className="text-2xl font-bold text-tinta-50">
                                                 {plan.name}
                                             </h2>
 
                                             {plan.description && (
-                                                <p className="mt-1 text-sm leading-6 text-slate-500">
+                                                <p className="mt-1 text-sm leading-6 text-tinta-500">
                                                     {
                                                         plan.description
                                                     }
@@ -1067,7 +1065,7 @@ export function Planes() {
                             }
                         </span>
 
-                                                <span className="pb-1 text-sm font-medium text-slate-400">
+                                                <span className="pb-1 text-sm font-medium text-tinta-500">
                           / mes
                         </span>
 
@@ -1076,10 +1074,10 @@ export function Planes() {
                                         </div>
 
 
-                                        <div className="mb-5 h-px bg-slate-100" />
+                                        <div className="mb-5 h-px bg-tinta-800" />
 
 
-                                        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
                                             Incluye
                                         </p>
 
@@ -1106,7 +1104,7 @@ export function Planes() {
                                                             <IconoCheck />
                                                         </div>
 
-                                                        <p className="text-sm leading-5 text-slate-600">
+                                                        <p className="text-sm leading-5 text-tinta-300">
                                                             {
                                                                 caracteristica
                                                             }
@@ -1133,10 +1131,6 @@ export function Planes() {
                                             className={[
                                                 'mt-7 flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition-all duration-200',
                                                 tema.boton,
-
-                                                esSeleccionado
-                                                    ? 'shadow-sm'
-                                                    : '',
                                             ].join(' ')}
                                         >
                                             <IconoLapiz />
@@ -1152,7 +1146,7 @@ export function Planes() {
                     </section>
                 )}
 
-            </div>
+            </main>
 
 
             <ModalPlan
@@ -1203,8 +1197,8 @@ function BotonFiltro({
                 'rounded-lg px-4 py-2 text-sm font-semibold transition',
 
                 activo
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
+                    ? 'bg-marca-600 text-white'
+                    : 'text-tinta-400 hover:bg-tinta-800 hover:text-tinta-100',
             ].join(' ')}
         >
             {children}
@@ -1216,16 +1210,16 @@ function BotonFiltro({
 function TarjetaResumen({
                             titulo,
                             valor,
-                            valorClase = 'text-slate-900',
+                            valorClase = 'text-tinta-50',
                         }: {
     titulo: string
     valor: string
     valorClase?: string
 }) {
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-tinta-800 bg-tinta-900/60 p-5">
 
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-tinta-500">
                 {titulo}
             </p>
 
@@ -1248,18 +1242,18 @@ function EstadoCargando() {
                 (item) => (
                     <div
                         key={item}
-                        className="h-[500px] animate-pulse rounded-3xl border border-slate-200 bg-white p-6"
+                        className="h-[500px] animate-pulse rounded-3xl border border-tinta-800 bg-tinta-900/60 p-6"
                     >
-                        <div className="h-12 w-12 rounded-2xl bg-slate-100" />
+                        <div className="h-12 w-12 rounded-2xl bg-tinta-800" />
 
-                        <div className="mt-7 h-7 w-32 rounded-lg bg-slate-100" />
+                        <div className="mt-7 h-7 w-32 rounded-lg bg-tinta-800" />
 
-                        <div className="mt-4 h-10 w-44 rounded-lg bg-slate-100" />
+                        <div className="mt-4 h-10 w-44 rounded-lg bg-tinta-800" />
 
                         <div className="mt-8 space-y-4">
-                            <div className="h-5 rounded bg-slate-100" />
-                            <div className="h-5 rounded bg-slate-100" />
-                            <div className="h-5 rounded bg-slate-100" />
+                            <div className="h-5 rounded bg-tinta-800" />
+                            <div className="h-5 rounded bg-tinta-800" />
+                            <div className="h-5 rounded bg-tinta-800" />
                         </div>
                     </div>
                 ),
@@ -1276,19 +1270,19 @@ function EstadoVacio({
     onCrear: () => void
 }) {
     return (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+        <div className="rounded-3xl border border-dashed border-tinta-700 bg-tinta-900/50 px-6 py-16 text-center">
 
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-marca-950 text-marca-400">
                 <IconoPlan
                     tipo="basic"
                 />
             </div>
 
-            <h2 className="mt-5 text-xl font-bold text-slate-900">
+            <h2 className="mt-5 text-xl font-bold text-tinta-50">
                 No hay planes registrados
             </h2>
 
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-tinta-500">
                 Crea el primer plan de
                 suscripción disponible para
                 las organizaciones.
@@ -1297,7 +1291,7 @@ function EstadoVacio({
             <button
                 type="button"
                 onClick={onCrear}
-                className="mt-6 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="mt-6 rounded-xl bg-marca-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-marca-700"
             >
                 Crear plan
             </button>
@@ -1315,9 +1309,9 @@ function EstadoFiltroVacio({
     onMostrarTodos: () => void
 }) {
     return (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+        <div className="rounded-3xl border border-dashed border-tinta-700 bg-tinta-900/50 px-6 py-14 text-center">
 
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-tinta-50">
                 No hay planes {
                 filtro === 'activos'
                     ? 'activos'
@@ -1325,7 +1319,7 @@ function EstadoFiltroVacio({
             }
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-tinta-500">
                 Cambia el filtro para consultar
                 los demás planes registrados.
             </p>
@@ -1333,7 +1327,7 @@ function EstadoFiltroVacio({
             <button
                 type="button"
                 onClick={onMostrarTodos}
-                className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="mt-5 rounded-xl border border-tinta-700 px-5 py-2.5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800"
             >
                 Mostrar todos
             </button>
@@ -1386,7 +1380,6 @@ function IconoLapiz() {
             aria-hidden="true"
         >
             <path d="M12 20h9" />
-
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
         </svg>
     )
@@ -1426,7 +1419,6 @@ function IconoPlan({
                 aria-hidden="true"
             >
                 <path d="m4 9 4-5 4 5 4-5 4 5-8 11Z" />
-
                 <path d="M4 9h16" />
             </svg>
         )
@@ -1442,7 +1434,6 @@ function IconoPlan({
             aria-hidden="true"
         >
             <path d="M4 7 8 4l4 5 4-5 4 3-2 11H6Z" />
-
             <path d="M7 18h10" />
         </svg>
     )

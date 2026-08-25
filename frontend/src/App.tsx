@@ -1,9 +1,9 @@
 import {
-  BrowserRouter,
-  Navigate,
-  Outlet,
-  Route,
-  Routes,
+    BrowserRouter,
+    Navigate,
+    Outlet,
+    Route,
+    Routes,
 } from 'react-router-dom'
 
 import { BarraPlataforma } from '@/componentes/BarraPlataforma'
@@ -21,162 +21,149 @@ import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
 
 
-/**
- * Layout principal de administración de plataforma.
- *
- * Las páginas protegidas comparten la barra lateral.
- */
 function LayoutPlataforma() {
-  return (
-    <div className="flex min-h-dvh bg-slate-50">
+    return (
+        <div className="flex min-h-dvh bg-tinta-950">
 
-      <BarraPlataforma />
+            <BarraPlataforma />
 
-      <main className="min-w-0 flex-1 overflow-x-hidden">
-        <Outlet />
-      </main>
+            <main className="min-w-0 flex-1 overflow-x-hidden bg-tinta-950">
+                <Outlet />
+            </main>
 
-    </div>
-  )
+        </div>
+    )
 }
 
 
 function Protegida({
-  children,
-}: {
-  children: React.ReactNode
+                       children,
+                   }: {
+    children: React.ReactNode
 }) {
-  return (
-    <RutaProtegida>
-      {children}
-    </RutaProtegida>
-  )
+    return (
+        <RutaProtegida>
+            {children}
+        </RutaProtegida>
+    )
 }
 
 
-/**
- * Rutas de la aplicación web.
- *
- * Cada historia mantiene su bloque separado para reducir
- * conflictos al integrar cambios entre ramas.
- */
 export default function App() {
-  return (
-    <ProveedorSesion>
+    return (
+        <ProveedorSesion>
 
-      <BrowserRouter>
+            <BrowserRouter>
 
-        <Routes>
+                <Routes>
 
-          {/* ---------- US-02: inicio de sesión ---------- */}
+                    {/* US-02: inicio de sesión */}
 
-          <Route
-            path="/ingresar"
-            element={
-              <InicioSesion />
-            }
-          />
-
-
-          {/* ---------- US-01: registro de paciente ---------- */}
-
-          <Route
-            path="/registro"
-            element={
-              <RegistroPaciente />
-            }
-          />
+                    <Route
+                        path="/ingresar"
+                        element={
+                            <InicioSesion />
+                        }
+                    />
 
 
-          {/* ---------- Rutas administrativas protegidas ---------- */}
+                    {/* US-01: registro de paciente */}
 
-          <Route
-            element={
-              <Protegida>
-                <LayoutPlataforma />
-              </Protegida>
-            }
-          >
-
-            {/* ---------- Panel ---------- */}
-
-            <Route
-              path="/panel"
-              element={
-                <Panel />
-              }
-            />
+                    <Route
+                        path="/registro"
+                        element={
+                            <RegistroPaciente />
+                        }
+                    />
 
 
-            {/* ---------- GES-43: organizaciones ---------- */}
+                    {/* Área administrativa */}
 
-            <Route
-              path="/organizaciones"
-              element={
-                <Organizaciones />
-              }
-            />
+                    <Route
+                        element={
+                            <Protegida>
+                                <LayoutPlataforma />
+                            </Protegida>
+                        }
+                    >
 
-            <Route
-              path="/organizaciones/nueva"
-              element={
-                <AltaOrganizacion />
-              }
-            />
+                        {/* Panel */}
 
-
-            {/* ---------- GES-44: planes y suscripciones ---------- */}
-
-            <Route
-              path="/planes"
-              element={
-                <Planes />
-              }
-            />
-
-            <Route
-              path="/suscripciones"
-              element={
-                <Suscripciones />
-              }
-            />
-
-            <Route
-              path="/suscripciones/:organizationId/historial"
-              element={
-                <HistorialSuscripcion />
-              }
-            />
-
-          </Route>
+                        <Route
+                            path="/panel"
+                            element={
+                                <Panel />
+                            }
+                        />
 
 
-          {/* ---------- Redirecciones ---------- */}
+                        {/* GES-43: organizaciones */}
 
-          <Route
-            path="/"
-            element={
-              <Navigate
-                to="/panel"
-                replace
-              />
-            }
-          />
+                        <Route
+                            path="/organizaciones"
+                            element={
+                                <Organizaciones />
+                            }
+                        />
 
-          <Route
-            path="*"
-            element={
-              <Navigate
-                to="/panel"
-                replace
-              />
-            }
-          />
+                        <Route
+                            path="/organizaciones/nueva"
+                            element={
+                                <AltaOrganizacion />
+                            }
+                        />
 
-        </Routes>
 
-      </BrowserRouter>
+                        {/* GES-44: planes y suscripciones */}
 
-    </ProveedorSesion>
-  )
+                        <Route
+                            path="/planes"
+                            element={
+                                <Planes />
+                            }
+                        />
+
+                        <Route
+                            path="/suscripciones"
+                            element={
+                                <Suscripciones />
+                            }
+                        />
+
+                        <Route
+                            path="/suscripciones/:organizationId/historial"
+                            element={
+                                <HistorialSuscripcion />
+                            }
+                        />
+
+                    </Route>
+
+
+                    <Route
+                        path="/"
+                        element={
+                            <Navigate
+                                to="/panel"
+                                replace
+                            />
+                        }
+                    />
+
+                    <Route
+                        path="*"
+                        element={
+                            <Navigate
+                                to="/panel"
+                                replace
+                            />
+                        }
+                    />
+
+                </Routes>
+
+            </BrowserRouter>
+
+        </ProveedorSesion>
+    )
 }

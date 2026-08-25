@@ -58,6 +58,7 @@ const vacio: DatosFormularioPlan = {
     active: true,
 }
 
+
 export function ModalPlan({
                               abierto,
                               modo,
@@ -66,8 +67,14 @@ export function ModalPlan({
                               onCerrar,
                               onGuardar,
                           }: Props) {
-    const [formulario, setFormulario] =
-        useState<DatosFormularioPlan>(vacio)
+    const [
+        formulario,
+        setFormulario,
+    ] =
+        useState<DatosFormularioPlan>(
+            vacio,
+        )
+
 
     useEffect(() => {
         if (!abierto) {
@@ -78,89 +85,130 @@ export function ModalPlan({
             modo === 'editar'
             && inicial
         ) {
-            setFormulario(inicial)
+            setFormulario(
+                inicial,
+            )
+
             return
         }
 
-        setFormulario(vacio)
+        setFormulario(
+            vacio,
+        )
     }, [
         abierto,
         modo,
         inicial,
     ])
 
+
     if (!abierto) {
         return null
     }
 
+
     const cambiar = (
-        campo: keyof DatosFormularioPlan,
-        valor: string | boolean,
+        campo:
+        keyof DatosFormularioPlan,
+
+        valor:
+            string | boolean,
     ) => {
-        setFormulario((actual) => ({
-            ...actual,
-            [campo]: valor,
-        }))
+        setFormulario(
+            (actual) => ({
+                ...actual,
+                [campo]: valor,
+            }),
+        )
     }
 
-    const enviar = async (
-        evento: FormEvent,
-    ) => {
-        evento.preventDefault()
 
-        if (
-            !formulario.name.trim()
-            || !formulario.code.trim()
-            || !formulario.price.trim()
-        ) {
-            return
+    const enviar =
+        async (
+            evento: FormEvent,
+        ) => {
+            evento.preventDefault()
+
+            if (
+                !formulario.name.trim()
+                || !formulario.code.trim()
+                || !formulario.price.trim()
+            ) {
+                return
+            }
+
+            await onGuardar(
+                formulario,
+            )
         }
 
-        await onGuardar(formulario)
-    }
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/40 px-4 py-8 backdrop-blur-[2px]"
-            onMouseDown={onCerrar}
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-8 backdrop-blur-sm"
+            onMouseDown={
+                onCerrar
+            }
         >
+
             <div
-                className="my-auto w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl"
-                onMouseDown={(evento) =>
+                className="my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-tinta-800 bg-tinta-900 shadow-2xl"
+                onMouseDown={(
+                    evento,
+                ) =>
                     evento.stopPropagation()
                 }
             >
-                <header className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+
+                <header className="flex items-center justify-between border-b border-tinta-800 px-6 py-5">
+
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">
+
+                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-400">
+                            Plataforma
+                        </p>
+
+                        <h2 className="mt-1 text-xl font-bold text-tinta-50">
                             {modo === 'crear'
                                 ? 'Nuevo plan'
                                 : 'Editar plan'}
                         </h2>
 
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-sm text-tinta-500">
                             {modo === 'crear'
                                 ? 'Configura un nuevo plan de suscripción.'
                                 : 'Actualiza los límites y funcionalidades del plan.'}
                         </p>
+
                     </div>
+
 
                     <button
                         type="button"
-                        onClick={onCerrar}
-                        disabled={guardando}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+                        onClick={
+                            onCerrar
+                        }
+                        disabled={
+                            guardando
+                        }
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-xl text-tinta-500 transition hover:bg-tinta-800 hover:text-tinta-100 disabled:opacity-50"
                         aria-label="Cerrar"
                     >
                         ×
                     </button>
+
                 </header>
 
+
                 <form
-                    onSubmit={enviar}
+                    onSubmit={
+                        enviar
+                    }
                     className="max-h-[calc(100vh-150px)] overflow-y-auto"
                 >
-                    <div className="space-y-7 p-6">
+
+                    <div className="space-y-8 p-6">
+
 
                         {/* Información general */}
 
@@ -168,39 +216,60 @@ export function ModalPlan({
                             titulo="Información general"
                             descripcion="Datos principales del plan de suscripción."
                         >
+
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+
                                 <Campo
                                     etiqueta="Nombre"
-                                    valor={formulario.name}
+                                    valor={
+                                        formulario.name
+                                    }
                                     placeholder="Ej. Pro"
                                     requerido
-                                    onChange={(valor) =>
-                                        cambiar('name', valor)
+                                    onChange={(
+                                        valor,
+                                    ) =>
+                                        cambiar(
+                                            'name',
+                                            valor,
+                                        )
                                     }
                                 />
 
+
                                 <Campo
                                     etiqueta="Código"
-                                    valor={formulario.code}
+                                    valor={
+                                        formulario.code
+                                    }
                                     placeholder="Ej. pro"
                                     requerido
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'code',
                                             valor.toLowerCase(),
                                         )
                                     }
                                 />
+
                             </div>
 
+
                             <div>
-                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+
+                                <label className="mb-2 block text-sm font-semibold text-tinta-300">
                                     Descripción
                                 </label>
 
                                 <textarea
-                                    value={formulario.description}
-                                    onChange={(evento) =>
+                                    value={
+                                        formulario.description
+                                    }
+                                    onChange={(
+                                        evento,
+                                    ) =>
                                         cambiar(
                                             'description',
                                             evento.target.value,
@@ -208,47 +277,65 @@ export function ModalPlan({
                                     }
                                     rows={3}
                                     placeholder="Describe brevemente qué ofrece este plan."
-                                    className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    className="w-full resize-none rounded-xl border border-tinta-800 bg-tinta-950 px-4 py-3 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                                 />
+
                             </div>
+
 
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+
+                                    <label className="mb-2 block text-sm font-semibold text-tinta-300">
                                         Precio mensual
                                     </label>
 
                                     <div className="flex">
+
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.01"
                                             required
-                                            value={formulario.price}
-                                            onChange={(evento) =>
+                                            value={
+                                                formulario.price
+                                            }
+                                            onChange={(
+                                                evento,
+                                            ) =>
                                                 cambiar(
                                                     'price',
                                                     evento.target.value,
                                                 )
                                             }
                                             placeholder="890"
-                                            className="h-11 min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                            className="h-11 min-w-0 flex-1 rounded-l-xl border border-r-0 border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                                         />
 
-                                        <div className="flex h-11 items-center rounded-r-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-600">
-                                            {formulario.currency}
+                                        <div className="flex h-11 items-center rounded-r-xl border border-tinta-800 bg-tinta-800 px-4 text-sm font-semibold text-tinta-300">
+
+                                            {
+                                                formulario.currency
+                                            }
+
                                         </div>
+
                                     </div>
+
                                 </div>
 
+
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+
+                                    <label className="mb-2 block text-sm font-semibold text-tinta-300">
                                         Estado
                                     </label>
 
                                     <Interruptor
-                                        activo={formulario.active}
+                                        activo={
+                                            formulario.active
+                                        }
                                         titulo={
                                             formulario.active
                                                 ? 'Plan activo'
@@ -266,9 +353,11 @@ export function ModalPlan({
                                             )
                                         }
                                     />
+
                                 </div>
 
                             </div>
+
                         </Seccion>
 
 
@@ -278,18 +367,29 @@ export function ModalPlan({
                             titulo="Límites del plan"
                             descripcion="Deja un campo vacío para indicar que el recurso es ilimitado."
                         >
-                            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-700">
+
+                            <div className="rounded-2xl border border-marca-900 bg-marca-950/40 px-4 py-3 text-sm text-marca-300">
+
                                 Los campos sin valor se interpretan como
-                                <strong> ilimitados</strong>.
+
+                                <strong>
+                                    {' '}ilimitados
+                                </strong>.
+
                             </div>
+
 
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 
                                 <CampoLimite
                                     etiqueta="Máximo de sucursales"
-                                    valor={formulario.maxBranches}
+                                    valor={
+                                        formulario.maxBranches
+                                    }
                                     placeholder="Ej. 5"
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'maxBranches',
                                             valor,
@@ -297,11 +397,16 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <CampoLimite
                                     etiqueta="Máximo de usuarios"
-                                    valor={formulario.maxUsers}
+                                    valor={
+                                        formulario.maxUsers
+                                    }
                                     placeholder="Ej. 60"
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'maxUsers',
                                             valor,
@@ -309,11 +414,16 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <CampoLimite
                                     etiqueta="Máximo de profesionales"
-                                    valor={formulario.maxPractitioners}
+                                    valor={
+                                        formulario.maxPractitioners
+                                    }
                                     placeholder="Ej. 40"
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'maxPractitioners',
                                             valor,
@@ -321,11 +431,16 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <CampoLimite
                                     etiqueta="Citas mensuales"
-                                    valor={formulario.maxAppointmentsMonth}
+                                    valor={
+                                        formulario.maxAppointmentsMonth
+                                    }
                                     placeholder="Ej. 4000"
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'maxAppointmentsMonth',
                                             valor,
@@ -333,11 +448,16 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <CampoLimite
                                     etiqueta="Consultas IA mensuales"
-                                    valor={formulario.maxAiQueriesMonth}
+                                    valor={
+                                        formulario.maxAiQueriesMonth
+                                    }
                                     placeholder="Ej. 3000"
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'maxAiQueriesMonth',
                                             valor,
@@ -345,11 +465,16 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <CampoLimite
                                     etiqueta="Almacenamiento (MB)"
-                                    valor={formulario.storageMb}
+                                    valor={
+                                        formulario.storageMb
+                                    }
                                     placeholder="Ej. 10240"
-                                    onChange={(valor) =>
+                                    onChange={(
+                                        valor,
+                                    ) =>
                                         cambiar(
                                             'storageMb',
                                             valor,
@@ -358,6 +483,7 @@ export function ModalPlan({
                                 />
 
                             </div>
+
                         </Seccion>
 
 
@@ -367,12 +493,15 @@ export function ModalPlan({
                             titulo="Funcionalidades"
                             descripcion="Activa las características disponibles para las organizaciones que utilicen este plan."
                         >
+
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 
                                 <OpcionFuncionalidad
                                     titulo="Chatbot"
                                     descripcion="Asistencia mediante chatbot."
-                                    activo={formulario.chatbot}
+                                    activo={
+                                        formulario.chatbot
+                                    }
                                     onCambiar={() =>
                                         cambiar(
                                             'chatbot',
@@ -381,10 +510,13 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <OpcionFuncionalidad
                                     titulo="Predicción de inasistencia"
                                     descripcion="Predicción de pacientes con riesgo de no asistir."
-                                    activo={formulario.noShowPrediction}
+                                    activo={
+                                        formulario.noShowPrediction
+                                    }
                                     onCambiar={() =>
                                         cambiar(
                                             'noShowPrediction',
@@ -393,10 +525,13 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <OpcionFuncionalidad
                                     titulo="Resúmenes por IA"
                                     descripcion="Generación de resúmenes asistidos por inteligencia artificial."
-                                    activo={formulario.aiSummaries}
+                                    activo={
+                                        formulario.aiSummaries
+                                    }
                                     onCambiar={() =>
                                         cambiar(
                                             'aiSummaries',
@@ -405,10 +540,13 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <OpcionFuncionalidad
                                     titulo="Exportación de reportes"
                                     descripcion="Permite generar y exportar reportes."
-                                    activo={formulario.reportExport}
+                                    activo={
+                                        formulario.reportExport
+                                    }
                                     onCambiar={() =>
                                         cambiar(
                                             'reportExport',
@@ -417,10 +555,13 @@ export function ModalPlan({
                                     }
                                 />
 
+
                                 <OpcionFuncionalidad
                                     titulo="Pago en línea"
                                     descripcion="Habilita funcionalidades relacionadas con pagos en línea."
-                                    activo={formulario.onlinePayment}
+                                    activo={
+                                        formulario.onlinePayment
+                                    }
                                     onCambiar={() =>
                                         cambiar(
                                             'onlinePayment',
@@ -430,32 +571,41 @@ export function ModalPlan({
                                 />
 
                             </div>
+
                         </Seccion>
 
                     </div>
 
 
-                    <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-6 py-4">
+                    <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-tinta-800 bg-tinta-900 px-6 py-4">
 
-                        <p className="hidden text-xs text-slate-400 sm:block">
+                        <p className="hidden text-xs text-tinta-500 sm:block">
                             Los cambios se aplicarán al guardar.
                         </p>
+
 
                         <div className="ml-auto flex gap-3">
 
                             <button
                                 type="button"
-                                onClick={onCerrar}
-                                disabled={guardando}
-                                className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                                onClick={
+                                    onCerrar
+                                }
+                                disabled={
+                                    guardando
+                                }
+                                className="h-11 rounded-xl border border-tinta-700 px-5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800 disabled:opacity-50"
                             >
                                 Cancelar
                             </button>
 
+
                             <button
                                 type="submit"
-                                disabled={guardando}
-                                className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={
+                                    guardando
+                                }
+                                className="h-11 rounded-xl bg-marca-600 px-5 text-sm font-semibold text-white transition hover:bg-marca-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {guardando
                                     ? 'Guardando...'
@@ -467,8 +617,11 @@ export function ModalPlan({
                         </div>
 
                     </footer>
+
                 </form>
+
             </div>
+
         </div>
     )
 }
@@ -485,19 +638,24 @@ function Seccion({
 }) {
     return (
         <section>
+
             <div className="mb-4">
-                <h3 className="text-base font-bold text-slate-900">
+
+                <h3 className="text-base font-bold text-tinta-100">
                     {titulo}
                 </h3>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-tinta-500">
                     {descripcion}
                 </p>
+
             </div>
+
 
             <div className="space-y-5">
                 {children}
             </div>
+
         </section>
     )
 }
@@ -508,8 +666,10 @@ type CampoProps = {
     valor: string
     placeholder?: string
     requerido?: boolean
-    onChange: (valor: string) => void
+    onChange:
+        (valor: string) => void
 }
+
 
 function Campo({
                    etiqueta,
@@ -520,28 +680,41 @@ function Campo({
                }: CampoProps) {
     return (
         <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">
+
+            <label className="mb-2 block text-sm font-semibold text-tinta-300">
+
                 {etiqueta}
 
                 {requerido && (
-                    <span className="ml-1 text-red-500">
+                    <span className="ml-1 text-red-400">
             *
           </span>
                 )}
+
             </label>
+
 
             <input
                 type="text"
-                required={requerido}
-                value={valor}
-                onChange={(evento) =>
+                required={
+                    requerido
+                }
+                value={
+                    valor
+                }
+                onChange={(
+                    evento,
+                ) =>
                     onChange(
                         evento.target.value,
                     )
                 }
-                placeholder={placeholder}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                placeholder={
+                    placeholder
+                }
+                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
             />
+
         </div>
     )
 }
@@ -556,31 +729,42 @@ function CampoLimite({
     etiqueta: string
     valor: string
     placeholder: string
-    onChange: (valor: string) => void
+    onChange:
+        (valor: string) => void
 }) {
     return (
         <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">
+
+            <label className="mb-2 block text-sm font-semibold text-tinta-300">
                 {etiqueta}
             </label>
+
 
             <input
                 type="number"
                 min="0"
                 step="1"
-                value={valor}
-                onChange={(evento) =>
+                value={
+                    valor
+                }
+                onChange={(
+                    evento,
+                ) =>
                     onChange(
                         evento.target.value,
                     )
                 }
-                placeholder={placeholder}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                placeholder={
+                    placeholder
+                }
+                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
             />
 
-            <p className="mt-1.5 text-xs text-slate-400">
+
+            <p className="mt-1.5 text-xs text-tinta-600">
                 Vacío = ilimitado
             </p>
+
         </div>
     )
 }
@@ -600,34 +784,41 @@ function Interruptor({
     return (
         <button
             type="button"
-            onClick={onCambiar}
+            onClick={
+                onCambiar
+            }
             className={[
                 'flex min-h-11 w-full items-center justify-between gap-4 rounded-xl border px-4 py-2 text-left transition',
 
                 activo
-                    ? 'border-emerald-200 bg-emerald-50'
-                    : 'border-slate-200 bg-slate-50',
+                    ? 'border-emerald-900 bg-emerald-950/40'
+                    : 'border-tinta-800 bg-tinta-950',
             ].join(' ')}
         >
+
             <div>
+
                 <p
                     className={[
                         'text-sm font-semibold',
 
                         activo
-                            ? 'text-emerald-700'
-                            : 'text-slate-600',
+                            ? 'text-emerald-400'
+                            : 'text-tinta-400',
                     ].join(' ')}
                 >
                     {titulo}
                 </p>
 
+
                 {descripcion && (
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-tinta-500">
                         {descripcion}
                     </p>
                 )}
+
             </div>
+
 
             <span
                 className={[
@@ -635,9 +826,10 @@ function Interruptor({
 
                     activo
                         ? 'bg-emerald-500'
-                        : 'bg-slate-300',
+                        : 'bg-tinta-700',
                 ].join(' ')}
             >
+
         <span
             className={[
                 'absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition',
@@ -647,7 +839,9 @@ function Interruptor({
                     : 'left-1',
             ].join(' ')}
         />
+
       </span>
+
         </button>
     )
 }
@@ -670,32 +864,41 @@ function OpcionFuncionalidad({
                 'flex min-h-[92px] items-center justify-between gap-4 rounded-2xl border p-4 transition',
 
                 activo
-                    ? 'border-blue-200 bg-blue-50/60'
-                    : 'border-slate-200 bg-white',
+                    ? 'border-marca-900 bg-marca-950/40'
+                    : 'border-tinta-800 bg-tinta-950',
             ].join(' ')}
         >
+
             <div>
-                <p className="text-sm font-semibold text-slate-800">
+
+                <p className="text-sm font-semibold text-tinta-200">
                     {titulo}
                 </p>
 
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-tinta-500">
                     {descripcion}
                 </p>
+
             </div>
+
 
             <button
                 type="button"
-                onClick={onCambiar}
-                aria-pressed={activo}
+                onClick={
+                    onCambiar
+                }
+                aria-pressed={
+                    activo
+                }
                 className={[
                     'relative h-6 w-11 shrink-0 rounded-full transition',
 
                     activo
-                        ? 'bg-blue-600'
-                        : 'bg-slate-300',
+                        ? 'bg-marca-600'
+                        : 'bg-tinta-700',
                 ].join(' ')}
             >
+
         <span
             className={[
                 'absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition',
@@ -705,7 +908,9 @@ function OpcionFuncionalidad({
                     : 'left-1',
             ].join(' ')}
         />
+
             </button>
+
         </div>
     )
 }

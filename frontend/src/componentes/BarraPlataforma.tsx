@@ -13,7 +13,11 @@ import { useSesion } from '@/sesion/useSesion'
 type ItemMenu = {
     etiqueta: string
     ruta: string
-    icono: 'panel' | 'organizaciones' | 'planes' | 'suscripciones'
+    icono:
+        | 'panel'
+        | 'organizaciones'
+        | 'planes'
+        | 'suscripciones'
 }
 
 
@@ -42,8 +46,10 @@ const items: ItemMenu[] = [
 
 
 export function BarraPlataforma() {
-    const { usuario, salir } =
-        useSesion()
+    const {
+        usuario,
+        salir,
+    } = useSesion()
 
     const navigate =
         useNavigate()
@@ -57,23 +63,26 @@ export function BarraPlataforma() {
 
 
     return (
-        <aside className="sticky top-0 flex h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5">
+        <aside className="sticky top-0 flex h-dvh w-64 shrink-0 flex-col border-r border-tinta-800 bg-tinta-900 px-4 py-5">
+
+            {/* Marca */}
 
             <div className="mb-8 flex items-center gap-3 px-2">
 
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-200">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-950/30">
 
                     <IconoEscudo className="size-6" />
 
                 </div>
 
+
                 <div className="leading-tight">
 
-                    <h1 className="text-[17px] font-bold tracking-tight text-slate-900">
+                    <h1 className="text-[17px] font-bold tracking-tight text-tinta-50">
                         MediAdmin
                     </h1>
 
-                    <p className="mt-1 text-[10px] font-bold tracking-[0.18em] text-blue-600">
+                    <p className="mt-1 text-[10px] font-bold tracking-[0.18em] text-marca-400">
                         PLATAFORMA
                     </p>
 
@@ -82,9 +91,11 @@ export function BarraPlataforma() {
             </div>
 
 
+            {/* Menú */}
+
             <div className="mb-3 px-3">
 
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-tinta-500">
                     Menú principal
                 </p>
 
@@ -102,30 +113,34 @@ export function BarraPlataforma() {
                                 'group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
 
                                 isActive
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                                    ? 'bg-marca-950 text-marca-300'
+                                    : 'text-tinta-400 hover:bg-tinta-800 hover:text-tinta-100',
                             ].join(' ')
                         }
                     >
                         {({ isActive }) => (
                             <>
                                 {isActive && (
-                                    <span className="absolute left-0 h-6 w-1 rounded-r-full bg-blue-600" />
+                                    <span className="absolute left-0 h-6 w-1 rounded-r-full bg-marca-500" />
                                 )}
+
 
                                 <div
                                     className={[
                                         'flex h-8 w-8 items-center justify-center rounded-lg transition',
 
                                         isActive
-                                            ? 'bg-white text-blue-600 shadow-sm'
-                                            : 'text-slate-500 group-hover:bg-white group-hover:text-slate-700',
+                                            ? 'bg-marca-900 text-marca-300'
+                                            : 'text-tinta-500 group-hover:bg-tinta-700 group-hover:text-tinta-200',
                                     ].join(' ')}
                                 >
                                     <IconoMenu
-                                        tipo={item.icono}
+                                        tipo={
+                                            item.icono
+                                        }
                                     />
                                 </div>
+
 
                                 <span>
                   {item.etiqueta}
@@ -138,37 +153,44 @@ export function BarraPlataforma() {
             </nav>
 
 
-            <div className="mt-5 border-t border-slate-200 pt-5">
+            {/* Perfil */}
+
+            <div className="mt-5 border-t border-tinta-800 pt-5">
 
                 <button
                     type="button"
                     onClick={cerrarSesion}
-                    className="mb-4 flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600"
+                    className="mb-4 flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-tinta-400 transition hover:bg-red-950/40 hover:text-red-400"
                 >
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+
                         <IconoSalir className="size-[18px]" />
+
                     </div>
 
                     Cerrar sesión
                 </button>
 
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <div className="rounded-2xl border border-tinta-800 bg-tinta-950/60 p-4">
 
                     <div className="flex items-center gap-3">
 
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-marca-950 text-marca-400">
+
                             <IconoEscudo className="size-5" />
+
                         </div>
+
 
                         <div className="min-w-0">
 
-                            <p className="truncate text-sm font-semibold text-slate-900">
+                            <p className="truncate text-sm font-semibold text-tinta-100">
                                 {usuario?.full_name
                                     || 'Superadministrador'}
                             </p>
 
-                            <p className="text-xs text-slate-500">
+                            <p className="mt-0.5 text-xs text-tinta-500">
                                 {usuario?.is_platform_admin
                                     ? 'Administrador de plataforma'
                                     : usuario?.organization
@@ -179,11 +201,12 @@ export function BarraPlataforma() {
 
                     </div>
 
-                    <div className="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3">
+
+                    <div className="mt-3 flex items-center gap-2 border-t border-tinta-800 pt-3">
 
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
 
-                        <span className="text-xs font-medium text-emerald-600">
+                        <span className="text-xs font-medium text-emerald-400">
               Cuenta activa
             </span>
 
@@ -203,19 +226,27 @@ function IconoMenu({
                    }: {
     tipo: ItemMenu['icono']
 }) {
-    if (tipo === 'panel') {
+    if (
+        tipo === 'panel'
+    ) {
         return (
             <IconoPulso className="size-[18px]" />
         )
     }
 
-    if (tipo === 'organizaciones') {
+
+    if (
+        tipo === 'organizaciones'
+    ) {
         return (
             <IconoEdificio className="size-[18px]" />
         )
     }
 
-    if (tipo === 'planes') {
+
+    if (
+        tipo === 'planes'
+    ) {
         return (
             <svg
                 viewBox="0 0 24 24"
@@ -226,10 +257,15 @@ function IconoMenu({
                 aria-hidden="true"
             >
                 <path d="M4 7h16M4 12h10M4 17h7" />
-                <circle cx="18" cy="15" r="3" />
+                <circle
+                    cx="18"
+                    cy="15"
+                    r="3"
+                />
             </svg>
         )
     }
+
 
     return (
         <svg
@@ -247,7 +283,9 @@ function IconoMenu({
                 height="14"
                 rx="2"
             />
+
             <path d="M3 10h18" />
+
             <path d="M7 15h4" />
         </svg>
     )
