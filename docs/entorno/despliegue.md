@@ -20,6 +20,7 @@ sitio estático y va aparte.
 | `requirements.txt` | `gunicorn` y `whitenoise` |
 | `config/settings.py` | `STATIC_ROOT`, WhiteNoise, `CSRF_TRUSTED_ORIGINS`, HTTPS y HSTS bajo `DEBUG=False` |
 | `frontend/railway.json` | sirve `frontend/dist` como sitio estático, con la ruta de reserva del enrutador |
+| `frontend/.nvmrc` · `engines` | fijan Node 22, sin lo cual el constructor elige el 18 y Vite 8 no compila |
 
 Está **probado en local con `DEBUG=False`**: `collectstatic` procesa los
 archivos, `check --deploy` queda limpio salvo dos avisos deliberados, y la API
@@ -197,5 +198,7 @@ es `up.railway.app`, que no es nuestro, así que activarlo no haría nada.
 | `collectstatic` falla en el despliegue | un archivo estático referencia a otro que no existe. Es a propósito que falle: mejor que no levante a que sirva un 404 en la demostración |
 | El frontend anda navegando pero da 404 al recargar | falta la bandera `-s` de `serve`, o Railway está usando el `railway.json` de la raíz porque el *Root Directory* del servicio no dice `frontend` |
 | El frontend construye pero apunta a `localhost:8000` | `VITE_API_BASE_URL` se agregó después de construir. Vite la incrusta al compilar: hay que volver a desplegar, no reiniciar |
+| `no provides an export named 'styleText'` al construir el frontend | el constructor está usando Node 18. Lo fijan `frontend/.nvmrc` y `engines`; si el servicio es viejo, forzarlo con `NIXPACKS_NODE_VERSION=22` |
+| `EPERM: operation not permitted, unlink ...oxide-win32-x64-msvc` en local | hay un `npm run dev` corriendo con el archivo tomado. Se para el servidor y se repite el `npm ci` |
 | Toda consulta devuelve cero filas | se migró como `postgres` en vez de `app_user`, o falta el contexto de inquilino |
 | "User not found" al iniciar sesión con un token válido | el token se firmó con otra `SECRET_KEY` |
