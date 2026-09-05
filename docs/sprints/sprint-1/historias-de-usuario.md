@@ -11,7 +11,7 @@ de pacientes y de la propia cuenta, de modo que el Sprint 2 pueda reservar
 fichas sobre datos reales.
 
 - **Fechas:** 25/08/26 – 07/09/26 · Revisión de Sprint: 08–10/09/26
-- **Historias:** US-03, US-05, US-06, US-07 a US-16 (13 historias)
+- **Historias:** US-03, US-05, US-06, US-07 a US-16 (13 historias), más US-04 que se arrastra del Sprint 0
 - **Compromiso:** 102 horas · 6 integrantes · 17 h por integrante
 
 El reparto de historias, el alcance de cada integrante en web y en
@@ -25,6 +25,7 @@ redactadas, para pegarlas en el CAPITULO 4 del documento.
 
 | ID | Caso de Uso | Plataforma | Descripción |
 |---|---|---|---|
+| CU2 | Gestión de Roles y Permisos | WEB | El administrador de la organización crea y edita los roles de su centro médico, les ajusta los permisos y se los asigna a los usuarios. Las cuatro plantillas del sistema se copian dentro de la organización al darla de alta, y lo que se edita es esa copia. |
 | CU3 | Recuperación de Credenciales | WEB/MÓVIL | El usuario solicita restablecer su contraseña indicando su organización y su correo. El sistema envía un enlace de un solo uso con vencimiento; al usarlo, la contraseña se reemplaza y se invalidan las sesiones abiertas. La respuesta es idéntica exista o no la cuenta, para no revelar qué correos están registrados. |
 | CU6 | Gestión de Perfil de Usuario | WEB/MÓVIL | El usuario consulta y edita sus datos de contacto y cambia su contraseña acreditando la actual. Los campos que definen su identidad dentro de la organización —documento, rol, organización— no son editables por él. |
 | CU7 | Consulta de Bitácora de Auditoría | WEB | El administrador consulta el registro cronológico de acciones sensibles de su organización, con filtros por actor, tipo de acción y rango de fechas. La bitácora es de sólo lectura: no se edita ni se borra desde la aplicación. |
@@ -38,6 +39,67 @@ redactadas, para pegarlas en el CAPITULO 4 del documento.
 | CU15 | Bloqueo de Agenda Médica | WEB | El administrador bloquea rangos de fecha y hora de la agenda de un profesional por vacaciones, feriado o ausencia. Los espacios bloqueados dejan de ofrecerse. |
 | CU16 | Consulta de Disponibilidad Médica | WEB/MÓVIL | El paciente consulta la disponibilidad de un profesional a lo largo de todas las sucursales donde atiende, en una sola vista y para un rango de fechas. |
 | CU17 | Búsqueda de Profesionales | WEB/MÓVIL | El paciente busca profesionales por especialidad o por nombre y filtra por sucursal, viendo sólo a los activos de su organización. |
+
+---
+
+## US-04 — Crear y asignar roles
+
+**Gestión de roles y permisos** · *arrastre del Sprint 0 (T-06)*
+
+| | |
+|---|---|
+| CU2 — Gestión de Roles y Permisos | El administrador de la organización crea y edita los roles de su centro médico, les ajusta los permisos y se los asigna a los usuarios. Lo que edita es la copia que su organización recibió al darse de alta, no la plantilla del sistema. |
+
+**Prioridad: ALTA** · **Cant Horas: 10 hr**
+
+**Funcionalidades:**
+
+a) Alta, edición y baja de roles dentro de la organización, con código único
+   por inquilino —no global: dos centros médicos pueden tener cada uno su rol
+   `caja` sin pisarse—.
+b) Edición del conjunto de permisos de un rol, tomados de un catálogo del
+   sistema con el formato `modulo.recurso.accion`. El conjunto se reemplaza
+   completo: lo que no viene, se revoca.
+c) Asignación de roles a los usuarios y revocación. Una persona puede tener
+   más de un rol, y sus permisos efectivos son la unión de los de todos.
+d) Las cuatro plantillas del sistema —Administrador de Organización, Médico,
+   Recepcionista y Paciente— se copian dentro del inquilino cuando US-43 da de
+   alta la organización. La plantilla no se edita nunca; se edita la copia.
+e) Un rol de una organización **no** puede llevar permisos del módulo
+   `platform`: sin ese corte, el administrador de un centro médico podría
+   concederse el alta de organizaciones.
+f) Un rol asignado a algún usuario no se elimina; primero se reasignan esos
+   usuarios. El rol de Administrador de Organización no se elimina ni se
+   desactiva en ningún caso: es el único que puede administrar usuarios y
+   roles, y sin él nadie podría volver a activarlo.
+g) Nadie se revoca un rol a sí mismo, por el mismo motivo.
+h) Toda alta, edición, baja, cambio de permisos, asignación y revocación queda
+   en la bitácora de auditoría con el valor anterior y el nuevo (RNF-18).
+i) La autorización se resuelve con `user.has_permission("modulo.recurso.accion")`
+   contra `UserRole → RolePermission`, nunca con `user.has_perm()`: las tablas
+   de `django.contrib.auth` no están aisladas por inquilino y responderían
+   contra los permisos de todas las organizaciones.
+
+> **Criterio de aceptación que no figura en el Product Backlog.** La plantilla
+> del rol *Paciente* nacía sin ningún permiso. Se le agregan los cuatro de
+> lectura del catálogo —`catalog.branch.read`, `catalog.specialty.read`,
+> `catalog.professional.read` y `scheduling.slot.read`—; sin ellos la
+> aplicación móvil no puede listar sucursales ni buscar profesionales, y el
+> Sprint 2 no puede reservar.
+
+**Nota sobre el catálogo de permisos.** La migración
+`accounts/0003_seed_permissions_sprint_1` declara de una sola vez los 17
+permisos que necesitan las historias del Sprint 1 —especialidades,
+profesionales, agendas y bloqueos, baja lógica y fusión de pacientes, y baja
+de roles—, y los propaga a las organizaciones **ya dadas de alta**: sus copias
+de las plantillas existen desde antes y no se enteran solas de un permiso
+nuevo. Se hizo en una migración y no en una por historia para que la base
+compartida se toque una vez (regla 5 del reparto).
+
+**Responsables:**
+Web: Karen Ortega · Móvil: — *(historia de administrador; no va en móvil)*
+
+**Prototipo** (capturas web)
 
 ---
 

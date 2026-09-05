@@ -18,6 +18,12 @@ from rest_framework.routers import DefaultRouter
 
 from .views.auth import login, logout, refresh
 from .views.registration import register_patient
+from .views.roles import (
+    AssignableUserViewSet,
+    PermissionViewSet,
+    RoleViewSet,
+    UserRoleViewSet,
+)
 
 app_name = "accounts"
 
@@ -26,8 +32,17 @@ router = DefaultRouter()
 # ---------- US-02 (Karen): inicio de sesión -------------------------------
 # Las vistas van en views/auth.py y los serializers en serializers/auth.py.
 
-# ---------- US-04 (Michael): roles y permisos -----------------------------
+# ---------- US-04 (Karen): roles y permisos -------------------------------
 # Las vistas van en views/roles.py y los serializers en serializers/roles.py.
+# US-04 pasó a Karen en el reparto del Sprint 1 (docs/sprints/sprint-1/).
+#
+# `users` queda registrado acá con el listado de sólo lectura que necesita la
+# pantalla de asignación. Su ruta de detalle sólo acepta un UUID, así que
+# `users/me/` sigue libre para US-05.
+router.register("permissions", PermissionViewSet, basename="permission")
+router.register("roles", RoleViewSet, basename="role")
+router.register("users", AssignableUserViewSet, basename="user")
+router.register("user-roles", UserRoleViewSet, basename="user_role")
 
 
 urlpatterns = router.urls + [

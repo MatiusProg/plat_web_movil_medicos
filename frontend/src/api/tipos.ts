@@ -43,6 +43,11 @@ export type CodigoError =
   | 'refresh_invalido'
   | 'refresh_ajeno'
   | 'token_sin_organizacion'
+  // US-04 — roles y permisos.
+  | 'rol_asignado'
+  | 'rol_de_administracion'
+  | 'rol_del_sistema'
+  | 'revocacion_propia'
   | 'sin_conexion'
   | 'desconocido'
 
