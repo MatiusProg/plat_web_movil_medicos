@@ -155,11 +155,19 @@ def test_el_superadmin_audita_sus_propias_acciones(platform_admin, org_a):
 
 
 def test_las_plantillas_de_rol_quedaron_sembradas(db):
-    """US-04. La migración semilla corre como app_user, sujeto a RLS."""
+    """US-04. La migración semilla corre como app_user, sujeto a RLS.
+
+    El total de permisos sube cada vez que una migración amplía el catálogo:
+    25 los declaró el seed del Sprint 0 y 17 más
+    ``accounts/0003_seed_permissions_sprint_1`` (especialidades,
+    profesionales, agendas, baja y fusión de pacientes, y baja de roles).
+    Quien agregue permisos actualiza este número, que es justamente lo que
+    hace que la cuenta signifique algo.
+    """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25
+        assert Permission.objects.count() == 25 + 17
         assert SubscriptionPlan.objects.count() == 3
 
 

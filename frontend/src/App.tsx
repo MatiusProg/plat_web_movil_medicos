@@ -14,7 +14,9 @@ import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
 import { Planes } from '@/paginas/Planes'
+import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
+import { Usuarios } from '@/paginas/Usuarios'
 import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
 
 import { RutaProtegida } from '@/rutas/RutaProtegida'
@@ -134,6 +136,23 @@ export default function App() {
                             path="/suscripciones/:organizationId/historial"
                             element={
                                 <HistorialSuscripcion />
+                            }
+                        />
+
+
+                        {/* US-04: roles, permisos y asignación */}
+
+                        <Route
+                            path="/roles"
+                            element={
+                                <Roles />
+                            }
+                        />
+
+                        <Route
+                            path="/usuarios"
+                            element={
+                                <Usuarios />
                             }
                         />
 

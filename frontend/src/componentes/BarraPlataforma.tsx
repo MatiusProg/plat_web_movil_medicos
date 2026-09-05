@@ -18,6 +18,21 @@ type ItemMenu = {
         | 'organizaciones'
         | 'planes'
         | 'suscripciones'
+        | 'roles'
+        | 'usuarios'
+    /**
+     * Quién ve la entrada.
+     *
+     * `'plataforma'` es del Superadministrador y se decide por
+     * `is_platform_admin`, no por permisos: su lista de permisos llega vacía
+     * porque `user_roles` está protegida por RLS y sus filas irían con
+     * `organization_id` NULL. Cualquier otro valor es un código de permiso y
+     * se consulta con `puede`. Sin `requiere`, la entrada la ve todo el mundo.
+     *
+     * Esconder una entrada no autoriza nada: la puerta real la pone el
+     * backend en cada endpoint.
+     */
+    requiere?: 'plataforma' | string
 }
 
 
@@ -31,16 +46,33 @@ const items: ItemMenu[] = [
         etiqueta: 'Organizaciones',
         ruta: '/organizaciones',
         icono: 'organizaciones',
+        requiere: 'plataforma',
     },
     {
         etiqueta: 'Planes',
         ruta: '/planes',
         icono: 'planes',
+        requiere: 'plataforma',
     },
     {
         etiqueta: 'Suscripciones',
         ruta: '/suscripciones',
         icono: 'suscripciones',
+        requiere: 'plataforma',
+    },
+
+    // US-04 — administración de la organización.
+    {
+        etiqueta: 'Roles y permisos',
+        ruta: '/roles',
+        icono: 'roles',
+        requiere: 'users.role.read',
+    },
+    {
+        etiqueta: 'Usuarios',
+        ruta: '/usuarios',
+        icono: 'usuarios',
+        requiere: 'users.user.read',
     },
 ]
 
@@ -49,10 +81,25 @@ export function BarraPlataforma() {
     const {
         usuario,
         salir,
+        puede,
     } = useSesion()
 
     const navigate =
         useNavigate()
+
+
+    const visibles =
+        items.filter((item) => {
+            if (!item.requiere) return true
+
+            if (item.requiere === 'plataforma') {
+                return Boolean(
+                    usuario?.is_platform_admin,
+                )
+            }
+
+            return puede(item.requiere)
+        })
 
 
     const cerrarSesion =
@@ -104,7 +151,7 @@ export function BarraPlataforma() {
 
             <nav className="flex flex-1 flex-col gap-1.5">
 
-                {items.map((item) => (
+                {visibles.map((item) => (
                     <NavLink
                         key={item.ruta}
                         to={item.ruta}
@@ -240,6 +287,43 @@ function IconoMenu({
     ) {
         return (
             <IconoEdificio className="size-[18px]" />
+        )
+    }
+
+
+    if (
+        tipo === 'roles'
+    ) {
+        return (
+            <IconoEscudo className="size-[18px]" />
+        )
+    }
+
+
+    if (
+        tipo === 'usuarios'
+    ) {
+        return (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-[18px] w-[18px]"
+                aria-hidden="true"
+            >
+                <circle
+                    cx="9"
+                    cy="8"
+                    r="3.2"
+                />
+
+                <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
+
+                <path d="M16 6.2a3 3 0 0 1 0 5.6" />
+
+                <path d="M17.5 14.2a5 5 0 0 1 3 4.8" />
+            </svg>
         )
     }
 

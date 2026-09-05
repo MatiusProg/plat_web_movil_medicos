@@ -6,6 +6,7 @@ regla del archivo compartido): en `accounts` trabajan tres personas el mismo
 sprint, y un solo `services.py` traería conflicto en cada pull request.
 
     auth.py            US-02, Karen
+    roles.py           US-04, Karen
 
 No se reexporta nada acá —nada de `from .auth import *`—: cada quien importa
 del módulo concreto, y así dos historias no vuelven a tocar la misma línea.

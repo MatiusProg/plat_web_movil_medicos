@@ -7,7 +7,7 @@ traería conflicto en el mismo archivo.
 
     auth.py            US-02, Karen
     registration.py    US-01, Alexander
-    roles.py           US-04, Michael
+    roles.py           US-04, Karen
 
 No se reexporta nada acá —nada de `from .auth import *`—: cada quien importa
 del módulo concreto, y así dos historias no vuelven a tocar la misma línea.

@@ -27,7 +27,7 @@ export interface Contexto {
 }
 
 interface Opciones extends Contexto {
-  metodo?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  metodo?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   cuerpo?: unknown
   /** Aborta la petición si el usuario cierra el formulario a mitad de camino. */
   senal?: AbortSignal
