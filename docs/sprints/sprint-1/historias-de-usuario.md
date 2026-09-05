@@ -135,6 +135,20 @@ g) Consumo del token al primer uso y rechazo de cualquier reintento posterior,
 h) Pantalla web y móvil de solicitud y de nueva contraseña, con mensajes
    distintos para enlace vencido, enlace ya usado y enlace inválido.
 
+**Notas de implementación.** Dos cosas que la historia no pedía y se
+agregaron igual:
+
+- **Un endpoint para comprobar el enlace** (`password-reset/verify/`) antes de
+  mostrar el formulario. Sin él, quien abre un enlace vencido escribe la
+  contraseña nueva dos veces para recién entonces enterarse.
+- **Recuperar el acceso desbloquea la cuenta** (RNF-07). Quien llega al
+  formulario de recuperación normalmente ya se bloqueó intentando adivinar su
+  propia contraseña, y dejarlo bloqueado con la contraseña nueva no tendría
+  ningún sentido.
+
+También se decidió que **pedir un enlace nuevo invalida el anterior**: sin eso,
+pedirlo diez veces deja diez enlaces utilizables a la vez.
+
 **Responsables:**
 Web: Karen Ortega · Móvil: Karen Ortega
 

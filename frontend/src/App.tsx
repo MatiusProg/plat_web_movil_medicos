@@ -14,6 +14,8 @@ import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
 import { Planes } from '@/paginas/Planes'
+import { RecuperarAcceso } from '@/paginas/RecuperarAcceso'
+import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
 import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
 import { Usuarios } from '@/paginas/Usuarios'
@@ -65,6 +67,26 @@ export default function App() {
                         path="/ingresar"
                         element={
                             <InicioSesion />
+                        }
+                    />
+
+
+                    {/* US-03: recuperación de contraseña.
+
+                        Las dos son públicas a propósito: quien las usa es
+                        justamente alguien que no puede iniciar sesión. */}
+
+                    <Route
+                        path="/recuperar"
+                        element={
+                            <RecuperarAcceso />
+                        }
+                    />
+
+                    <Route
+                        path="/restablecer"
+                        element={
+                            <RestablecerContrasena />
                         }
                     />
 

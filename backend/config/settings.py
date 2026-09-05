@@ -215,6 +215,36 @@ CORS_ALLOW_HEADERS = (*default_headers, "x-organization")
 
 
 # --------------------------------------------------------------------------
+#  Correo — US-03, el enlace de restablecimiento
+# --------------------------------------------------------------------------
+#  En desarrollo el correo se imprime en la consola: no hace falta configurar
+#  ningún SMTP para probar el flujo completo, y el enlace queda a la vista en
+#  la terminal donde corre `runserver`. En producción se define EMAIL_BACKEND
+#  en el `.env` junto con las credenciales del proveedor.
+#
+#  Las pruebas no usan nada de esto: Django reemplaza el backend por uno en
+#  memoria y `mail.outbox` deja ver lo que se habría mandado.
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default="no-responder@centromedico.test",
+)
+
+# Dónde vive el frontend, para armar el enlace del correo. No se deduce de la
+# petición: el enlace lo abre un navegador contra la aplicación web, no contra
+# la API, y en producción son dos dominios distintos.
+FRONTEND_BASE_URL = env(
+    "FRONTEND_BASE_URL", default="http://localhost:5173",
+).rstrip("/")
+
+
+# --------------------------------------------------------------------------
 #  Internacionalización
 # --------------------------------------------------------------------------
 LANGUAGE_CODE = "es-bo"

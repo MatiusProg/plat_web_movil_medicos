@@ -400,3 +400,71 @@ class LoginAttempt(models.Model):
     def __str__(self):
         estado = "éxito" if self.succeeded else self.failure_reason
         return f"{self.attempted_email} · {estado}"
+
+
+class PasswordResetToken(models.Model):
+    """US-03 — Enlace de un solo uso para restablecer la contraseña.
+
+    Es una tabla y no un token firmado sin estado porque la historia pide dos
+    cosas que un token firmado no puede dar por sí solo: que se **consuma al
+    primer uso** —punto (g)— y que en la base quede su **hash y no el valor en
+    claro** —punto (c)—. Sin fila no hay dónde marcar el consumo, y un token
+    firmado es válido tantas veces como se lo presente hasta que expire.
+
+    **Se guarda el SHA-256 del token, no el token.** Alcanza con SHA-256 y no
+    hace falta Argon2: lo que se resguarda no es una contraseña que una persona
+    eligió —corta, adivinable y reutilizada en otros sitios— sino 256 bits
+    aleatorios generados por el servidor. Contra eso, la fuerza bruta no es un
+    riesgo y el costo de Argon2 sólo serviría para hacer lento cada intento de
+    validación. Lo que el hash resuelve es lo que importa: quien lea la tabla
+    no puede secuestrar ninguna cuenta.
+
+    ``organization`` va denormalizado, como en toda tabla protegida por RLS: la
+    política compara ese campo contra ``app_current_tenant()``.
+    """
+
+    # Clave UUID generada en Python, por la misma razón que en LoginAttempt:
+    # esta tabla se escribe en peticiones sin autenticar y conviene no depender
+    # de `INSERT ... RETURNING`, que exige pasar también la política de SELECT.
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="password_reset_tokens",
+    )
+
+    # SHA-256 en hexadecimal: 64 caracteres, siempre.
+    token_hash = models.CharField(max_length=64, unique=True)
+
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    # Desde dónde se pidió. No identifica a nadie por sí sola, pero un mismo
+    # origen pidiendo restablecimientos en serie es lo que hay que poder ver.
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "password_reset_tokens"
+        verbose_name = "token de restablecimiento"
+        verbose_name_plural = "tokens de restablecimiento"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"],
+                         name="ix_password_reset_user"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} · vence {self.expires_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    @property
+    def is_usable(self):
+        """Ni consumido ni vencido. Es lo único que habilita a cambiar la clave."""
+        return self.used_at is None and not self.is_expired

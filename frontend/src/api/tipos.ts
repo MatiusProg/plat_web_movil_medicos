@@ -43,6 +43,13 @@ export type CodigoError =
   | 'refresh_invalido'
   | 'refresh_ajeno'
   | 'token_sin_organizacion'
+  // US-03 — recuperación de contraseña. Los tres motivos del enlace se
+  // distinguen a propósito: "venció" y "ya se usó" le dicen a la persona qué
+  // hacer, y para llegar a cualquiera de los dos hay que tener en la mano un
+  // token que el servidor generó.
+  | 'enlace_invalido'
+  | 'enlace_usado'
+  | 'enlace_vencido'
   // US-04 — roles y permisos.
   | 'rol_asignado'
   | 'rol_de_administracion'
