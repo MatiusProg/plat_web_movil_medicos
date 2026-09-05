@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/sign_in_screen.dart';
 import '../session/session.dart';
 import '../session/session_scope.dart';
 
@@ -56,18 +57,13 @@ GoRouter buildRouter(Session session) {
       ),
 
       // ---------- US-02 (Karen): inicio y cierre de sesión ----------------
-      // La pantalla real va en features/auth/. Este marcador la reemplaza
-      // mientras tanto para que el shell arranque y se pueda navegar.
+      // El cierre no tiene ruta propia: lo dispara `Session.signOut` desde
+      // donde esté el botón —hoy la pantalla de después de entrar, mañana el
+      // perfil de US-05— y la redirección de arriba se encarga del resto.
       GoRoute(
         path: '/sign-in',
         name: Routes.signIn,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Ingresar',
-          story: 'US-02 · Karen',
-          detail: 'La pantalla de ingreso va en lib/features/auth/. '
-              'El shell ya guarda la sesión, renueva el token y manda el '
-              'encabezado de organización.',
-        ),
+        builder: (context, state) => const SignInScreen(),
       ),
 
       // ---------- Pantalla de después de entrar ---------------------------
@@ -88,43 +84,6 @@ class _LoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-/// Pantalla de espera de una historia que todavía no existe.
-///
-/// Es a propósito explícita: dice qué historia falta y de quién es, así nadie
-/// la confunde con una pantalla a medio hacer.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({
-    required this.title,
-    required this.story,
-    required this.detail,
-  });
-
-  final String title;
-  final String story;
-  final String detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(story, style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Text(detail, style: theme.textTheme.bodyMedium),
-          ],
-        ),
-      ),
     );
   }
 }

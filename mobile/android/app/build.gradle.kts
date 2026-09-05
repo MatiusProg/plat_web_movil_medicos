@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.grupo15.mobile"
-    compileSdk = flutter.compileSdkVersion
+    // flutter.compileSdkVersion es 36, pero flutter_secure_storage compila contra
+    // la 37 y checkDebugAarMetadata exige que la app iguale o supere esa version.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
