@@ -8,16 +8,25 @@ debe salir limpio: ese es el criterio de terminado de la tarea 6 del Sprint 0.
 ## Versiones acordadas
 
 **Todos instalan la misma versión.** La deriva de versiones rompe compilaciones
-y produce errores que parecen de código pero no lo son. El Scrum Master instala
-primero, corre `flutter --version` y completa esta tabla; el resto se ajusta.
+y produce errores que parecen de código pero no lo son.
 
 | Componente | Versión |
 |---|---|
-| Flutter SDK | _(completar)_ |
-| Dart | _(la que trae Flutter)_ |
-| Android Studio | _(completar)_ |
+| Flutter SDK | **3.47.2** (canal `stable`, publicada el 27/08/2026) |
+| Dart | **3.13.2** (la que trae ese Flutter) |
+| Android Studio | _(la última estable; no fija la compilación)_ |
 | Android SDK Platform | API 34 |
 | JDK | 17 |
+
+> **Cómo se fijó esta versión.** La tabla estaba en `_(completar)_` y el shell
+> de Flutter no podía esperar: es la última estable al momento de crear el
+> proyecto, y es con la que `mobile/` está generado y probado. Si el Scrum
+> Master prefiere otra, se cambia acá y se corre `flutter test` en `mobile/`
+> antes de que el resto instale.
+
+La versión de Android Studio no entra en la tabla a propósito: no interviene en
+la compilación, sólo aporta el SDK de Android y el emulador. Lo que sí tiene
+que coincidir es la API 34.
 
 ---
 
@@ -81,13 +90,23 @@ con decir "ya instalé".
 
 ## Emulador o dispositivo físico
 
+> **Decisión registrada (05/09/2026): se trabaja con celular por USB, no con
+> emulador.** El emulador exige demasiado a las máquinas del equipo, y la
+> demostración final se hace igual sobre un teléfono real. Android Studio se
+> instala igual —hace falta por el SDK, las platform-tools y el `adb` que
+> reconoce el teléfono—, pero **no se crea ningún dispositivo virtual**.
+>
+> Consecuencia práctica: `flutter devices` tiene que listar el celular
+> conectado. Si no aparece, el problema es el cable, la depuración por USB o el
+> diálogo de autorización — no el proyecto.
+
 El conjunto ocupa entre 15 y 20 GB en disco. El emulador pide 16 GB de RAM para
 ser usable; con 8 GB arranca pero se arrastra y vuelve lento cada ciclo de
-prueba.
+prueba. Ése es el motivo de la decisión de arriba.
 
-**Un celular Android por USB es la mejor opción para la mayoría.** Es más
-rápido, no consume RAM del equipo y además es la condición real de la
-demostración. No es un parche: es la alternativa recomendada.
+**Un celular Android por USB es más rápido, no consume RAM del equipo y además
+es la condición real de la demostración.** No es un parche: es la forma de
+trabajo elegida.
 
 Para habilitarlo:
 
@@ -100,6 +119,28 @@ Comprobar:
 ```bash
 flutter devices
 ```
+
+### Con el celular por USB, la API no está en `localhost`
+
+Esto es consecuencia directa de no usar emulador y es el primer tropiezo
+garantizado. Para el teléfono, `localhost` es el propio teléfono: el backend no
+está ahí.
+
+1. Averiguá la IP de tu máquina en la red local (`ipconfig` en Windows).
+2. Levantá Django escuchando fuera de localhost:
+
+   ```bash
+   python manage.py runserver 0.0.0.0:8000
+   ```
+
+3. Pasale esa IP a la aplicación:
+
+   ```bash
+   flutter run --dart-define=API_BASE_URL=http://192.168.0.15:8000/api
+   ```
+
+El teléfono y la computadora tienen que estar en la **misma red**. Si el
+firewall de Windows pregunta, hay que permitir Python en redes privadas.
 
 ---
 
