@@ -257,6 +257,30 @@ def test_resolver_el_slug_no_deja_permisos_de_plataforma(org_a, org_b, user_b):
         assert not User.objects.filter(email=user_b.email).exists()
 
 
+def test_un_token_de_restablecimiento_no_se_ve_desde_otra_organizacion(
+    org_a, org_b, user_a
+):
+    """US-03. El enlace de recuperación se usa SIN autenticar, así que lo
+    único que acota su alcance es el contexto que resuelve el slug."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from accounts.models import PasswordResetToken
+
+    with tenant_context(org_a.id):
+        PasswordResetToken.objects.create(
+            organization=org_a, user=user_a, token_hash="a" * 64,
+            expires_at=timezone.now() + timedelta(minutes=30),
+        )
+
+    with tenant_context(org_b.id):
+        assert not PasswordResetToken.objects.filter(token_hash="a" * 64).exists()
+
+    with no_tenant_context():
+        assert PasswordResetToken.objects.count() == 0
+
+
 # --------------------------------------------------------------------------
 #  Cobertura: ninguna tabla con organization_id sin RLS forzado
 # --------------------------------------------------------------------------

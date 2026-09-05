@@ -54,6 +54,11 @@ export function InicioSesion() {
   const destino =
     (ubicacion.state as { desde?: string } | null)?.desde ?? '/panel'
 
+  // US-03 deja este mensaje al volver de cambiar la contraseña. Sin él, la
+  // persona aterriza en el login sin ninguna señal de que el cambio funcionó.
+  const avisoDeVuelta =
+    (ubicacion.state as { aviso?: string } | null)?.aviso ?? null
+
   useEffect(() => {
     if (usuario) navegar(destino, { replace: true })
   }, [usuario, destino, navegar])
@@ -119,6 +124,15 @@ export function InicioSesion() {
               Ingresá con tus credenciales para acceder según tu rol.
             </p>
           </header>
+
+          {avisoDeVuelta && (
+            <p
+              role="status"
+              className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-300"
+            >
+              {avisoDeVuelta}
+            </p>
+          )}
 
           <form onSubmit={enviar} noValidate className="space-y-5">
             <Campo
@@ -195,6 +209,17 @@ export function InicioSesion() {
               Entrar
             </Boton>
           </form>
+
+          {/* US-03. El enlace va debajo del formulario y no arriba: se lo
+              busca recién después de que la contraseña no funcionó. */}
+          <p className="mt-5 text-center text-sm">
+            <Link
+              to="/recuperar"
+              className="text-marca-600 dark:text-marca-400 font-semibold hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </p>
 
           <p className="text-tinta-500 dark:text-tinta-400 mt-8 text-center text-sm">
             ¿No tenés una cuenta?{' '}

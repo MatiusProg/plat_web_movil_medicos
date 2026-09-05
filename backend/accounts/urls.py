@@ -17,6 +17,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views.auth import login, logout, refresh
+from .views.password_reset import confirm_reset, request_reset, verify_reset
 from .views.registration import register_patient
 from .views.roles import (
     AssignableUserViewSet,
@@ -53,4 +54,12 @@ urlpatterns = router.urls + [
     path("login/", login, name="login"),
     path("token/refresh/", refresh, name="token-refresh"),
     path("logout/", logout, name="logout"),
+
+    # ---------- US-03 (Karen): recuperación de contraseña -----------------
+    # Las vistas van en views/password_reset.py y los serializers en
+    # serializers/password_reset.py. La política de complejidad, compartida
+    # con US-05, está en accounts/passwords.py.
+    path("password-reset/", request_reset, name="password-reset"),
+    path("password-reset/verify/", verify_reset, name="password-reset-verify"),
+    path("password-reset/confirm/", confirm_reset, name="password-reset-confirm"),
 ]
