@@ -20,6 +20,8 @@ type ItemMenu = {
         | 'suscripciones'
         | 'roles'
         | 'usuarios'
+        | 'agendas'
+        | 'catalogo'
     /**
      * Quién ve la entrada.
      *
@@ -73,6 +75,26 @@ const items: ItemMenu[] = [
         ruta: '/usuarios',
         icono: 'usuarios',
         requiere: 'users.user.read',
+    },
+
+    // US-13 a US-16 — agendas y catálogo.
+    {
+        etiqueta: 'Agendas',
+        ruta: '/agendas',
+        icono: 'agendas',
+        requiere: 'scheduling.schedule.read',
+    },
+    {
+        etiqueta: 'Disponibilidad',
+        ruta: '/disponibilidad',
+        icono: 'agendas',
+        requiere: 'scheduling.slot.read',
+    },
+    {
+        etiqueta: 'Buscar profesionales',
+        ruta: '/buscar-profesionales',
+        icono: 'catalogo',
+        requiere: 'catalog.professional.read',
     },
 ]
 

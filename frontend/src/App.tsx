@@ -8,7 +8,11 @@ import {
 
 import { BarraPlataforma } from '@/componentes/BarraPlataforma'
 
+import { Agendas } from '@/paginas/Agendas'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
+import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
+import { BuscarProfesionales } from '@/paginas/BuscarProfesionales'
+import { Disponibilidad } from '@/paginas/Disponibilidad'
 import { InicioSesion } from '@/paginas/InicioSesion'
 import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
@@ -175,6 +179,43 @@ export default function App() {
                             path="/usuarios"
                             element={
                                 <Usuarios />
+                            }
+                        />
+
+
+                        {/* US-13 / US-14: agendas médicas y bloqueos */}
+
+                        <Route
+                            path="/agendas"
+                            element={
+                                <Agendas />
+                            }
+                        />
+
+                        <Route
+                            path="/agendas/bloqueos"
+                            element={
+                                <BloqueosAgenda />
+                            }
+                        />
+
+
+                        {/* US-15: disponibilidad consolidada */}
+
+                        <Route
+                            path="/disponibilidad"
+                            element={
+                                <Disponibilidad />
+                            }
+                        />
+
+
+                        {/* US-16: búsqueda de profesionales */}
+
+                        <Route
+                            path="/buscar-profesionales"
+                            element={
+                                <BuscarProfesionales />
                             }
                         />
 
