@@ -189,6 +189,16 @@ LOGIN_LOCKOUT_MINUTES = 15
 # que nadie pida un año entero. Pasado el tope, el endpoint responde 400.
 AVAILABILITY_MAX_HORIZON_DAYS = env.int("AVAILABILITY_MAX_HORIZON_DAYS", default=30)
 
+# US-07 (g): tope de dependientes por titular. Es configurable y no una
+# constante porque el número correcto depende del centro médico —una familia
+# numerosa es normal, cien dependientes es alguien inflando el padrón—, y
+# porque sin tope el alta de pacientes queda abierta desde una cuenta común.
+PATIENT_MAX_DEPENDENTS = env.int("PATIENT_MAX_DEPENDENTS", default=10)
+
+# US-07 (f): a partir de qué edad un dependiente puede pasar a titular. Es la
+# mayoría de edad en Bolivia.
+PATIENT_MAJORITY_AGE = env.int("PATIENT_MAJORITY_AGE", default=18)
+
 
 # --------------------------------------------------------------------------
 #  API

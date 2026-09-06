@@ -28,6 +28,25 @@ class Patient(models.Model):
         FEMALE = "F", "Femenino"
         OTHER = "X", "Otro"
 
+    class Relationship(models.TextChoices):
+        """Parentesco con el titular. US-07 (a).
+
+        Es una lista cerrada y no texto libre porque el Sprint 4 reporta sobre
+        ella —cuántas fichas se reservan para terceros y de qué vínculo—, y
+        sobre texto libre eso no se puede agrupar. ``OTHER`` está para que la
+        lista no obligue a mentir, que es lo que pasa cuando el caso real no
+        figura.
+        """
+
+        CHILD = "child", "Hijo/a"
+        SPOUSE = "spouse", "Cónyuge"
+        PARENT = "parent", "Padre/Madre"
+        SIBLING = "sibling", "Hermano/a"
+        GRANDPARENT = "grandparent", "Abuelo/a"
+        GRANDCHILD = "grandchild", "Nieto/a"
+        WARD = "ward", "Bajo tutela"
+        OTHER = "other", "Otro"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
         "tenancy.Organization", on_delete=models.PROTECT, related_name="patients",
@@ -41,6 +60,11 @@ class Patient(models.Model):
     guardian = models.ForeignKey(
         "self", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="dependents",
+    )
+    # Qué es del titular. Vacío cuando no hay titular, y obligatorio cuando lo
+    # hay: lo garantiza `ck_patient_relationship`. US-07 (a).
+    relationship = models.CharField(
+        max_length=20, choices=Relationship, blank=True, default="",
     )
 
     document_type = models.CharField(
@@ -87,6 +111,17 @@ class Patient(models.Model):
                     | models.Q(guardian__isnull=False)
                 ),
                 name="ck_patient_doc_or_guardian",
+            ),
+            # US-07 (a): un dependiente sin parentesco no dice nada, y un
+            # parentesco sin titular no significa nada. Los dos van juntos o no
+            # va ninguno.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(guardian__isnull=True, relationship="")
+                    | models.Q(guardian__isnull=False)
+                    & ~models.Q(relationship="")
+                ),
+                name="ck_patient_relationship",
             ),
         ]
 
