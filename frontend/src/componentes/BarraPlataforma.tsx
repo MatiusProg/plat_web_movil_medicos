@@ -1,3 +1,26 @@
+/**
+ * La navegación de las pantallas con sesión.
+ *
+ * **Cada historia agrega su entrada en `items`.** Es el archivo que más
+ * historias comparten del frontend, así que cada una toca su bloque y no la
+ * línea de al lado — la misma regla que `urls.py` en el backend.
+ *
+ * La barra no decide si se ve plegada o abierta: eso lo lleva
+ * `ArmazonPlataforma`, que es quien también corre el contenido. Acá sólo se
+ * dibuja según lo que llega por props.
+ *
+ * **Tres detalles que no son estéticos:**
+ *
+ * - La lista de opciones tiene su propio `overflow-y-auto`. Sin eso, cada
+ *   entrada nueva empujaba el bloque de perfil hacia abajo hasta sacarlo de la
+ *   pantalla, y un administrador con todos los permisos no llegaba a ver su
+ *   propio botón de cerrar sesión.
+ * - Plegada, cada opción conserva su `title`: un icono sin nombre no dice nada,
+ *   y en un panel de administración médica adivinar no es una opción.
+ * - El estado activo se marca con una barrita de color además del fondo, para
+ *   que se distinga sin depender sólo del color.
+ */
+
 import { NavLink, useNavigate } from 'react-router-dom'
 
 import {
@@ -108,7 +131,21 @@ const items: ItemMenu[] = [
 ]
 
 
-export function BarraPlataforma() {
+interface Props {
+    /** Sólo a partir de `md`: en móvil la barra es un cajón, no una franja. */
+    plegada: boolean
+    alternarPlegada: () => void
+    abiertaEnMovil: boolean
+    cerrarEnMovil: () => void
+}
+
+
+export function BarraPlataforma({
+                                    plegada,
+                                    alternarPlegada,
+                                    abiertaEnMovil,
+                                    cerrarEnMovil,
+                                }: Props) {
     const {
         usuario,
         salir,
@@ -140,21 +177,40 @@ export function BarraPlataforma() {
         }
 
 
+    // Plegada sólo aplica de `md` para arriba. Dentro del cajón de móvil las
+    // etiquetas se ven siempre: ahí sobra el ancho.
+    const soloAncha =
+        plegada ? 'md:hidden' : ''
+
+
     return (
-        <aside className="sticky top-0 flex h-dvh w-64 shrink-0 flex-col border-r border-tinta-800 bg-tinta-900 px-4 py-5">
+        <aside
+            className={[
+                'fixed inset-y-0 left-0 z-40 flex h-dvh flex-col border-r border-tinta-800 bg-tinta-900',
+                'transition-[width,transform] duration-200 ease-out',
+
+                // Ancho: en móvil siempre cómoda; en escritorio, según se pliegue.
+                'w-64',
+                plegada ? 'md:w-[4.5rem]' : 'md:w-64',
+
+                // En móvil entra y sale; de `md` en adelante está siempre puesta.
+                abiertaEnMovil ? 'translate-x-0' : '-translate-x-full',
+                'md:translate-x-0',
+            ].join(' ')}
+        >
 
             {/* Marca */}
 
-            <div className="mb-8 flex items-center gap-3 px-2">
+            <div className="flex shrink-0 items-center gap-3 px-4 py-5">
 
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-950/30">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-950/30">
 
                     <IconoEscudo className="size-6" />
 
                 </div>
 
 
-                <div className="leading-tight">
+                <div className={`leading-tight ${soloAncha}`}>
 
                     <h1 className="text-[17px] font-bold tracking-tight text-tinta-50">
                         MediAdmin
@@ -166,12 +222,24 @@ export function BarraPlataforma() {
 
                 </div>
 
+
+                {/* Cerrar el cajón. Sólo en móvil: en escritorio no hay cajón. */}
+
+                <button
+                    type="button"
+                    onClick={cerrarEnMovil}
+                    aria-label="Cerrar el menú"
+                    className="ml-auto grid size-9 shrink-0 place-items-center rounded-xl text-tinta-400 transition hover:bg-tinta-800 hover:text-tinta-100 md:hidden"
+                >
+                    <IconoCerrar />
+                </button>
+
             </div>
 
 
             {/* Menú */}
 
-            <div className="mb-3 px-3">
+            <div className={`mb-3 px-7 ${soloAncha}`}>
 
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-tinta-500">
                     Menú principal
@@ -180,15 +248,19 @@ export function BarraPlataforma() {
             </div>
 
 
-            <nav className="flex flex-1 flex-col gap-1.5">
+            {/* `flex-1` con `overflow-y-auto`: las opciones scrollean acá dentro
+                en vez de empujar el perfil fuera de la pantalla. */}
+
+            <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-4 pb-2">
 
                 {visibles.map((item) => (
                     <NavLink
                         key={item.ruta}
                         to={item.ruta}
+                        title={plegada ? item.etiqueta : undefined}
                         className={({ isActive }) =>
                             [
-                                'group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
+                                'group relative flex shrink-0 items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
 
                                 isActive
                                     ? 'bg-marca-950 text-marca-300'
@@ -205,7 +277,7 @@ export function BarraPlataforma() {
 
                                 <div
                                     className={[
-                                        'flex h-8 w-8 items-center justify-center rounded-lg transition',
+                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition',
 
                                         isActive
                                             ? 'bg-marca-900 text-marca-300'
@@ -220,9 +292,9 @@ export function BarraPlataforma() {
                                 </div>
 
 
-                                <span>
-                  {item.etiqueta}
-                </span>
+                                <span className={`truncate ${soloAncha}`}>
+                                    {item.etiqueta}
+                                </span>
                             </>
                         )}
                     </NavLink>
@@ -231,44 +303,74 @@ export function BarraPlataforma() {
             </nav>
 
 
-            {/* Perfil */}
+            {/* Plegar. Sólo en escritorio, que es donde plegar significa algo. */}
 
-            <div className="mt-5 border-t border-tinta-800 pt-5">
+            <button
+                type="button"
+                onClick={alternarPlegada}
+                aria-label={plegada ? 'Desplegar el menú' : 'Plegar el menú'}
+                title={plegada ? 'Desplegar el menú' : 'Plegar el menú'}
+                className="mx-4 hidden shrink-0 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-tinta-500 transition hover:bg-tinta-800 hover:text-tinta-200 md:flex"
+            >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+                    <IconoPlegar plegada={plegada} />
+                </div>
+
+                <span className={soloAncha}>
+                    Plegar
+                </span>
+            </button>
+
+
+            {/* Perfil. `shrink-0` para que quede anclado abajo pase lo que pase. */}
+
+            <div className="mt-3 shrink-0 border-t border-tinta-800 px-4 pt-4 pb-5">
 
                 <button
                     type="button"
                     onClick={cerrarSesion}
-                    className="mb-4 flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-tinta-400 transition hover:bg-red-950/40 hover:text-red-400"
+                    title={plegada ? 'Cerrar sesión' : undefined}
+                    className="mb-3 flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-tinta-400 transition hover:bg-red-950/40 hover:text-red-400"
                 >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
 
                         <IconoSalir className="size-[18px]" />
 
                     </div>
 
-                    Cerrar sesión
+                    <span className={soloAncha}>
+                        Cerrar sesión
+                    </span>
                 </button>
 
 
-                <div className="rounded-2xl border border-tinta-800 bg-tinta-950/60 p-4">
+                <div
+                    className={[
+                        'rounded-2xl border border-tinta-800 bg-tinta-950/60',
+                        plegada ? 'p-4 md:p-2' : 'p-4',
+                    ].join(' ')}
+                >
 
                     <div className="flex items-center gap-3">
 
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-marca-950 text-marca-400">
+                        <div
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-marca-950 text-marca-400"
+                            title={plegada ? (usuario?.full_name ?? '') : undefined}
+                        >
 
                             <IconoEscudo className="size-5" />
 
                         </div>
 
 
-                        <div className="min-w-0">
+                        <div className={`min-w-0 ${soloAncha}`}>
 
                             <p className="truncate text-sm font-semibold text-tinta-100">
                                 {usuario?.full_name
                                     || 'Superadministrador'}
                             </p>
 
-                            <p className="mt-0.5 text-xs text-tinta-500">
+                            <p className="mt-0.5 truncate text-xs text-tinta-500">
                                 {usuario?.is_platform_admin
                                     ? 'Administrador de plataforma'
                                     : usuario?.organization
@@ -280,13 +382,13 @@ export function BarraPlataforma() {
                     </div>
 
 
-                    <div className="mt-3 flex items-center gap-2 border-t border-tinta-800 pt-3">
+                    <div className={`mt-3 flex items-center gap-2 border-t border-tinta-800 pt-3 ${soloAncha}`}>
 
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
 
                         <span className="text-xs font-medium text-emerald-400">
-              Cuenta activa
-            </span>
+                            Cuenta activa
+                        </span>
 
                     </div>
 
@@ -295,6 +397,48 @@ export function BarraPlataforma() {
             </div>
 
         </aside>
+    )
+}
+
+
+function IconoCerrar() {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            className="size-5"
+            aria-hidden="true"
+        >
+            <path d="M6 6l12 12" />
+            <path d="M18 6L6 18" />
+        </svg>
+    )
+}
+
+
+function IconoPlegar({
+                         plegada,
+                     }: {
+    plegada: boolean
+}) {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-[18px] w-[18px]"
+            aria-hidden="true"
+        >
+            {plegada
+                ? <path d="M9 6l6 6-6 6" />
+                : <path d="M15 6l-6 6 6 6" />}
+        </svg>
     )
 }
 

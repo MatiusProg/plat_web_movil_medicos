@@ -23,7 +23,6 @@ import {
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { Boton } from '@/componentes/Boton'
-import { Cabecera } from '@/componentes/Cabecera'
 import { Campo } from '@/componentes/Campo'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -101,7 +100,6 @@ export function AltaOrganizacion() {
   if (!usuario.is_platform_admin) {
     return (
       <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-        <Cabecera />
         <main className="mx-auto max-w-4xl px-5 py-10">
           <p className="text-tinta-500 text-[0.9375rem]">
             Registrar organizaciones es del Superadministrador de Plataforma.
@@ -114,7 +112,6 @@ export function AltaOrganizacion() {
   if (creada) {
     return (
       <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-        <Cabecera />
         <main className="mx-auto max-w-2xl px-5 py-10">
           <Credenciales creada={creada} alTerminar={() => navegar('/organizaciones')} />
         </main>
@@ -124,8 +121,6 @@ export function AltaOrganizacion() {
 
   return (
     <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-      <Cabecera />
-
       <main className="mx-auto max-w-2xl space-y-6 px-5 py-10">
         <div className="surgir">
           <Link

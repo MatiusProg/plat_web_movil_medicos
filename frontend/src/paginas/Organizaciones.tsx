@@ -20,7 +20,6 @@ import { Link } from 'react-router-dom'
 import { listarOrganizaciones, type Organizacion } from '@/api/organizaciones'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
-import { Cabecera } from '@/componentes/Cabecera'
 import { IconoEdificio } from '@/componentes/iconos'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -54,7 +53,6 @@ export function Organizaciones() {
   if (!usuario.is_platform_admin) {
     return (
       <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-        <Cabecera />
         <main className="mx-auto max-w-4xl px-5 py-10">
           <p className="text-tinta-500 text-[0.9375rem]">
             Esta sección es del Superadministrador de Plataforma.
@@ -66,8 +64,6 @@ export function Organizaciones() {
 
   return (
     <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-      <Cabecera />
-
       <main className="mx-auto max-w-4xl space-y-6 px-5 py-10">
         <div className="surgir flex flex-wrap items-end justify-between gap-4">
           <div>
