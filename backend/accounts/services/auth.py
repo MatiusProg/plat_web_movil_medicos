@@ -35,6 +35,7 @@ from django.conf import settings
 from django.db import connection
 from django.utils import timezone
 
+from audit.services import client_ip
 from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization
 
@@ -191,11 +192,10 @@ def record_attempt(result, email, request):
 def _ip_del_cliente(request):
     """La IP del cliente, mirando primero el encabezado del proxy.
 
-    En Railway la aplicación corre detrás de un proxy, así que ``REMOTE_ADDR``
-    es el del proxy y no el del cliente. ``X-Forwarded-For`` lleva la cadena
-    completa: el primero es el cliente.
+    La implementación se mudó a ``audit.services.client_ip`` con US-06: la usan
+    las tres cosas que registran de dónde vino una petición —la bitácora,
+    ``login_attempts`` y los tokens de restablecimiento— y ninguna de las tres
+    es dueña de las otras dos. Acá queda el nombre, porque US-02 y US-03 lo
+    llaman así y renombrarlo en tres archivos no arregla nada.
     """
-    reenviada = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if reenviada:
-        return reenviada.split(",")[0].strip() or None
-    return request.META.get("REMOTE_ADDR") or None
+    return client_ip(request)

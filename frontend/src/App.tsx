@@ -10,6 +10,7 @@ import { BarraPlataforma } from '@/componentes/BarraPlataforma'
 
 import { Agendas } from '@/paginas/Agendas'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
+import { Bitacora } from '@/paginas/Bitacora'
 import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
 import { BuscarProfesionales } from '@/paginas/BuscarProfesionales'
 import { Disponibilidad } from '@/paginas/Disponibilidad'
@@ -179,6 +180,16 @@ export default function App() {
                             path="/usuarios"
                             element={
                                 <Usuarios />
+                            }
+                        />
+
+
+                        {/* US-06: bitácora de auditoría */}
+
+                        <Route
+                            path="/bitacora"
+                            element={
+                                <Bitacora />
                             }
                         />
 

@@ -9,19 +9,19 @@ Dos cosas viven acá y no en el serializer:
    diferencias y no una asignación: hay que saber qué entró y qué salió para
    poder auditarlo.
 
-La bitácora del Sprint 0 (``accounts.AuditLog``) es la que existe hoy. Cuando
-US-06 publique la app ``audit``, estas escrituras se mudan allá; queda anotado
-para no duplicar el registro cuando eso pase.
+La mudanza que este archivo anunciaba **ya pasó**: US-06 publicó la app
+``audit`` y ``record`` es ahora un alias de ``audit.services.record``. Los seis
+lugares que lo llamaban siguen llamándolo igual —misma firma, mismo orden de
+argumentos— y lo que cambió está una capa más abajo: el asiento ya no se
+escribe dentro de la transacción de la petición, así que sobrevive a los
+rechazos. Ver el punto (c) de US-06.
 """
 
 from django.db import transaction
 
-from ..models import AuditLog, Permission, RolePermission
-# `_ip_del_cliente` es de US-02 y del mismo paquete: las dos historias son de
-# la misma dueña y comparten el problema —Railway pone un proxy delante—, así
-# que se reutiliza en vez de copiarla. Cuando US-06 se lleve la bitácora a la
-# app `audit`, esta función se va con ella.
-from .auth import _ip_del_cliente
+from audit import services as bitacora
+
+from ..models import Permission, RolePermission
 
 # Los permisos del módulo `platform` son del Superadministrador y no se le
 # pueden conceder a un rol de una organización. Sin este corte, el
@@ -38,18 +38,21 @@ def assignable_permissions():
 def record(request, action, entity, entity_id, detail):
     """Deja el asiento en la bitácora. RNF-18.
 
-    ``organization`` sale del usuario y no del contexto: es una acción de la
-    organización sobre sí misma, y con ``NULL`` quedaría como acción de
-    plataforma, que nadie del inquilino podría leer después.
+    Alias hacia ``audit.services.record``, que es donde vive la bitácora desde
+    US-06. Se conserva el nombre para no tocar los seis lugares de US-04 que ya
+    lo llamaban, y porque ``servicio.record(...)`` se lee mejor en una vista de
+    roles que un import de otra app.
+
+    Ojo con una diferencia: esto ya **no devuelve** el asiento. El asiento se
+    escribe después de que cierre la transacción de la petición, así que
+    todavía no existe cuando esta llamada retorna.
     """
-    return AuditLog.objects.create(
-        organization=request.user.organization,
-        user=request.user,
+    return bitacora.record(
+        request,
         action=action,
         entity=entity,
-        entity_id=str(entity_id),
+        entity_id=entity_id,
         detail=detail,
-        ip_address=_ip_del_cliente(request),
     )
 
 

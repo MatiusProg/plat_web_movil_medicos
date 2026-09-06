@@ -329,6 +329,11 @@ class AuditLog(models.Model):
     entity_id = models.CharField(max_length=64, blank=True, default="")
     detail = models.JSONField(default=dict, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    # US-06 (b) pide "con qué agente" además de la IP. Mismo ancho que
+    # `login_attempts.user_agent`, que guarda lo mismo y ya estaba recortando a
+    # 300: dos columnas con el mismo contenido y distinto largo dejarían la
+    # misma cadena entera en una y cortada en la otra.
+    user_agent = models.CharField(max_length=300, blank=True, default="")
     occurred_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

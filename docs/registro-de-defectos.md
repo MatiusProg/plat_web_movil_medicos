@@ -324,3 +324,72 @@ cd backend && pytest        # 33 passed
 Además, comprobado a mano: `runserver` responde `200` en `/api/health/`, y el
 esquema está aplicado tanto en el contenedor local como en Supabase, con el
 aislamiento verificado en vivo en ambos.
+
+---
+
+# Sprint 1
+
+Mismo criterio que arriba: lo que se rompió, y lo que se decidió a sabiendas
+que no coincide con lo que pedía la historia.
+
+## Defectos
+
+### D-14 · La bitácora no registraba nada desde una vista (US-06)
+
+**Síntoma.** `test_una_accion_de_us03_deja_su_asiento` en rojo: la solicitud de
+restablecimiento devolvía 200 y no quedaba ni un asiento. Las otras cinco
+pruebas del mismo archivo pasaban.
+
+**Causa.** **Es D-13 otra vez.** US-06 encola el asiento en la petición para
+escribirlo después de que cierre la transacción —la misma técnica que D-12
+introdujo para las alertas—, pero lo encolaba sobre el `Request` de DRF, que es
+un envoltorio: `getattr` sobre él delega en el `HttpRequest` de Django, y
+`setattr` **no**. El middleware, que recibe el de abajo, encontraba la cola
+vacía siempre.
+
+Lo que hizo que se colara: las pruebas que usan `APIRequestFactory` reciben
+directamente el objeto de Django, así que el mecanismo funcionaba en cinco de
+las seis pruebas. La única que entraba por HTTP de verdad fue la que lo delató.
+
+**Corrección.** `audit.services._http_request()` desenvuelve con
+`request._request` antes de encolar. La lección de D-13 estaba escrita en este
+mismo archivo y aun así se repitió, así que ahora está también en el docstring
+de la función, que es donde se lee cuando hace falta.
+
+## Comportamientos conocidos y aceptados
+
+### C-04 · La bitácora no es una app con modelo propio (US-06)
+
+El reparto del Sprint 1 pide «app nueva `audit`, bajo `/api/audit/`». La app
+existe, con su prefijo, su permiso, su middleware y sus filtros — pero el
+modelo sigue siendo `accounts.AuditLog`.
+
+**Por qué.** La tabla `audit_log` existe desde el Sprint 0, con su política RLS
+y su `REVOKE UPDATE, DELETE`, aplicada en local y en Supabase, y con asientos ya
+escritos por US-03 y US-04. Mudar el modelo de app obligaba a tocar migraciones
+de dos apps y a reapuntar imports en código ya mergeado, sin ganar ninguna
+garantía: todo lo que la historia pide de la bitácora se cumple leyendo el
+modelo de al lado. `convenciones-de-codigo.md` además ya ubicaba la bitácora
+dentro de `accounts`.
+
+**Qué habría que hacer si se quisiera mudar.** Una `SeparateDatabaseAndState`
+sin operaciones de base, más el cambio de imports. No urge y no cambia nada
+observable.
+
+### C-05 · La clave primaria de `audit_log` sigue siendo `bigserial` (US-06)
+
+El punto (d) de la historia pide UUID generado en Python, con el argumento de
+`login_attempts`: una tabla de sólo inserción bajo RLS, donde el
+`INSERT ... RETURNING id` de Django exigiría abrir también la política de
+lectura (es el defecto D-07).
+
+**Por qué no aplica acá.** La política `tenant_isolation` de `audit_log` **sí**
+deja leer los asientos de la propia organización — es exactamente lo que hace
+el punto (e) de la historia. El `RETURNING` pasa y la inserción funciona; el
+problema que el UUID resolvía no se tiene.
+
+**Por qué no se cambió igual.** Alterar el tipo de la clave primaria de una
+tabla con datos, aplicada en dos bases distintas, para resolver un problema
+inexistente, es justo lo que la regla 5 del reparto pide no hacer. Si alguna
+vez la política de lectura de `audit_log` se cerrara, esto habría que
+revisarlo.

@@ -64,6 +64,10 @@ INSTALLED_APPS = [
     "catalog",
     "patients",
     "scheduling",
+    # US-06: la bitácora. No trae modelos —lee `accounts.AuditLog`—, pero es
+    # una app igual porque tiene su propio prefijo de rutas, su permiso y su
+    # middleware.
+    "audit",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
@@ -84,6 +88,15 @@ MIDDLEWARE = [
     # una transacción para servir un CSS—.
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
+    # US-06 (c). Va ANTES que TenantMiddleware y no después, aunque escriba lo
+    # último: Django llama a `process_response` en orden inverso al de esta
+    # lista, así que estar arriba es lo que lo hace correr DESPUÉS de que
+    # TenantMiddleware cerró la transacción de la petición. Ésa es toda la
+    # gracia: un asiento escrito dentro de la transacción se pierde cuando DRF
+    # llama a `set_rollback()` al manejar un rechazo, que es justo lo que más
+    # interesa auditar. Moverlo debajo no rompe ninguna prueba de camino feliz
+    # y apaga la mitad de la bitácora.
+    "audit.middleware.AuditTrailMiddleware",
     # Abre la transacción de la petición y resuelve el inquilino por slug para
     # las peticiones sin autenticar (el login). Sin este middleware, toda
     # consulta sobre una tabla con RLS devuelve cero filas.
