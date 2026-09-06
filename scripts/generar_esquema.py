@@ -35,6 +35,14 @@ MIGRACIONES = [
     ("patients", "0001_initial"),
     ("tenancy", "0002_rls_policies"),
     ("tenancy", "0003_seed_catalog"),
+    # Sprint 1
+    ("accounts", "0003_seed_permissions_sprint_1"),
+    ("accounts", "0004_password_reset_token"),
+    ("catalog", "0002_catalogo_sprint_1"),
+    ("catalog", "0003_rls_policies"),
+    ("catalog", "0004_seed_demo"),
+    ("scheduling", "0001_initial"),
+    ("scheduling", "0002_rls_policies"),
 ]
 
 CABECERA = """\
@@ -80,7 +88,8 @@ def main() -> int:
     for app, migracion in MIGRACIONES:
         resultado = subprocess.run(
             [interprete, "manage.py", "sqlmigrate", app, migracion],
-            cwd=BACKEND, capture_output=True, text=True, encoding="utf-8",
+            cwd=BACKEND, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
         )
         if resultado.returncode != 0:
             print(f"FALLO {app}/{migracion}:", file=sys.stderr)
