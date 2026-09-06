@@ -9,7 +9,6 @@
  * backend, que es exactamente lo que va a decidir qué menú se dibuja.
  */
 
-import { Cabecera } from '@/componentes/Cabecera'
 import { IconoEscudo } from '@/componentes/iconos'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -23,8 +22,6 @@ export function Panel() {
 
   return (
     <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
-      <Cabecera />
-
       <main className="mx-auto max-w-4xl space-y-6 px-5 py-10">
         <div className="surgir">
           <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">

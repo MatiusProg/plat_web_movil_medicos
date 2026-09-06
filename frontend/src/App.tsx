@@ -1,12 +1,11 @@
 import {
     BrowserRouter,
     Navigate,
-    Outlet,
     Route,
     Routes,
 } from 'react-router-dom'
 
-import { BarraPlataforma } from '@/componentes/BarraPlataforma'
+import { ArmazonPlataforma } from '@/componentes/ArmazonPlataforma'
 
 import { Agendas } from '@/paginas/Agendas'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
@@ -28,41 +27,6 @@ import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
 
 import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
-
-
-/**
- * El armazón de las pantallas con sesión: barra lateral fija y área de
- * contenido.
- *
- * **El área de contenido tiene que seguir al tema, no imponerlo.** Todas las
- * pantallas están escritas en claro con variantes `dark:` —`text-tinta-900
- * dark:text-tinta-50`, `bg-white dark:bg-tinta-900/50`— y esas variantes las
- * activa `prefers-color-scheme`, como declara `index.css`. Cuando acá se fijaba
- * `bg-tinta-950` a secas, en un equipo en modo claro quedaba un fondo casi
- * negro debajo de textos casi negros: se perdía todo salvo lo que estuviera
- * dentro de una tarjeta blanca. `Panel` era la única pantalla que se salvaba,
- * porque se pinta su propio fondo.
- *
- * En una aplicación médica eso no es un detalle estético: la pantalla la lee
- * alguien apurado, en el monitor que le tocó.
- *
- * La barra lateral sí queda oscura siempre, y es a propósito: es el patrón
- * habitual de un panel de administración —navegación oscura, contenido claro—
- * y sus colores están elegidos para ese fondo.
- */
-function LayoutPlataforma() {
-    return (
-        <div className="flex min-h-dvh bg-tinta-50 dark:bg-tinta-950">
-
-            <BarraPlataforma />
-
-            <main className="min-w-0 flex-1 overflow-x-hidden bg-tinta-50 dark:bg-tinta-950">
-                <Outlet />
-            </main>
-
-        </div>
-    )
-}
 
 
 /**
@@ -162,7 +126,7 @@ export default function App() {
                     <Route
                         element={
                             <Protegida>
-                                <LayoutPlataforma />
+                                <ArmazonPlataforma />
                             </Protegida>
                         }
                     >
