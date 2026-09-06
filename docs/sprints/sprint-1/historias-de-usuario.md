@@ -25,7 +25,7 @@ redactadas, para pegarlas en el CAPITULO 4 del documento.
 
 | ID | Caso de Uso | Plataforma | Descripción |
 |---|---|---|---|
-| CU2 | Gestión de Roles y Permisos | WEB | El administrador de la organización crea y edita los roles de su centro médico, les ajusta los permisos y se los asigna a los usuarios. Las cuatro plantillas del sistema se copian dentro de la organización al darla de alta, y lo que se edita es esa copia. |
+| CU5 | Gestión de Roles y Permisos | WEB | El administrador de la organización crea y edita los roles de su centro médico, les ajusta los permisos y se los asigna a los usuarios. Las cuatro plantillas del sistema se copian dentro de la organización al darla de alta, y lo que se edita es esa copia. |
 | CU3 | Recuperación de Credenciales | WEB/MÓVIL | El usuario solicita restablecer su contraseña indicando su organización y su correo. El sistema envía un enlace de un solo uso con vencimiento; al usarlo, la contraseña se reemplaza y se invalidan las sesiones abiertas. La respuesta es idéntica exista o no la cuenta, para no revelar qué correos están registrados. |
 | CU6 | Gestión de Perfil de Usuario | WEB/MÓVIL | El usuario consulta y edita sus datos de contacto y cambia su contraseña acreditando la actual. Los campos que definen su identidad dentro de la organización —documento, rol, organización— no son editables por él. |
 | CU7 | Consulta de Bitácora de Auditoría | WEB | El administrador consulta el registro cronológico de acciones sensibles de su organización, con filtros por actor, tipo de acción y rango de fechas. La bitácora es de sólo lectura: no se edita ni se borra desde la aplicación. |
@@ -48,7 +48,7 @@ redactadas, para pegarlas en el CAPITULO 4 del documento.
 
 | | |
 |---|---|
-| CU2 — Gestión de Roles y Permisos | El administrador de la organización crea y edita los roles de su centro médico, les ajusta los permisos y se los asigna a los usuarios. Lo que edita es la copia que su organización recibió al darse de alta, no la plantilla del sistema. |
+| CU5 — Gestión de Roles y Permisos | El administrador de la organización crea y edita los roles de su centro médico, les ajusta los permisos y se los asigna a los usuarios. Lo que edita es la copia que su organización recibió al darse de alta, no la plantilla del sistema. |
 
 **Prioridad: ALTA** · **Cant Horas: 10 hr**
 
