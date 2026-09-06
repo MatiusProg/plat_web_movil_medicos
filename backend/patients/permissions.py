@@ -36,3 +36,13 @@ class CanReadDependents(RequiresPermission):
 
 class CanWriteDependents(RequiresPermission):
     code = "patients.dependent.write"
+
+
+# ---------- US-08 (SM): antecedentes del paciente -----------------------
+
+class CanReadHistory(RequiresPermission):
+    code = "patients.history.read"
+
+
+class CanWriteHistory(RequiresPermission):
+    code = "patients.history.write"

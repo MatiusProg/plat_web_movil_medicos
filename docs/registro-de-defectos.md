@@ -356,6 +356,49 @@ las seis pruebas. La única que entraba por HTTP de verdad fue la que lo delató
 mismo archivo y aun así se repitió, así que ahora está también en el docstring
 de la función, que es donde se lee cuando hace falta.
 
+### D-15 · Un paciente podía leer los antecedentes de su vecino (US-08)
+
+**Síntoma.** `test_un_paciente_no_ve_los_antecedentes_de_su_vecino` en rojo:
+Carla, paciente de Kolping, abría los antecedentes de Ana, paciente de Kolping,
+y recibía un 200 con la lista completa.
+
+**Causa.** El alcance sobre la ficha de otro se decidía con
+`user.has_permission("patients.history.read")`, y ese permiso lo llevan **las
+dos** plantillas que leen antecedentes: el Médico, para verlos al abrir la
+consulta, y el Paciente, para ver los suyos. El permiso responde "sí" a los dos
+y no distingue nada.
+
+Lo grave es dónde no había red de contención: RLS **no** separa a dos pacientes
+de la misma organización —los dos son del mismo inquilino, y para la base las
+dos filas son igual de visibles—, así que la única puerta era ésa. Es el
+recordatorio de que el aislamiento por inquilino resuelve un problema y no
+todos: dentro de una organización hay que separar igual.
+
+**Corrección.** El alcance de profesional exige además tener **ficha de
+profesional activa** en el catálogo (`catalog.Practitioner`, US-12), que es lo
+que de verdad distingue a quien atiende pacientes. Se consulta en cada petición
+y no se guarda en el token, para que dar de baja a un profesional le corte el
+acceso en ese momento y no cuando venza su token: hay una prueba para eso
+(`test_un_profesional_dado_de_baja_deja_de_leer_antecedentes`).
+
+**Regla que deja.** Un permiso que dos roles distintos necesitan por motivos
+distintos no sirve para decidir *sobre los datos de quién* se puede operar.
+Autoriza la acción, no el alcance.
+
+### D-16 · El esquema documentado perdía todos los acentos al regenerarse
+
+**Síntoma.** Correr `scripts/generar_esquema.py` en Windows devolvía un diff de
+20 líneas cambiadas sin haber tocado ninguna migración: `así` pasaba a `as?`,
+`política` a `pol?tica`. Quien lo regeneraba ensuciaba el archivo sin querer.
+
+**Causa.** El script ya leía la salida del subproceso como UTF-8, pero el
+proceso hijo la **escribía** con la página de códigos de la consola (cp1252),
+que es lo que hace Python en Windows cuando su stdout no es una terminal.
+
+**Corrección.** `PYTHONIOENCODING=utf-8` en el entorno del hijo. De paso, el
+script no conocía las migraciones nuevas del sprint: la lista es manual y hay
+que agregarlas ahí.
+
 ### D-17 · La migración de US-06 no se podía aplicar sobre una base con datos
 
 **Síntoma.** `pytest` en verde con las 205 pruebas, y `manage.py migrate` contra

@@ -1068,6 +1068,106 @@ BEGIN;
 COMMIT;
 
 -- =========================================================================
+--  accounts / 0005_us06_audit
+-- =========================================================================
+
+BEGIN;
+--
+-- Add field user_agent to auditlog
+--
+ALTER TABLE "audit_log" ADD COLUMN "user_agent" varchar(300) DEFAULT '' NOT NULL;
+ALTER TABLE "audit_log" ALTER COLUMN "user_agent" DROP DEFAULT;
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- =========================================================================
+--  patients / 0002_us07_dependents
+-- =========================================================================
+
+BEGIN;
+--
+-- Add field relationship to patient
+--
+ALTER TABLE "patients" ADD COLUMN "relationship" varchar(20) DEFAULT '' NOT NULL;
+ALTER TABLE "patients" ALTER COLUMN "relationship" DROP DEFAULT;
+--
+-- Create constraint ck_patient_relationship on model patient
+--
+ALTER TABLE "patients" ADD CONSTRAINT "ck_patient_relationship" CHECK ((("guardian_id" IS NULL AND "relationship" = '') OR ("guardian_id" IS NOT NULL AND NOT ("relationship" = ''))));
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- =========================================================================
+--  patients / 0003_us08_history
+-- =========================================================================
+
+BEGIN;
+--
+-- Create model PatientHistoryEntry
+--
+CREATE TABLE "patient_history_entries" ("id" uuid NOT NULL PRIMARY KEY, "kind" varchar(20) NOT NULL, "description" varchar(200) NOT NULL, "severity" varchar(20) NOT NULL, "source" varchar(20) NOT NULL, "recorded_at" date NOT NULL, "is_active" boolean NOT NULL, "created_at" timestamp with time zone NOT NULL, "updated_at" timestamp with time zone NOT NULL, "declared_by_id" uuid NULL, "organization_id" uuid NOT NULL, "patient_id" uuid NOT NULL, CONSTRAINT "ck_history_severity" CHECK (("kind" = 'allergy' OR "severity" = '')));
+ALTER TABLE "patient_history_entries" ADD CONSTRAINT "patient_history_entries_declared_by_id_dc8c9c7c_fk_users_id" FOREIGN KEY ("declared_by_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE "patient_history_entries" ADD CONSTRAINT "patient_history_entr_organization_id_08c7573a_fk_organizat" FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id") DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE "patient_history_entries" ADD CONSTRAINT "patient_history_entries_patient_id_5d80aa15_fk_patients_id" FOREIGN KEY ("patient_id") REFERENCES "patients" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "patient_history_entries_declared_by_id_dc8c9c7c" ON "patient_history_entries" ("declared_by_id");
+CREATE INDEX "patient_history_entries_organization_id_08c7573a" ON "patient_history_entries" ("organization_id");
+CREATE INDEX "patient_history_entries_patient_id_5d80aa15" ON "patient_history_entries" ("patient_id");
+CREATE INDEX "ix_history_patient" ON "patient_history_entries" ("patient_id", "is_active");
+COMMIT;
+
+-- =========================================================================
+--  patients / 0004_us08_rls
+-- =========================================================================
+
+BEGIN;
+--
+-- Raw SQL operation
+--
+
+            ALTER TABLE patient_history_entries ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE patient_history_entries FORCE  ROW LEVEL SECURITY;
+            CREATE POLICY tenant_isolation ON patient_history_entries
+                USING (organization_id = app_current_tenant())
+                WITH CHECK (organization_id = app_current_tenant());
+        
+--
+-- Raw SQL operation
+--
+
+    DO $do$
+    DECLARE c text;
+    BEGIN
+        FOR c IN
+            SELECT conname FROM pg_constraint
+             WHERE conrelid = 'patient_history_entries'::regclass AND contype = 'f'
+               AND confrelid = 'patients'::regclass
+               AND conkey = ARRAY[
+                   (SELECT attnum FROM pg_attribute
+                     WHERE attrelid = 'patient_history_entries'::regclass AND attname = 'patient_id')
+               ]
+        LOOP
+            EXECUTE format('ALTER TABLE patient_history_entries DROP CONSTRAINT %I', c);
+        END LOOP;
+    END
+    $do$;
+
+    ALTER TABLE patient_history_entries ADD CONSTRAINT fk_patient_history_entries_patients_same_org
+        FOREIGN KEY (patient_id, organization_id)
+        REFERENCES patients (id, organization_id) ON DELETE CASCADE;
+    
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- =========================================================================
 --  Como regenerar este archivo
 --
 --    backend/.venv/Scripts/python scripts/generar_esquema.py    (Windows)

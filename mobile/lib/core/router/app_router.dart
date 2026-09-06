@@ -16,6 +16,7 @@ import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
 import '../../features/dependents/dependent_form_screen.dart';
 import '../../features/dependents/dependents_screen.dart';
+import '../../features/history/history_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/search/specialties_screen.dart';
 import '../session/session.dart';
@@ -34,6 +35,7 @@ class Routes {
   static const String availability = 'availability';
   static const String dependents = 'dependents';
   static const String dependentForm = 'dependent-form';
+  static const String history = 'history';
 }
 
 GoRouter buildRouter(Session session) {
@@ -114,6 +116,13 @@ GoRouter buildRouter(Session session) {
         ],
       ),
 
+      // ---------- US-08 (SM): antecedentes -------------------------------
+      GoRoute(
+        path: '/history',
+        name: Routes.history,
+        builder: (context, state) => const HistoryScreen(),
+      ),
+
       // ---------- US-15 (Alexander): disponibilidad consolidada ---------
       GoRoute(
         path: '/professionals/:id/availability',
@@ -191,6 +200,13 @@ class _HomeScreen extends StatelessWidget {
               onPressed: () => context.push('/dependents'),
               icon: const Icon(Icons.family_restroom),
               label: const Text('Personas a mi cargo'),
+            ),
+            const SizedBox(height: 12),
+            // ---------- US-08 (SM): antecedentes ------------------------
+            OutlinedButton.icon(
+              onPressed: () => context.push('/history'),
+              icon: const Icon(Icons.medical_information_outlined),
+              label: const Text('Mis antecedentes'),
             ),
             const SizedBox(height: 12),
             Text(

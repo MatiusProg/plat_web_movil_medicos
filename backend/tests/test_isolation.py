@@ -17,7 +17,7 @@ from catalog.models import (
     PractitionerBranch,
     Specialty,
 )
-from patients.models import Patient
+from patients.models import Patient, PatientHistoryEntry
 from scheduling.models import Schedule, ScheduleBlock
 from tenancy.context import no_tenant_context, platform_admin_context, tenant_context
 from tenancy.models import (
@@ -175,12 +175,12 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     US-06 suma ``audit.log.read`` y **borra** ``users.audit.read``, que el seed
     del Sprint 0 declaró antes de que existiera la app ``audit`` y que ninguna
     vista consultó nunca: el neto es cero. US-07 suma los dos de los pacientes
-    a cargo.
+    a cargo y US-08 los dos de los antecedentes.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()
@@ -386,6 +386,62 @@ def test_un_profesional_no_se_asocia_a_una_sucursal_de_otra_organizacion(
                 PractitionerBranch.objects.create(
                     organization=org_a, practitioner=profesional_a,
                     branch=branch_b,
+                )
+
+
+def test_no_se_ve_un_antecedente_de_otra_organizacion(org_a, org_b):
+    """US-08. La tabla es nueva, así que le toca su caso acá (apartado 5.4 de
+    las convenciones)."""
+    with tenant_context(org_a.id):
+        paciente_a = Patient.objects.create(
+            organization=org_a, first_name="Ana", last_name="Ríos",
+            document_number="7001",
+        )
+        PatientHistoryEntry.objects.create(
+            organization=org_a, patient=paciente_a,
+            kind="allergy", description="Penicilina", severity="severe",
+        )
+    with tenant_context(org_b.id):
+        paciente_b = Patient.objects.create(
+            organization=org_b, first_name="Beto", last_name="Cruz",
+            document_number="7002",
+        )
+        PatientHistoryEntry.objects.create(
+            organization=org_b, patient=paciente_b,
+            kind="medication", description="Metformina",
+        )
+
+    with tenant_context(org_a.id):
+        assert list(
+            PatientHistoryEntry.objects.values_list("description", flat=True),
+        ) == ["Penicilina"]
+    with tenant_context(org_b.id):
+        assert list(
+            PatientHistoryEntry.objects.values_list("description", flat=True),
+        ) == ["Metformina"]
+
+
+def test_un_antecedente_no_referencia_un_paciente_de_otra_organizacion(
+    org_a, org_b,
+):
+    """La clave foránea compuesta `(patient_id, organization_id)`.
+
+    Sin ella la fila quedaría visible para el inquilino que dice
+    `organization_id` mientras describe a alguien de otro centro médico. Con
+    datos clínicos eso no es una inconsistencia: es una filtración.
+    """
+    with tenant_context(org_b.id):
+        ajeno = Patient.objects.create(
+            organization=org_b, first_name="Beto", last_name="Cruz",
+            document_number="7003",
+        )
+
+    with tenant_context(org_a.id):
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                PatientHistoryEntry.objects.create(
+                    organization=org_a, patient=ajeno,
+                    kind="condition", description="Hipertensión",
                 )
 
 

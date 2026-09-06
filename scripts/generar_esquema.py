@@ -18,6 +18,7 @@ documentación no se separe de lo que realmente hay en la base.
 """
 
 import io
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -43,6 +44,10 @@ MIGRACIONES = [
     ("catalog", "0004_seed_demo"),
     ("scheduling", "0001_initial"),
     ("scheduling", "0002_rls_policies"),
+    ("accounts", "0005_us06_audit"),
+    ("patients", "0002_us07_dependents"),
+    ("patients", "0003_us08_history"),
+    ("patients", "0004_us08_rls"),
 ]
 
 CABECERA = """\
@@ -85,11 +90,17 @@ def main() -> int:
     interprete = sys.executable
     partes = [CABECERA]
 
+    # En Windows, el proceso hijo escribe su salida con la pagina de codigos de
+    # la consola (cp1252) y no en UTF-8, asi que cada acento de los comentarios
+    # de las migraciones llegaba como un caracter de reemplazo. Leerlo como
+    # UTF-8 no alcanza: hay que pedirle al hijo que lo escriba asi.
+    entorno = dict(os.environ, PYTHONIOENCODING="utf-8")
+
     for app, migracion in MIGRACIONES:
         resultado = subprocess.run(
             [interprete, "manage.py", "sqlmigrate", app, migracion],
             cwd=BACKEND, capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
+            encoding="utf-8", errors="replace", env=entorno,
         )
         if resultado.returncode != 0:
             print(f"FALLO {app}/{migracion}:", file=sys.stderr)
