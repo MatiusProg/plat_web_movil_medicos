@@ -62,18 +62,18 @@ vez para las ocho superficies móviles del sprint:
 | Rutas | `core/router/app_router.dart` | Redirección según la sesión |
 | Tema | `core/theme/theme.dart` | La paleta del frontend web |
 
-**Las pantallas todavía no existen.** Cada historia agrega la suya:
+**Casi todas las pantallas faltan todavía.** Cada historia agrega la suya:
 
-| Historia | Carpeta | Responsable |
-|---|---|---|
-| US-02 — Inicio y cierre de sesión | `lib/features/auth/` | Karen |
-| US-01 — Registro de paciente | `lib/features/signup/` | Alexander |
-| US-03 — Recuperación de contraseña | `lib/features/auth/` | Karen |
-| US-05 — Perfil y cambio de contraseña | `lib/features/profile/` | Michael |
-| US-07 — Pacientes dependientes | `lib/features/dependents/` | SM |
-| US-08 — Antecedentes | `lib/features/history/` | SM |
-| US-15 — Disponibilidad consolidada | `lib/features/availability/` | Alexander |
-| US-16 — Búsqueda de profesionales | `lib/features/search/` | Alexander |
+| Historia | Carpeta | Responsable | Estado |
+|---|---|---|---|
+| US-02 — Inicio y cierre de sesión | `lib/features/auth/` | Karen | pendiente |
+| US-01 — Registro de paciente | `lib/features/signup/` | Alexander | pendiente |
+| US-03 — Recuperación de contraseña | `lib/features/auth/` | Karen | pendiente |
+| US-05 — Perfil y cambio de contraseña | `lib/features/profile/` | Michael | pendiente |
+| US-07 — Pacientes dependientes | `lib/features/dependents/` | SM | pendiente |
+| US-08 — Antecedentes | `lib/features/history/` | SM | pendiente |
+| US-15 — Disponibilidad consolidada | `lib/features/availability/` | Alexander | ✅ hecha (`/professionals/:id/availability`) |
+| US-16 — Búsqueda de profesionales | `lib/features/search/` | Alexander | ✅ hecha (`/specialties`, `/search`) |
 
 Las carpetas son las que fija
 [`docs/sprints/sprint-1/reparto.md`](../docs/sprints/sprint-1/reparto.md).

@@ -12,6 +12,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/availability/availability_screen.dart';
+import '../../features/search/search_screen.dart';
+import '../../features/search/specialties_screen.dart';
 import '../session/session.dart';
 import '../session/session_scope.dart';
 
@@ -23,6 +26,9 @@ class Routes {
   static const String loading = 'loading';
   static const String signIn = 'sign-in';
   static const String home = 'home';
+  static const String specialties = 'specialties';
+  static const String search = 'search';
+  static const String availability = 'availability';
 }
 
 GoRouter buildRouter(Session session) {
@@ -76,6 +82,30 @@ GoRouter buildRouter(Session session) {
         path: '/home',
         name: Routes.home,
         builder: (context, state) => const _HomeScreen(),
+      ),
+
+      // ---------- US-16 (Alexander): búsqueda de profesionales -----------
+      GoRoute(
+        path: '/specialties',
+        name: Routes.specialties,
+        builder: (context, state) => const SpecialtiesScreen(),
+      ),
+      GoRoute(
+        path: '/search',
+        name: Routes.search,
+        builder: (context, state) => SearchScreen(
+          specialtyId: state.uri.queryParameters['specialty'],
+        ),
+      ),
+
+      // ---------- US-15 (Alexander): disponibilidad consolidada ---------
+      GoRoute(
+        path: '/professionals/:id/availability',
+        name: Routes.availability,
+        builder: (context, state) => AvailabilityScreen(
+          practitionerId: state.pathParameters['id']!,
+          practitionerName: state.uri.queryParameters['name'],
+        ),
       ),
     ],
   );
@@ -169,6 +199,12 @@ class _HomeScreen extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.go('/specialties'),
+              icon: const Icon(Icons.search),
+              label: const Text('Buscar profesionales'),
+            ),
+            const SizedBox(height: 12),
             Text(
               'El shell está listo. Cada historia agrega su pantalla en '
               'lib/features/ y su ruta en core/router/app_router.dart.',
