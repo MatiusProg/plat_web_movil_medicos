@@ -356,6 +356,36 @@ las seis pruebas. La única que entraba por HTTP de verdad fue la que lo delató
 mismo archivo y aun así se repitió, así que ahora está también en el docstring
 de la función, que es donde se lee cuando hace falta.
 
+### D-17 · La migración de US-06 no se podía aplicar sobre una base con datos
+
+**Síntoma.** `pytest` en verde con las 205 pruebas, y `manage.py migrate` contra
+la base local fallando:
+
+    IntegrityError: update or delete on table "permissions" violates foreign key
+    constraint ... on table "role_permissions"
+
+**Causa.** La migración borra `users.audit.read` del catálogo, y confiaba en que
+la cascada de la clave foránea se llevara sus `role_permissions`. **La cascada
+de Django la resuelve el ORM**, recorriendo la tabla hija para borrar lo que
+apunta a esa fila — y `role_permissions` está bajo RLS. Sin el contexto de cada
+inquilino, el ORM no ve una sola de sus filas, no borra nada, y el `DELETE`
+sobre `permissions` lo rechaza PostgreSQL, que sí las ve todas.
+
+**Por qué ninguna prueba lo encontró.** Al crear la base de pruebas, las
+migraciones corren **antes** de que exista una sola organización: no hay copias
+de rol que estorben, así que el borrado no choca con nada. Apareció al aplicar
+la migración contra la base local, que tiene cargada la organización de
+demostración. Es el mismo tipo de agujero que la Ronda 1 del Sprint 0: la forma
+de probar, no el código.
+
+**Corrección.** Las concesiones se borran inquilino por inquilino, dentro del
+contexto de cada uno, y recién después se borra la fila del catálogo.
+
+**Regla que deja.** Una migración que **borra** datos del catálogo compartido
+hay que probarla contra una base con organizaciones cargadas, no sólo con
+`pytest`. `manage.py migrate` en local es parte de la revisión, no un trámite
+posterior.
+
 ## Comportamientos conocidos y aceptados
 
 ### C-04 · La bitácora no es una app con modelo propio (US-06)

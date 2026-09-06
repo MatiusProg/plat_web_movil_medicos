@@ -126,13 +126,30 @@ def seed(apps, schema_editor):
             for role in Role.objects.filter(organization_id=organization_id)
         }
         _grant(RolePermission, clones, permissions, organization_id=organization_id)
+        # Y acá, dentro del contexto del inquilino, se quitan sus concesiones
+        # del permiso viejo. Ver el comentario de abajo.
+        RolePermission.objects.filter(permission__code__in=SUPERSEDED).delete()
 
     schema_editor.execute("SELECT set_config('app.tenant_id', '', true)")
     schema_editor.execute(PLATFORM_ON)
 
-    # Borrar la fila de `permissions` arrastra sus `role_permissions` por la
-    # clave foránea. Va al final: si fallara algo de arriba, el catálogo queda
-    # con el permiso viejo, que es el estado en el que estaba.
+    # Las concesiones de las plantillas, que viven a nivel plataforma.
+    RolePermission.objects.filter(permission__code__in=SUPERSEDED).delete()
+
+    # Recién ahora se puede borrar la fila del catálogo.
+    #
+    # **No alcanza con borrar el `Permission` y confiar en la cascada.** La
+    # cascada de Django la resuelve el ORM, recorriendo `role_permissions` para
+    # borrar lo que apunta a esa fila — y `role_permissions` está bajo RLS. Sin
+    # el contexto de cada inquilino, el ORM no ve una sola de sus filas, no
+    # borra nada, y el `DELETE` sobre `permissions` lo rechaza la clave foránea
+    # de PostgreSQL, que sí las ve todas.
+    #
+    # Es un fallo que **ninguna prueba podía encontrar**: al crear la base de
+    # pruebas las migraciones corren antes de que exista una sola organización,
+    # así que no hay copias de rol que estorben. Apareció al aplicar la
+    # migración contra la base local, que tiene la organización de demostración
+    # cargada. Está anotado como D-17 en `docs/registro-de-defectos.md`.
     Permission.objects.filter(code__in=SUPERSEDED).delete()
 
 
