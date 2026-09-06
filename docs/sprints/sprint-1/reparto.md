@@ -23,7 +23,7 @@ convenciones de código, en `../../convenciones-de-codigo.md`.
 | Integrante | Historias | Web | Móvil | Horas |
 |---|---|---|---|---|
 | Ortega Mancilla, Karen Paola | US-04, US-03 | US-04, US-03 | US-02 (deuda S0), US-03 | **20** |
-| Mamani Samurio, Michael Alexander | US-05, US-09, US-10 | US-05, US-09, US-10 | US-05 | **16** |
+| *Sin asignar* | US-05, US-09, US-10 | US-05, US-09, US-10 | US-05 | **16** |
 | Hurtado Castro, Luis Mateo *(SM)* | US-06, US-07, US-08 | US-06, endpoint de US-08 | US-07, US-08 | **26** |
 | Iporo Chulque, José Daniel | US-11, US-12 | US-11, US-12 | — | **16** |
 | Aguayo Quiroz, Luis Miguel | US-13, US-14 | US-13, US-14 | — | **22** |
@@ -35,6 +35,20 @@ La sección 7 explica de dónde salen esas horas si ninguna historia cambió.
 **14 historias:** las 13 del Sprint 1 más US-04, que se arrastra del Sprint 0.
 US-04 no se redacta como historia todavía; se trabaja con lo que dice el
 Product Backlog y se documenta al terminarla.
+
+> **Actualización del 06/09/26.** US-05, US-09 y US-10 quedan **sin responsable
+> asignado** y no se entregan en este sprint. Las tres pasan al Sprint 2 con su
+> estimación intacta —16 h en total— y hay que reasignarlas en el Planning.
+>
+> El resto del documento se deja **tal como se acordó el 25/08**: es el contrato
+> del sprint y sirve como registro de lo que se comprometió, no de lo que
+> terminó pasando. Lo que cambió está acá y en la sección 6.
+>
+> **Qué arrastra esto al Sprint 2.** US-09 es *Must have* y la consume la
+> recepcionista en la reserva, así que hay que ponerla temprano. US-05 es la
+> historia de referencia de la escala de estimación (apartado 1.2.6): mientras
+> no exista, la escala no tiene su patrón. Y el cierre de sesión en móvil queda
+> sin dónde vivir — ver la nota de la sección 3.
 
 ---
 
@@ -88,7 +102,11 @@ puede administrar.
 
 ---
 
-### Michael Mamani — *perfil y padrón de pacientes* — 16 h
+### Sin asignar — *perfil y padrón de pacientes* — 16 h
+
+> **No entregada.** Las tres historias de este bloque quedan sin responsable y
+> pasan al Sprint 2. Lo de abajo es el alcance tal como se acordó, y se conserva
+> porque quien las tome no tiene que volver a analizarlas.
 
 Carga deliberadamente contenida y **sin nada que bloquee a nadie más**: US-09 es
 *Must have*, pero quien la consume es la recepcionista en el Sprint 2, no una
@@ -125,10 +143,12 @@ fusión va a la bitácora con el valor anterior y el nuevo.
 **Depende de:** US-04 (permisos), `accounts/passwords.py` de Karen para la
 política de contraseñas, US-06 (bitácora) para el punto (e) de US-10.
 
-**Dependen de él:** nadie, dentro de este sprint.
+**Dependen de ellas:** nadie, dentro de este sprint. Es lo que permitió que su
+ausencia no arrastrara al resto del sprint.
 
 **Corte por fecha.** Si US-05 no está mergeada el 02/09, no se le suma trabajo
 nuevo y US-09 y US-10 se replanifican con el equipo. Acordado en el planning.
+*El corte se cumplió: al 06/09 las tres pasan al Sprint 2.*
 
 ---
 
@@ -180,7 +200,7 @@ para todos los demás.
 
 **Depende de:** el shell de Flutter (Alexander) para US-07 y US-08.
 
-**Dependen de él:** Karen (US-03 d), Michael (US-10 e) y él mismo (US-08 g).
+**Dependen de él:** Karen (US-03 d), US-10 (e) y él mismo (US-08 g).
 
 **Si el sprint se atrasa, US-08 es lo primero que cae al Sprint 2.** Es *Should
 have* y es lo más barato de soltar. Daniel queda declarado como reserva para
@@ -325,7 +345,7 @@ crearlo—. En móvil, `mobile/lib/features/signup/`,
 **Depende de:** Luis Aguayo (contrato de US-13, 01/09) y Daniel (US-12) para
 US-16.
 
-**Dependen de él:** Karen, el SM y Michael, todos por el shell.
+**Dependen de él:** Karen, el SM y US-05, todos por el shell.
 
 ---
 
@@ -338,7 +358,7 @@ Ocho superficies móviles este sprint, sobre cuatro personas.
 | US-01 *(deuda S0)* | Registro de paciente | Alexander |
 | US-02 *(deuda S0)* | Inicio y cierre de sesión | Karen |
 | US-03 | Solicitud de restablecimiento y nueva contraseña | Karen |
-| US-05 | Perfil y cambio de contraseña | Michael |
+| US-05 | Perfil y cambio de contraseña | *Sin asignar* |
 | US-07 | **Sólo móvil** — alta y listado de dependientes | SM |
 | US-08 | Antecedentes propios y de dependientes | SM |
 | US-15 | Disponibilidad consolidada entre sucursales | Alexander |
@@ -351,9 +371,13 @@ móvil para el paciente**— y agregarles pantalla móvil duplica interfaces que
 nadie va a abrir y contradice el propio argumento de diseño del proyecto.
 
 **Dónde queda el cierre de sesión.** CU4 es WEB/MÓVIL y lo cubre la deuda de
-US-02 (Karen), pero el botón vive en la pantalla de perfil (Michael). Karen
-expone el método en el shell, Michael lo invoca. Que quede acordado ahora o
-aparece dos veces, o ninguna.
+US-02 (Karen), pero el botón vive en la pantalla de perfil (US-05). Karen
+expone el método en el shell y la pantalla de perfil lo invoca. Que quede
+acordado ahora o aparece dos veces, o ninguna.
+
+> Al quedar US-05 sin entregar, el método existe en el shell y **no lo llama
+> nadie**: hoy el cierre de sesión en móvil vive en el botón provisional de la
+> pantalla de inicio. Quien tome US-05 en el Sprint 2 lo mueve al perfil.
 
 ---
 
@@ -366,10 +390,10 @@ después del primer conflicto. Esto es esa partición.
 |---|---|---|
 | `accounts` | `roles.py`, `permissions.py` | Karen (US-04) |
 | `accounts` | `password_reset.py` | Karen (US-03) |
-| `accounts` | `passwords.py` *(compartido)* | **Escribe Karen, consume Michael** |
-| `accounts` | `profile.py` | Michael (US-05) |
+| `accounts` | `passwords.py` *(compartido)* | **Escribe Karen, lo consumirá US-05** |
+| `accounts` | `profile.py` | *Sin asignar* (US-05) |
 | `patients` | `dependents.py`, `history.py` | SM (US-07, US-08) |
-| `patients` | `search.py`, `admin_ops.py` | Michael (US-09, US-10) |
+| `patients` | `search.py`, `admin_ops.py` | *Sin asignar* (US-09, US-10) |
 | `catalog` | `branches.py`, `specialties.py`, `professionals.py` | Daniel (US-11, US-12) |
 | `catalog` | módulo de búsqueda *(nombre a acordar con Daniel)* | Alexander (US-16) |
 | `audit` *(nueva)* | app completa, `/api/audit/` | SM (US-06) |
@@ -378,7 +402,7 @@ después del primer conflicto. Esto es esa partición.
 
 **`accounts/passwords.py`** es el único archivo compartido del sprint: contiene
 la política de complejidad y el cifrado Argon2 que usan US-03, US-05 y el alta.
-Lo escribe Karen los días 1–2 y Michael lo consume; no se duplica la validación.
+Lo escribe Karen los días 1–2 y US-05 lo consume; no se duplica la validación.
 
 **`config/urls.py` sigue cerrado.** El SM lo abre una sola vez, en un commit, al
 inicio del sprint, para incluir `audit` y `scheduling`. Después nadie lo toca.
@@ -427,7 +451,7 @@ lo demás.
 | **30/08** | Shell de Flutter usable — desbloquea ocho superficies móviles | Alexander |
 | **01/09** | Contrato del endpoint de espacios disponibles publicado, aunque la implementación siga | Luis Aguayo |
 | **01/09** | Bitácora recibiendo asientos — la escriben US-03, US-08 y US-10 | SM |
-| **02/09** | US-05 mergeada; si no, se replanifican US-09 y US-10 | Michael |
+| **02/09** | US-05 mergeada; si no, se replanifican US-09 y US-10 | *Sin asignar* — se cumplió el corte: las tres van al Sprint 2 |
 | **04/09** | Backend completo y congelado; sólo pantallas, prototipos y pruebas | Todos |
 | **07/09** | Cierre del sprint | — |
 
