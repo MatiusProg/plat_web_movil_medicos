@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Sin esto, una APK de **release** no tiene acceso a la red y la
+         aplicación falla en silencio: todas las llamadas mueren y la persona
+         sólo ve "No se pudo conectar con el servidor". No se notaba porque
+         Flutter agrega el permiso por su cuenta a los manifiestos de `debug` y
+         `profile`, que es con los que se venía probando. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="mobile"
+        android:label="Centro Médico"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
