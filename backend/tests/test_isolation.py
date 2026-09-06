@@ -171,16 +171,27 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     profesionales, agendas, baja y fusión de pacientes, y baja de roles).
     Quien agregue permisos actualiza este número, que es justamente lo que
     hace que la cuenta signifique algo.
+
+    US-06 suma ``audit.log.read`` y **borra** ``users.audit.read``, que el seed
+    del Sprint 0 declaró antes de que existiera la app ``audit`` y que ninguna
+    vista consultó nunca: el neto es cero. US-07 suma los dos de los pacientes
+    a cargo.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2
         assert SubscriptionPlan.objects.count() == 3
+        # El viejo no quedó dando vueltas.
+        assert not Permission.objects.filter(code="users.audit.read").exists()
 
 
 def test_un_menor_sin_documento_se_registra_con_titular(org_a):
-    """US-07. Un recién nacido no tiene CI y tiene que poder registrarse."""
+    """US-07. Un recién nacido no tiene CI y tiene que poder registrarse.
+
+    Desde que US-07 agregó ``ck_patient_relationship``, una ficha con titular
+    lleva además el parentesco: un dependiente sin él no dice de quién es qué.
+    """
     with tenant_context(org_a.id):
         titular = Patient.objects.create(
             organization=org_a, first_name="Ana", last_name="Ríos",
@@ -188,14 +199,35 @@ def test_un_menor_sin_documento_se_registra_con_titular(org_a):
         )
         Patient.objects.create(
             organization=org_a, first_name="Bebé", last_name="Ríos",
-            document_number=None, guardian=titular,
+            document_number=None, guardian=titular, relationship="child",
         )
         # Dos menores sin documento no deben chocar entre sí.
         Patient.objects.create(
             organization=org_a, first_name="Otro", last_name="Ríos",
-            document_number=None, guardian=titular,
+            document_number=None, guardian=titular, relationship="child",
         )
         assert Patient.objects.count() == 3
+
+
+def test_un_dependiente_sin_parentesco_es_rechazado(org_a):
+    """US-07 (a), la otra mitad de ``ck_patient_relationship``.
+
+    Va acá y no en `test_us07.py` porque lo que se prueba es la restricción de
+    la base, no la vista: la API valida el parentesco por su cuenta, y esta
+    prueba es la que avisa si alguien crea un dependiente desde un comando de
+    gestión o desde una migración de datos.
+    """
+    with tenant_context(org_a.id):
+        titular = Patient.objects.create(
+            organization=org_a, first_name="Ana", last_name="Ríos",
+            document_number="5001",
+        )
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                Patient.objects.create(
+                    organization=org_a, first_name="Bebé", last_name="Ríos",
+                    document_number=None, guardian=titular,
+                )
 
 
 def test_un_paciente_sin_documento_ni_titular_es_rechazado(org_a):

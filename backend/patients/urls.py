@@ -11,9 +11,15 @@ Convencion del prefijo y de los nombres de ruta en
 
 from rest_framework.routers import DefaultRouter
 
+from .dependents import DependentViewSet
+
 app_name = "patients"
 
 router = DefaultRouter()
-# router.register("recurso", RecursoViewSet, basename="recurso")
+
+# ---------- US-07 (SM): pacientes dependientes --------------------------
+# El selector compartido de "¿para quién es esta ficha?" cuelga de acá:
+# `dependents/patient-options/`. Lo consumen US-08 y la reserva del Sprint 2.
+router.register("dependents", DependentViewSet, basename="dependent")
 
 urlpatterns = router.urls

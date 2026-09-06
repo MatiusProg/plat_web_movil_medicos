@@ -14,6 +14,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
+import '../../features/dependents/dependent_form_screen.dart';
+import '../../features/dependents/dependents_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/search/specialties_screen.dart';
 import '../session/session.dart';
@@ -30,6 +32,8 @@ class Routes {
   static const String specialties = 'specialties';
   static const String search = 'search';
   static const String availability = 'availability';
+  static const String dependents = 'dependents';
+  static const String dependentForm = 'dependent-form';
 }
 
 GoRouter buildRouter(Session session) {
@@ -92,6 +96,22 @@ GoRouter buildRouter(Session session) {
         builder: (context, state) => SearchScreen(
           specialtyId: state.uri.queryParameters['specialty'],
         ),
+      ),
+
+      // ---------- US-07 (SM): personas a cargo ---------------------------
+      // `/dependents/new` es hija de `/dependents` para que el botón atrás
+      // vuelva al listado y no a la pantalla de inicio.
+      GoRoute(
+        path: '/dependents',
+        name: Routes.dependents,
+        builder: (context, state) => const DependentsScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: Routes.dependentForm,
+            builder: (context, state) => const DependentFormScreen(),
+          ),
+        ],
       ),
 
       // ---------- US-15 (Alexander): disponibilidad consolidada ---------
@@ -164,6 +184,13 @@ class _HomeScreen extends StatelessWidget {
               onPressed: () => context.push('/specialties'),
               icon: const Icon(Icons.search),
               label: const Text('Buscar profesionales'),
+            ),
+            const SizedBox(height: 12),
+            // ---------- US-07 (SM): personas a cargo ---------------------
+            OutlinedButton.icon(
+              onPressed: () => context.push('/dependents'),
+              icon: const Icon(Icons.family_restroom),
+              label: const Text('Personas a mi cargo'),
             ),
             const SizedBox(height: 12),
             Text(
