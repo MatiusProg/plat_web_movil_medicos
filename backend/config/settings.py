@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "tenancy",
     "catalog",
     "patients",
+    "scheduling",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
@@ -170,6 +171,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # RNF-07: bloqueo temporal tras 5 intentos fallidos.
 LOGIN_MAX_FAILED_ATTEMPTS = 5
 LOGIN_LOCKOUT_MINUTES = 15
+
+# US-15: tope de días que se pueden pedir de disponibilidad de una vez, para
+# que nadie pida un año entero. Pasado el tope, el endpoint responde 400.
+AVAILABILITY_MAX_HORIZON_DAYS = env.int("AVAILABILITY_MAX_HORIZON_DAYS", default=30)
 
 
 # --------------------------------------------------------------------------

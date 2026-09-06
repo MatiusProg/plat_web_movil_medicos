@@ -6,11 +6,19 @@ del sprint puede darse por terminada.
 Toda tabla nueva con ``organization_id`` tiene que sumar su caso acá.
 """
 
+import datetime as dt
+
 import pytest
 from django.db import IntegrityError, ProgrammingError, connection, transaction
 
 from accounts.models import AuditLog, LoginAttempt, Permission, Role, User
+from catalog.models import (
+    Practitioner,
+    PractitionerBranch,
+    Specialty,
+)
 from patients.models import Patient
+from scheduling.models import Schedule, ScheduleBlock
 from tenancy.context import no_tenant_context, platform_admin_context, tenant_context
 from tenancy.models import (
     IsolationAlert,
@@ -279,6 +287,74 @@ def test_un_token_de_restablecimiento_no_se_ve_desde_otra_organizacion(
 
     with no_tenant_context():
         assert PasswordResetToken.objects.count() == 0
+
+
+# --------------------------------------------------------------------------
+#  Catálogo y agendas del Sprint 1 (US-12 a US-16)
+# --------------------------------------------------------------------------
+def test_no_se_ve_un_profesional_de_otra_organizacion(org_a, org_b):
+    with tenant_context(org_b.id):
+        Practitioner.objects.create(
+            organization=org_b, first_name="Solo", last_name="B",
+        )
+    with tenant_context(org_a.id):
+        assert Practitioner.objects.count() == 0
+
+
+def test_no_se_ve_una_especialidad_ni_una_agenda_de_otra_organizacion(
+    org_a, org_b, branches_a, practitioner_a,
+):
+    with tenant_context(org_a.id):
+        Specialty.objects.create(organization=org_a, name="Neurología")
+        Schedule.objects.create(
+            organization=org_a, practitioner=practitioner_a,
+            branch=branches_a["centro"], weekday=0,
+            start_time="09:00", end_time="12:00", slot_minutes=30,
+            valid_from=dt.date(2026, 9, 1),
+        )
+    with tenant_context(org_b.id):
+        assert Specialty.objects.count() == 0
+        assert Schedule.objects.count() == 0
+    with no_tenant_context():
+        assert Practitioner.objects.count() == 0
+        assert Schedule.objects.count() == 0
+        assert ScheduleBlock.objects.count() == 0
+
+
+def test_una_agenda_no_referencia_un_profesional_de_otra_organizacion(
+    org_a, org_b, branches_a,
+):
+    """Clave foránea compuesta `(practitioner_id, organization_id)`: aunque RLS
+    dejara pasar la fila, la FK no encuentra al profesional en esta
+    organización."""
+    with tenant_context(org_b.id):
+        profesional_b = Practitioner.objects.create(
+            organization=org_b, first_name="Ajeno", last_name="B",
+        )
+    with tenant_context(org_a.id):
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                Schedule.objects.create(
+                    organization=org_a, practitioner=profesional_b,
+                    branch=branches_a["centro"], weekday=0,
+                    start_time="09:00", end_time="12:00", slot_minutes=30,
+                    valid_from=dt.date(2026, 9, 1),
+                )
+
+
+def test_un_profesional_no_se_asocia_a_una_sucursal_de_otra_organizacion(
+    org_a, org_b, branch_b,
+):
+    with tenant_context(org_a.id):
+        profesional_a = Practitioner.objects.create(
+            organization=org_a, first_name="Laura", last_name="A",
+        )
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                PractitionerBranch.objects.create(
+                    organization=org_a, practitioner=profesional_a,
+                    branch=branch_b,
+                )
 
 
 # --------------------------------------------------------------------------
