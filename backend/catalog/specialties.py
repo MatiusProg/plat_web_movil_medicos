@@ -18,6 +18,9 @@ class SpecialtyListView(OrganizationScopedMixin, ListAPIView):
 
     serializer_class = SpecialtySerializer
     permission_classes = [IsAuthenticated, CanReadSpecialties]
+    # Son unas pocas por organización y las dibuja entera la pantalla de
+    # entrada por especialidad de US-16.
+    pagination_class = None
 
     def get_queryset(self):
         queryset = self.scoped(Specialty.objects.all())

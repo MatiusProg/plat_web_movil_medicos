@@ -19,6 +19,8 @@ class BranchListView(OrganizationScopedMixin, ListAPIView):
 
     serializer_class = BranchSerializer
     permission_classes = [IsAuthenticated, CanReadBranches]
+    # Son unas pocas por organización y las dibuja entera un selector.
+    pagination_class = None
 
     def get_queryset(self):
         queryset = self.scoped(Branch.objects.all())
