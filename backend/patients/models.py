@@ -131,3 +131,108 @@ class Patient(models.Model):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class PatientHistoryEntry(models.Model):
+    """US-08 — Un antecedente declarado por el paciente.
+
+    **Declarado, no diagnosticado.** Es la distinción que sostiene toda la
+    historia: lo que hay acá lo escribió el paciente o su titular desde el
+    teléfono, y no equivale a un diagnóstico clínico. El diagnóstico lo registra
+    el médico en el Sprint 3, en la app ``records``, en otra tabla. Mezclarlos
+    haría que "el paciente dice que es alérgico a la penicilina" y "el médico
+    diagnosticó alergia a la penicilina" se leyeran igual, y no valen lo mismo.
+
+    Por eso ``source`` existe desde ahora aunque en el Sprint 1 tenga un solo
+    valor posible: la columna que distingue el origen tiene que estar el día que
+    aparezca el segundo, o habrá que salir a adivinar cuál era cuál.
+
+    Los tres tipos van en una sola tabla y no en tres. Una alergia, una
+    condición crónica y una medicación habitual tienen los mismos campos, se
+    listan juntas, se dan de baja igual y el módulo de atención las lee de una
+    sola vez; tres tablas serían tres consultas para dibujar una pantalla.
+    """
+
+    class Kind(models.TextChoices):
+        ALLERGY = "allergy", "Alergia"
+        CONDITION = "condition", "Condición crónica"
+        MEDICATION = "medication", "Medicación habitual"
+
+    class Severity(models.TextChoices):
+        """Sólo para las alergias. Punto (b).
+
+        Distinguir una intolerancia leve de una reacción anafiláctica es la
+        diferencia entre una nota al margen y algo que el profesional tiene que
+        ver antes de recetar.
+        """
+
+        MILD = "mild", "Leve"
+        MODERATE = "moderate", "Moderada"
+        SEVERE = "severe", "Grave"
+        ANAPHYLACTIC = "anaphylactic", "Anafiláctica"
+
+    class Source(models.TextChoices):
+        SELF_REPORTED = "self_reported", "Declarado por el paciente"
+        # Lo escribe el Sprint 3. Declarado acá para que la columna nazca con
+        # los dos valores y no haya que migrar datos cuando llegue.
+        PRACTITIONER = "practitioner", "Registrado por un profesional"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="patient_history_entries",
+    )
+    patient = models.ForeignKey(
+        Patient, on_delete=models.CASCADE, related_name="history_entries",
+    )
+
+    kind = models.CharField(max_length=20, choices=Kind)
+    description = models.CharField(max_length=200)
+    # Vacío salvo en las alergias. Lo hace cumplir `ck_history_severity`.
+    severity = models.CharField(
+        max_length=20, choices=Severity, blank=True, default="",
+    )
+    source = models.CharField(
+        max_length=20, choices=Source, default=Source.SELF_REPORTED,
+    )
+
+    # Quién lo cargó: el propio paciente o el titular que lo tiene a cargo.
+    # NULL si esa cuenta se dio de baja; el antecedente no se va con ella.
+    declared_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="declared_history_entries",
+    )
+    # Punto (a): la fecha de registro. Separada de `created_at` porque es un
+    # dato clínico que se muestra —"declarado en marzo de 2024"— y no una marca
+    # técnica de la fila.
+    recorded_at = models.DateField(auto_now_add=True)
+
+    # Punto (e): baja lógica. Lo declarado no se pierde, deja de estar vigente.
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "patient_history_entries"
+        verbose_name = "antecedente"
+        verbose_name_plural = "antecedentes"
+        ordering = ["kind", "-recorded_at"]
+        indexes = [
+            models.Index(fields=["patient", "is_active"],
+                         name="ix_history_patient"),
+        ]
+        constraints = [
+            # La severidad es de las alergias y de nadie más: una medicación
+            # "grave" no significa nada, y dejarla entrar haría que la pantalla
+            # tuviera que decidir cuándo mostrarla.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(kind="allergy")
+                    | models.Q(severity="")
+                ),
+                name="ck_history_severity",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.description}"

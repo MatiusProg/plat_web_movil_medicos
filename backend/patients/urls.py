@@ -12,6 +12,7 @@ Convencion del prefijo y de los nombres de ruta en
 from rest_framework.routers import DefaultRouter
 
 from .dependents import DependentViewSet
+from .history import PatientHistoryViewSet
 
 app_name = "patients"
 
@@ -21,5 +22,10 @@ router = DefaultRouter()
 # El selector compartido de "¿para quién es esta ficha?" cuelga de acá:
 # `dependents/patient-options/`. Lo consumen US-08 y la reserva del Sprint 2.
 router.register("dependents", DependentViewSet, basename="dependent")
+
+# ---------- US-08 (SM): antecedentes del paciente -----------------------
+# `history/highlights/` es la mitad web de la historia: el conjunto vigente que
+# el módulo de atención del Sprint 3 muestra al abrir la consulta.
+router.register("history", PatientHistoryViewSet, basename="history")
 
 urlpatterns = router.urls
