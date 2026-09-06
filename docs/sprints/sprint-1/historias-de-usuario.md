@@ -189,7 +189,7 @@ f) Formulario web y pantalla móvil compartiendo el mismo endpoint, con guardado
    parcial: editar el teléfono no obliga a reenviar toda la ficha.
 
 **Responsables:**
-Web: Michael Mamani · Móvil: Michael Mamani
+Web: *sin asignar* · Móvil: *sin asignar* — no entregada en el Sprint 1
 
 **Prototipo** (capturas, tanto web como móvil)
 
@@ -340,7 +340,7 @@ g) Prueba de carga con un conjunto de 10.000 registros **sintéticos** —el
    verificación del RNF-01.
 
 **Responsables:**
-Web: Michael Mamani · Móvil: — (caso de uso sólo web)
+Web: *sin asignar* · Móvil: — (caso de uso sólo web) — no entregada en el Sprint 1
 
 **Prototipo** (capturas web)
 
@@ -376,7 +376,7 @@ f) Autorización por `user.has_permission("patients.patient.write")`; el
    verbos.
 
 **Responsables:**
-Web: Michael Mamani · Móvil: — (caso de uso sólo web)
+Web: *sin asignar* · Móvil: — (caso de uso sólo web) — no entregada en el Sprint 1
 
 **Prototipo** (capturas web)
 
