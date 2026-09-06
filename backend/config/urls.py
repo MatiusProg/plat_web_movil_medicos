@@ -8,7 +8,9 @@ los permisos de accounts.RolePermission.
 **Este archivo está cerrado: no se le agregan rutas.** Cada app tiene su propio
 ``urls.py`` y ya está incluida acá. Si los seis editaran este archivo, cada
 pull request traería un conflicto. La única excepción es incluir una app
-**nueva** una sola vez, que es lo que hace la línea de ``scheduling``.
+**nueva** una sola vez, que es lo que hacen las líneas de ``scheduling`` y de
+``audit``. Con ésas dos el Sprint 1 no crea ninguna app más, así que el archivo
+vuelve a estar cerrado.
 
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py      (US-43, US-44, US-45)
@@ -16,6 +18,7 @@ pull request traería un conflicto. La única excepción es incluir una app
     sucursales, profesionales  catalog/urls.py      (US-11, US-12, US-16)
     agendas y disponibilidad   scheduling/urls.py   (US-13, US-14, US-15)
     pacientes                  patients/urls.py     (US-07 en adelante)
+    bitácora                   audit/urls.py        (US-06)
 """
 
 from django.urls import include, path
@@ -52,4 +55,5 @@ urlpatterns = [
     path("api/catalog/", include("catalog.urls")),
     path("api/scheduling/", include("scheduling.urls")),
     path("api/patients/", include("patients.urls")),
+    path("api/audit/", include("audit.urls")),
 ]

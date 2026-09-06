@@ -39,7 +39,10 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
 
-from ..models import AuditLog, PasswordResetToken, User
+from audit import services as bitacora
+from audit.actions import Action
+
+from ..models import PasswordResetToken, User
 from .auth import _ip_del_cliente
 
 logger = logging.getLogger(__name__)
@@ -97,14 +100,20 @@ def request_reset(organization, email, request):
         # Punto (d): el envío queda registrado. Se audita aunque el correo
         # después falle — lo que interesa es que alguien pidió restablecer esa
         # cuenta, no si el servidor de correo respondió.
-        AuditLog.objects.create(
+        #
+        # Desde US-06 el asiento se escribe fuera de la transacción de la
+        # petición. Para esta historia no es un detalle: el punto (b) obliga a
+        # responder lo mismo exista o no la cuenta, así que un rechazo que
+        # deshiciera la transacción se llevaría puesta la constancia de que
+        # alguien anduvo probando correos.
+        bitacora.record(
+            request,
+            action=Action.PASSWORD_RESET_REQUEST,
+            entity="password_reset_tokens",
+            entity_id=user.id,
+            detail={"email": user.email, "organization": organization.slug},
             organization=organization,
             user=user,
-            action="password.reset.request",
-            entity="password_reset_tokens",
-            entity_id=str(user.id),
-            detail={"email": user.email, "organization": organization.slug},
-            ip_address=_ip_del_cliente(request),
         )
 
     _send_email(user, organization, token)
@@ -218,14 +227,14 @@ def complete_reset(reset_token, new_password, request):
 
     revocadas = revoke_all_sessions(user)
 
-    AuditLog.objects.create(
+    bitacora.record(
+        request,
+        action=Action.PASSWORD_RESET_COMPLETE,
+        entity="users",
+        entity_id=user.id,
+        detail={"email": user.email, "sesiones_invalidadas": revocadas},
         organization=reset_token.organization,
         user=user,
-        action="password.reset.complete",
-        entity="users",
-        entity_id=str(user.id),
-        detail={"email": user.email, "sesiones_invalidadas": revocadas},
-        ip_address=_ip_del_cliente(request),
     )
 
     return user

@@ -20,6 +20,7 @@ type ItemMenu = {
         | 'suscripciones'
         | 'roles'
         | 'usuarios'
+        | 'bitacora'
         | 'agendas'
         | 'catalogo'
     /**
@@ -75,6 +76,14 @@ const items: ItemMenu[] = [
         ruta: '/usuarios',
         icono: 'usuarios',
         requiere: 'users.user.read',
+    },
+
+    // US-06 — bitácora de auditoría.
+    {
+        etiqueta: 'Bitácora',
+        ruta: '/bitacora',
+        icono: 'bitacora',
+        requiere: 'audit.log.read',
     },
 
     // US-13 a US-16 — agendas y catálogo.
@@ -345,6 +354,30 @@ function IconoMenu({
                 <path d="M16 6.2a3 3 0 0 1 0 5.6" />
 
                 <path d="M17.5 14.2a5 5 0 0 1 3 4.8" />
+            </svg>
+        )
+    }
+
+
+    if (
+        tipo === 'bitacora'
+    ) {
+        return (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-[18px] w-[18px]"
+                aria-hidden="true"
+            >
+                <path d="M5 4.5h11a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2V4.5Z" />
+
+                <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H18" />
+
+                <path d="M9 9h6" />
+
+                <path d="M9 13h4" />
             </svg>
         )
     }
