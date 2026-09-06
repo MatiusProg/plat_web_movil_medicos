@@ -159,7 +159,9 @@ class _HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => context.go('/specialties'),
+              // `push`, no `go`: así el botón atrás del teléfono vuelve acá en
+              // lugar de cerrar la aplicación.
+              onPressed: () => context.push('/specialties'),
               icon: const Icon(Icons.search),
               label: const Text('Buscar profesionales'),
             ),

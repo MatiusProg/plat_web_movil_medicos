@@ -43,7 +43,7 @@ class _SpecialtiesScreenState extends State<SpecialtiesScreen> {
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Buscar por nombre',
-            onPressed: () => context.go('/search'),
+            onPressed: () => context.push('/search'),
           ),
         ],
       ),
@@ -76,12 +76,12 @@ class _SpecialtiesScreenState extends State<SpecialtiesScreen> {
                   child: ListTile(
                     title: Text(e.name),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go('/search?specialty=${e.id}'),
+                    onTap: () => context.push('/search?specialty=${e.id}'),
                   ),
                 ),
               const SizedBox(height: 12),
               OutlinedButton(
-                onPressed: () => context.go('/search'),
+                onPressed: () => context.push('/search'),
                 child: const Text('Ver todos los profesionales'),
               ),
             ],

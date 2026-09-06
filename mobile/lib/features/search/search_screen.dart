@@ -154,7 +154,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       }
                       return _TarjetaProfesional(
                         profesional: _resultados[i],
-                        onVerDisponibilidad: () => context.go(
+                        onVerDisponibilidad: () => context.push(
                           '/professionals/${_resultados[i].id}/availability',
                         ),
                       );
