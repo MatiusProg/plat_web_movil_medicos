@@ -109,6 +109,28 @@ const items: ItemMenu[] = [
         requiere: 'audit.log.read',
     },
 
+    // US-11 — administración de sucursales.
+    {
+        etiqueta: 'Sucursales',
+        ruta: '/sucursales',
+        icono: 'organizaciones',
+        requiere: 'catalog.branch.read',
+    },
+
+    // US-12: administracion del catalogo medico.
+    {
+        etiqueta: 'Especialidades',
+        ruta: '/especialidades',
+        icono: 'catalogo',
+        requiere: 'catalog.specialty.read',
+    },
+    {
+        etiqueta: 'Profesionales',
+        ruta: '/profesionales',
+        icono: 'usuarios',
+        requiere: 'catalog.professional.read',
+    },
+
     // US-13 a US-16 — agendas y catálogo.
     {
         etiqueta: 'Agendas',
