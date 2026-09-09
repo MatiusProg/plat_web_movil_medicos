@@ -22,7 +22,10 @@ import { RecuperarAcceso } from '@/paginas/RecuperarAcceso'
 import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
 import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
+import { Especialidades } from '@/paginas/Especialidades'
+import { Profesionales } from '@/paginas/Profesionales'
 import { Usuarios } from '@/paginas/Usuarios'
+import { Sucursales } from '@/paginas/Sucursales'
 import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
 
 import { RutaProtegida } from '@/rutas/RutaProtegida'
@@ -178,7 +181,14 @@ export default function App() {
                         />
 
 
+                        {/* US-11: gestión de sucursales */}
+                        <Route path="/sucursales" element={<Sucursales />} />
+
                         {/* US-13 / US-14: agendas médicas y bloqueos */}
+
+                        {/* US-12: administracion del catalogo medico */}
+                        <Route path="/especialidades" element={<Especialidades />} />
+                        <Route path="/profesionales" element={<Profesionales />} />
 
                         <Route
                             path="/agendas"

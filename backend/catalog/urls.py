@@ -1,29 +1,71 @@
-"""Rutas de la app `catalog`.
+"""Rutas de la app catalog.
 
-Cada historia agrega su router o su `path` **acá**, nunca en `config/urls.py`.
-Ese archivo ya incluye esta app.
-
-Convención del prefijo y de los nombres de ruta en
-`docs/convenciones-de-codigo.md`.
+Las rutas existentes se conservan para no afectar otras historias.
 """
 
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .branches import BranchListView
+from .branch_views import BranchDetailView, BranchDeactivateView
 from .search import ProfessionalSearchView
-from .specialties import SpecialtyListView
+from .us12_views import (
+    SpecialtyManageListView,
+    SpecialtyDetailView,
+    SpecialtyDeactivateView,
+    PractitionerManageListView,
+    PractitionerDetailView,
+    PractitionerDeactivateView,
+)
 
 app_name = "catalog"
 
 router = DefaultRouter()
 
 urlpatterns = router.urls + [
-    # ---------- US-11 / US-12 (lectura) ---------------------------------
+    # US-11: gestión de sucursales.
     path("branches/", BranchListView.as_view(), name="branch-list"),
-    path("specialties/", SpecialtyListView.as_view(), name="specialty-list"),
+    path("branches/<uuid:pk>/", BranchDetailView.as_view(), name="branch-detail"),
+    path(
+        "branches/<uuid:pk>/deactivate/",
+        BranchDeactivateView.as_view(),
+        name="branch-deactivate",
+    ),
 
-    # ---------- US-16 (Alexander): búsqueda de profesionales ------------
-    path("professionals/", ProfessionalSearchView.as_view(),
-         name="professional-search"),
+    # US-12: especialidades.
+    path("specialties/", SpecialtyManageListView.as_view(), name="specialty-list"),
+    path(
+        "specialties/<uuid:pk>/",
+        SpecialtyDetailView.as_view(),
+        name="specialty-detail",
+    ),
+    path(
+        "specialties/<uuid:pk>/deactivate/",
+        SpecialtyDeactivateView.as_view(),
+        name="specialty-deactivate",
+    ),
+
+    # US-12: administración de profesionales.
+    path(
+        "professionals/manage/",
+        PractitionerManageListView.as_view(),
+        name="professional-manage-list",
+    ),
+    path(
+        "professionals/<uuid:pk>/",
+        PractitionerDetailView.as_view(),
+        name="professional-detail",
+    ),
+    path(
+        "professionals/<uuid:pk>/deactivate/",
+        PractitionerDeactivateView.as_view(),
+        name="professional-deactivate",
+    ),
+
+    # US-16: búsqueda de profesionales (se conserva).
+    path(
+        "professionals/",
+        ProfessionalSearchView.as_view(),
+        name="professional-search",
+    ),
 ]
