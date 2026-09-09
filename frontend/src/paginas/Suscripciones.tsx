@@ -75,7 +75,7 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-blue-900 bg-blue-950 text-blue-400',
+                'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
 
             dot:
                 'bg-blue-500',
@@ -87,7 +87,7 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-violet-900 bg-violet-950 text-violet-400',
+                'border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400',
 
             dot:
                 'bg-violet-500',
@@ -96,7 +96,7 @@ function estiloPlan(
 
     return {
         badge:
-            'border-marca-900 bg-marca-950 text-marca-400',
+            'border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400',
 
         dot:
             'bg-marca-500',
@@ -430,11 +430,11 @@ export function Suscripciones() {
 
                 <header className="mb-8">
 
-                    <p className="text-sm font-medium text-marca-400">
+                    <p className="text-sm font-medium text-marca-600 dark:text-marca-400">
                         Plataforma
                     </p>
 
-                    <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-50">
+                    <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">
                         Suscripciones
                     </h1>
 
@@ -450,7 +450,7 @@ export function Suscripciones() {
                 {/* Error */}
 
                 {error && (
-                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-900 bg-red-950/40 px-5 py-4 text-sm text-red-300">
+                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-5 py-4 text-sm text-red-700 dark:text-red-300">
 
                         <div>
 
@@ -458,7 +458,7 @@ export function Suscripciones() {
                                 No se pudo completar la operación
                             </p>
 
-                            <p className="mt-1 text-red-400">
+                            <p className="mt-1 text-red-600 dark:text-red-400">
                                 {error}
                             </p>
 
@@ -470,7 +470,7 @@ export function Suscripciones() {
                             onClick={() =>
                                 setError(null)
                             }
-                            className="font-bold text-red-400 transition hover:text-red-300"
+                            className="font-bold text-red-600 dark:text-red-400 transition hover:text-red-700 dark:hover:text-red-300"
                             aria-label="Cerrar aviso"
                         >
                             ×
@@ -489,7 +489,7 @@ export function Suscripciones() {
                         valor={String(
                             activas,
                         )}
-                        valorClase="text-emerald-400"
+                        valorClase="text-emerald-600 dark:text-emerald-400"
                     />
 
                     <Resumen
@@ -502,7 +502,7 @@ export function Suscripciones() {
                     <Resumen
                         titulo="Plan más utilizado"
                         valor={masUsado}
-                        valorClase="text-marca-400"
+                        valorClase="text-marca-600 dark:text-marca-400"
                     />
 
                 </section>
@@ -510,13 +510,13 @@ export function Suscripciones() {
 
                 {/* Tabla */}
 
-                <section className="overflow-hidden rounded-2xl border border-tinta-800 bg-tinta-900/60">
+                <section className="overflow-hidden rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60">
 
-                    <div className="flex flex-col gap-4 border-b border-tinta-800 p-5 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col gap-4 border-b border-tinta-200 dark:border-tinta-800 p-5 md:flex-row md:items-center md:justify-between">
 
                         <div>
 
-                            <h2 className="text-lg font-semibold text-tinta-50">
+                            <h2 className="text-lg font-semibold text-tinta-900 dark:text-tinta-50">
                                 Organizaciones suscritas
                             </h2>
 
@@ -544,7 +544,7 @@ export function Suscripciones() {
                                     )
                                 }
                                 placeholder="Buscar organización..."
-                                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 pl-10 pr-4 text-sm text-tinta-100 placeholder:text-tinta-500 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                                className="h-11 w-full rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 pl-10 pr-4 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-500 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                             />
 
                         </div>
@@ -568,7 +568,7 @@ export function Suscripciones() {
 
                                 <thead>
 
-                                <tr className="border-b border-tinta-800 bg-tinta-950/50 text-left">
+                                <tr className="border-b border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-950/50 text-left">
 
                                     <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
                                         Organización
@@ -610,7 +610,7 @@ export function Suscripciones() {
                                                 key={
                                                     suscripcion.id
                                                 }
-                                                className="border-b border-tinta-800 transition last:border-0 hover:bg-tinta-800/30"
+                                                className="border-b border-tinta-200 dark:border-tinta-800 transition last:border-0 hover:bg-tinta-100 dark:hover:bg-tinta-800/30"
                                             >
 
                                                 {/* Organización */}
@@ -619,7 +619,7 @@ export function Suscripciones() {
 
                                                     <div className="flex items-center gap-3">
 
-                                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-marca-950 text-marca-400">
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400">
 
                                                             <IconoEdificio />
 
@@ -628,7 +628,7 @@ export function Suscripciones() {
 
                                                         <div className="min-w-0">
 
-                                                            <p className="truncate font-semibold text-tinta-50">
+                                                            <p className="truncate font-semibold text-tinta-900 dark:text-tinta-50">
                                                                 {
                                                                     suscripcion
                                                                         .organization_name
@@ -687,7 +687,7 @@ export function Suscripciones() {
 
                                     suscripcion.status
                                     === 'active'
-                                        ? 'text-emerald-400'
+                                        ? 'text-emerald-600 dark:text-emerald-400'
                                         : 'text-tinta-500',
                                 ].join(' ')}
                             >
@@ -719,7 +719,7 @@ export function Suscripciones() {
 
                                                 <td className="px-6 py-5">
 
-                                                    <div className="flex items-center gap-2 text-sm text-tinta-300">
+                                                    <div className="flex items-center gap-2 text-sm text-tinta-600 dark:text-tinta-300">
 
                                                         <IconoCalendario />
 
@@ -748,7 +748,7 @@ export function Suscripciones() {
                                                                     suscripcion,
                                                                 )
                                                             }
-                                                            className="rounded-xl border border-tinta-700 px-4 py-2 text-sm font-semibold text-tinta-300 transition hover:border-marca-800 hover:bg-marca-950 hover:text-marca-400"
+                                                            className="rounded-xl border border-tinta-300 dark:border-tinta-700 px-4 py-2 text-sm font-semibold text-tinta-600 dark:text-tinta-300 transition hover:border-marca-200 dark:hover:border-marca-800 hover:bg-marca-50 dark:hover:bg-marca-950 hover:text-marca-600 dark:hover:text-marca-400"
                                                         >
                                                             Historial
                                                         </button>
@@ -829,14 +829,14 @@ function Resumen({
                      titulo,
                      valor,
                      valorClase =
-                     'text-tinta-50',
+                     'text-tinta-900 dark:text-tinta-50',
                  }: {
     titulo: string
     valor: string
     valorClase?: string
 }) {
     return (
-        <div className="rounded-2xl border border-tinta-800 bg-tinta-900/60 p-5">
+        <div className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60 p-5">
 
             <p className="text-sm text-tinta-500">
                 {titulo}
@@ -861,7 +861,7 @@ function EstadoCargando() {
                 (item) => (
                     <div
                         key={item}
-                        className="h-16 animate-pulse rounded-xl bg-tinta-800"
+                        className="h-16 animate-pulse rounded-xl bg-tinta-100 dark:bg-tinta-800"
                     />
                 ),
             )}
@@ -875,13 +875,13 @@ function EstadoVacio() {
     return (
         <div className="px-6 py-14 text-center">
 
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-tinta-800 text-tinta-400">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-tinta-100 dark:bg-tinta-800 text-tinta-500 dark:text-tinta-400">
 
                 <IconoEdificio />
 
             </div>
 
-            <p className="mt-4 font-semibold text-tinta-300">
+            <p className="mt-4 font-semibold text-tinta-600 dark:text-tinta-300">
                 No se encontraron suscripciones.
             </p>
 

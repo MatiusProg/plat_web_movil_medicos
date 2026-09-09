@@ -61,16 +61,16 @@ function temaPlan(
     if (tipo === 'basic') {
         return {
             icono:
-                'bg-blue-950 text-blue-400 ring-blue-900',
+                'bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 ring-blue-200 dark:ring-blue-900',
 
             precio:
-                'text-blue-400',
+                'text-blue-600 dark:text-blue-400',
 
             check:
-                'border-blue-900 bg-blue-950 text-blue-400',
+                'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
 
             boton:
-                'border-blue-900 text-blue-400 hover:bg-blue-950',
+                'border-blue-200 dark:border-blue-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950',
 
             seleccionado:
                 'border-blue-700 shadow-blue-950/40',
@@ -83,16 +83,16 @@ function temaPlan(
     if (tipo === 'pro') {
         return {
             icono:
-                'bg-marca-950 text-marca-400 ring-marca-900',
+                'bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400 ring-marca-200 dark:ring-marca-900',
 
             precio:
-                'text-marca-400',
+                'text-marca-600 dark:text-marca-400',
 
             check:
-                'border-marca-900 bg-marca-950 text-marca-400',
+                'border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400',
 
             boton:
-                'border-marca-900 text-marca-400 hover:bg-marca-950',
+                'border-marca-200 dark:border-marca-900 text-marca-600 dark:text-marca-400 hover:bg-marca-50 dark:hover:bg-marca-950',
 
             seleccionado:
                 'border-marca-700 shadow-marca-950/40',
@@ -104,16 +104,16 @@ function temaPlan(
 
     return {
         icono:
-            'bg-violet-950 text-violet-400 ring-violet-900',
+            'bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 ring-violet-200 dark:ring-violet-900',
 
         precio:
-            'text-violet-400',
+            'text-violet-600 dark:text-violet-400',
 
         check:
-            'border-violet-900 bg-violet-950 text-violet-400',
+            'border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400',
 
         boton:
-            'border-violet-900 text-violet-400 hover:bg-violet-950',
+            'border-violet-200 dark:border-violet-900 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950',
 
         seleccionado:
             'border-violet-700 shadow-violet-950/40',
@@ -777,11 +777,11 @@ export function Planes() {
 
                     <div>
 
-                        <p className="text-sm font-medium text-marca-400">
+                        <p className="text-sm font-medium text-marca-600 dark:text-marca-400">
                             Plataforma
                         </p>
 
-                        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-50">
+                        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">
                             Planes de suscripción
                         </h1>
 
@@ -810,14 +810,14 @@ export function Planes() {
 
 
                 {error && (
-                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-900 bg-red-950/40 px-5 py-4 text-sm text-red-300">
+                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-5 py-4 text-sm text-red-700 dark:text-red-300">
 
                         <div>
                             <p className="font-semibold">
                                 No se pudo completar la operación
                             </p>
 
-                            <p className="mt-1 text-red-400">
+                            <p className="mt-1 text-red-600 dark:text-red-400">
                                 {error}
                             </p>
                         </div>
@@ -851,7 +851,7 @@ export function Planes() {
                         valor={String(
                             planesActivos,
                         )}
-                        valorClase="text-emerald-400"
+                        valorClase="text-emerald-600 dark:text-emerald-400"
                     />
 
                     <TarjetaResumen
@@ -859,7 +859,7 @@ export function Planes() {
                         valor={String(
                             planesInactivos,
                         )}
-                        valorClase="text-tinta-400"
+                        valorClase="text-tinta-500 dark:text-tinta-400"
                     />
 
                 </div>
@@ -868,7 +868,7 @@ export function Planes() {
                 <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
                     <div>
-                        <p className="text-sm font-semibold text-tinta-300">
+                        <p className="text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                             Filtrar planes
                         </p>
 
@@ -878,7 +878,7 @@ export function Planes() {
                     </div>
 
 
-                    <div className="inline-flex w-fit rounded-xl border border-tinta-800 bg-tinta-900 p-1">
+                    <div className="inline-flex w-fit rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 p-1">
 
                         <BotonFiltro
                             activo={
@@ -964,11 +964,11 @@ export function Planes() {
                                             )
                                         }
                                         className={[
-                                            'relative flex min-h-[500px] cursor-pointer flex-col rounded-3xl bg-tinta-900/60 p-6 transition-all duration-300 ease-out',
+                                            'relative flex min-h-[500px] cursor-pointer flex-col rounded-3xl bg-tinta-50 dark:bg-tinta-900/60 p-6 transition-all duration-300 ease-out',
 
                                             esSeleccionado
                                                 ? `z-10 -translate-y-2 border-2 shadow-2xl ${tema.seleccionado}`
-                                                : 'border border-tinta-800 hover:-translate-y-1 hover:border-tinta-700',
+                                                : 'border border-tinta-200 dark:border-tinta-800 hover:-translate-y-1 hover:border-tinta-300 dark:hover:border-tinta-700',
 
                                             !plan.is_active
                                                 ? 'opacity-80'
@@ -1025,11 +1025,11 @@ export function Planes() {
 
 
                                             {plan.is_active ? (
-                                                <span className="rounded-full border border-emerald-900 bg-emerald-950 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-400">
+                                                <span className="rounded-full border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
                           ACTIVO
                         </span>
                                             ) : (
-                                                <span className="rounded-full border border-tinta-700 bg-tinta-800 px-3 py-1 text-[11px] font-bold tracking-wide text-tinta-400">
+                                                <span className="rounded-full border border-tinta-300 dark:border-tinta-700 bg-tinta-100 dark:bg-tinta-800 px-3 py-1 text-[11px] font-bold tracking-wide text-tinta-500 dark:text-tinta-400">
                           INACTIVO
                         </span>
                                             )}
@@ -1039,7 +1039,7 @@ export function Planes() {
 
                                         <div className="mb-5">
 
-                                            <h2 className="text-2xl font-bold text-tinta-50">
+                                            <h2 className="text-2xl font-bold text-tinta-900 dark:text-tinta-50">
                                                 {plan.name}
                                             </h2>
 
@@ -1074,7 +1074,7 @@ export function Planes() {
                                         </div>
 
 
-                                        <div className="mb-5 h-px bg-tinta-800" />
+                                        <div className="mb-5 h-px bg-tinta-100 dark:bg-tinta-800" />
 
 
                                         <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
@@ -1104,7 +1104,7 @@ export function Planes() {
                                                             <IconoCheck />
                                                         </div>
 
-                                                        <p className="text-sm leading-5 text-tinta-300">
+                                                        <p className="text-sm leading-5 text-tinta-600 dark:text-tinta-300">
                                                             {
                                                                 caracteristica
                                                             }
@@ -1198,7 +1198,7 @@ function BotonFiltro({
 
                 activo
                     ? 'bg-marca-600 text-white'
-                    : 'text-tinta-400 hover:bg-tinta-800 hover:text-tinta-100',
+                    : 'text-tinta-500 dark:text-tinta-400 hover:bg-tinta-100 dark:hover:bg-tinta-800 hover:text-tinta-800 dark:hover:text-tinta-100',
             ].join(' ')}
         >
             {children}
@@ -1210,14 +1210,14 @@ function BotonFiltro({
 function TarjetaResumen({
                             titulo,
                             valor,
-                            valorClase = 'text-tinta-50',
+                            valorClase = 'text-tinta-900 dark:text-tinta-50',
                         }: {
     titulo: string
     valor: string
     valorClase?: string
 }) {
     return (
-        <div className="rounded-2xl border border-tinta-800 bg-tinta-900/60 p-5">
+        <div className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60 p-5">
 
             <p className="text-sm text-tinta-500">
                 {titulo}
@@ -1242,18 +1242,18 @@ function EstadoCargando() {
                 (item) => (
                     <div
                         key={item}
-                        className="h-[500px] animate-pulse rounded-3xl border border-tinta-800 bg-tinta-900/60 p-6"
+                        className="h-[500px] animate-pulse rounded-3xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60 p-6"
                     >
-                        <div className="h-12 w-12 rounded-2xl bg-tinta-800" />
+                        <div className="h-12 w-12 rounded-2xl bg-tinta-100 dark:bg-tinta-800" />
 
-                        <div className="mt-7 h-7 w-32 rounded-lg bg-tinta-800" />
+                        <div className="mt-7 h-7 w-32 rounded-lg bg-tinta-100 dark:bg-tinta-800" />
 
-                        <div className="mt-4 h-10 w-44 rounded-lg bg-tinta-800" />
+                        <div className="mt-4 h-10 w-44 rounded-lg bg-tinta-100 dark:bg-tinta-800" />
 
                         <div className="mt-8 space-y-4">
-                            <div className="h-5 rounded bg-tinta-800" />
-                            <div className="h-5 rounded bg-tinta-800" />
-                            <div className="h-5 rounded bg-tinta-800" />
+                            <div className="h-5 rounded bg-tinta-100 dark:bg-tinta-800" />
+                            <div className="h-5 rounded bg-tinta-100 dark:bg-tinta-800" />
+                            <div className="h-5 rounded bg-tinta-100 dark:bg-tinta-800" />
                         </div>
                     </div>
                 ),
@@ -1270,15 +1270,15 @@ function EstadoVacio({
     onCrear: () => void
 }) {
     return (
-        <div className="rounded-3xl border border-dashed border-tinta-700 bg-tinta-900/50 px-6 py-16 text-center">
+        <div className="rounded-3xl border border-dashed border-tinta-300 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-900/50 px-6 py-16 text-center">
 
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-marca-950 text-marca-400">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400">
                 <IconoPlan
                     tipo="basic"
                 />
             </div>
 
-            <h2 className="mt-5 text-xl font-bold text-tinta-50">
+            <h2 className="mt-5 text-xl font-bold text-tinta-900 dark:text-tinta-50">
                 No hay planes registrados
             </h2>
 
@@ -1309,9 +1309,9 @@ function EstadoFiltroVacio({
     onMostrarTodos: () => void
 }) {
     return (
-        <div className="rounded-3xl border border-dashed border-tinta-700 bg-tinta-900/50 px-6 py-14 text-center">
+        <div className="rounded-3xl border border-dashed border-tinta-300 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-900/50 px-6 py-14 text-center">
 
-            <h2 className="text-lg font-bold text-tinta-50">
+            <h2 className="text-lg font-bold text-tinta-900 dark:text-tinta-50">
                 No hay planes {
                 filtro === 'activos'
                     ? 'activos'
@@ -1327,7 +1327,7 @@ function EstadoFiltroVacio({
             <button
                 type="button"
                 onClick={onMostrarTodos}
-                className="mt-5 rounded-xl border border-tinta-700 px-5 py-2.5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800"
+                className="mt-5 rounded-xl border border-tinta-300 dark:border-tinta-700 px-5 py-2.5 text-sm font-semibold text-tinta-600 dark:text-tinta-300 transition hover:bg-tinta-100 dark:hover:bg-tinta-800"
             >
                 Mostrar todos
             </button>
