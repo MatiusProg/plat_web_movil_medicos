@@ -38,6 +38,14 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   ApiClient? _client;
   Future<Disponibilidad>? _futuro;
 
+  /// El nombre que vino en la respuesta.
+  ///
+  /// Quien llega desde la búsqueda no trae `practitionerName` -ahí se navega
+  /// sólo con el id-, así que el título decía "Disponibilidad" a secas y el
+  /// paciente veía una grilla de horarios sin saber de quién eran. El dato ya
+  /// venía en la respuesta y nadie lo usaba.
+  String? _nombreDeLaRespuesta;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -58,16 +66,27 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       practitionerId: widget.practitionerId,
       from: iso(hoy),
       to: iso(hoy.add(const Duration(days: 14))),
-    );
+    ).then((datos) {
+      // `_futuro` se fija en `didChangeDependencies` y no en `build`, así que
+      // este `setState` repinta el título sin volver a disparar la petición.
+      if (mounted && datos.practitionerName.isNotEmpty) {
+        setState(() => _nombreDeLaRespuesta = datos.practitionerName);
+      }
+      return datos;
+    });
   }
 
-  void _cargar() => setState(() => _futuro = _pedir());
+  void _cargar() => setState(() {
+        _futuro = _pedir();
+      });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.practitionerName ?? 'Disponibilidad'),
+        title: Text(
+          widget.practitionerName ?? _nombreDeLaRespuesta ?? 'Disponibilidad',
+        ),
       ),
       body: FutureBuilder<Disponibilidad>(
         future: _futuro,

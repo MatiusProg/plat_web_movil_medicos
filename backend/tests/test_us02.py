@@ -491,3 +491,53 @@ def test_no_se_puede_cerrar_la_sesion_de_otro(api_client, org_a, org_b, user_a, 
 
     assert response.status_code == 403
     assert response.json()["code"] == "refresh_ajeno"
+
+
+# --------------------------------------------------------------------------
+#  /accounts/me/ — reconstruir la sesión sin volver a pedir credenciales
+#  (lo pide el móvil al reabrir la aplicación, ver Session.restore())
+# --------------------------------------------------------------------------
+def test_me_exige_autenticacion(api_client):
+    response = api_client.get(reverse("accounts:me"))
+
+    assert response.status_code == 401
+
+
+def test_me_devuelve_los_mismos_datos_que_el_login(
+    api_client, org_a, user_a, rol_recepcionista,
+):
+    cuerpo = iniciar_sesion(api_client, org_a, user_a.email).json()
+
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {cuerpo['access']}")
+    response = api_client.get(reverse("accounts:me"))
+
+    assert response.status_code == 200
+    assert response.json() == cuerpo["user"]
+
+
+def test_me_de_un_superadmin_no_lleva_organizacion(api_client, platform_admin):
+    login = api_client.post(
+        reverse("accounts:login"),
+        {"email": platform_admin.email, "password": CLAVE},
+        format="json",
+    ).json()
+
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {login['access']}")
+    response = api_client.get(reverse("accounts:me"))
+
+    assert response.status_code == 200
+    cuerpo = response.json()
+    assert cuerpo["organization"] is None
+    assert cuerpo["is_platform_admin"] is True
+
+
+def test_me_refleja_un_rol_asignado(api_client, org_a, user_a, rol_recepcionista):
+    cuerpo = iniciar_sesion(api_client, org_a, user_a.email).json()
+
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {cuerpo['access']}")
+    response = api_client.get(reverse("accounts:me"))
+
+    assert response.json()["roles"] == [
+        {"code": "receptionist", "name": "Recepcionista"},
+    ]
+    assert response.json()["permissions"] == ["patients.patient.search"]

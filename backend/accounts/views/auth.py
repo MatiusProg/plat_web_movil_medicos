@@ -1,10 +1,11 @@
 """US-02 — Inicio de sesión (CU1), renovación (RNF-06) y cierre (CU4).
 
-Tres endpoints, todos sin autenticar salvo el de cierre:
+Cuatro endpoints, todos sin autenticar salvo el de cierre y el de sesión:
 
     POST /api/accounts/login/            credenciales -> par de tokens
     POST /api/accounts/token/refresh/    refresh      -> access nuevo
     POST /api/accounts/logout/           refresh      -> lista negra
+    GET  /api/accounts/me/               (autenticado) -> el usuario actual
 
 **Los fallos de credenciales responden con ``Response``, no con ``raise``.**
 No es estilo: toda la petición corre dentro de la transacción que abre
@@ -54,7 +55,11 @@ def login(request):
     serializer.is_valid(raise_exception=True)
     datos = serializer.validated_data
 
-    slug = datos.get("organization") or request.META.get(ORGANIZATION_HEADER) or ""
+    # `or` trataría "" (el superadministrador, a propósito) igual que "no
+    # vino", y caería al encabezado. Hay que distinguir ausente de vacío.
+    slug = datos.get("organization")
+    if slug is None:
+        slug = request.META.get(ORGANIZATION_HEADER) or ""
     email = datos["email"]
 
     organization, motivo = servicio.resolve_organization(slug)
@@ -121,6 +126,30 @@ def _respuesta_de_fallo(resultado):
         {"code": "credenciales_invalidas", "detail": CREDENCIALES_INVALIDAS},
         status=status.HTTP_401_UNAUTHORIZED,
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    """Devuelve la sesión de quien está autenticado, sin volver a pedir credenciales.
+
+    Lo pide el móvil: ``Session.restore()`` guarda los tokens en el
+    almacenamiento seguro pero nunca al usuario —sus permisos cambian, y una
+    copia vieja mentiría (US-04)—, así que al reabrir la aplicación no hay
+    ningún dato de quién es hasta que se llama acá.
+
+    A diferencia de ``login``, no hace falta abrir ``tenant_context`` /
+    ``platform_admin_context`` a mano: la petición ya llegó autenticada por
+    JWT, y la autenticación fija el contexto desde los claims del token antes
+    de que esta vista corra.
+
+    No es ``users/me/``: esa ruta ya está reservada para US-05 (ver el
+    comentario en ``accounts/urls.py`` sobre ``AssignableUserViewSet``), que
+    va a ser un perfil editable, no esta lectura simple para reconstruir el
+    rol al reabrir la aplicación.
+    """
+    cuerpo = sesion_iniciada(request.user, {})
+    return Response(cuerpo["user"], status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])

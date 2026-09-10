@@ -22,9 +22,11 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api/errors.dart';
 import '../../core/session/session_scope.dart';
+import '../../core/widgets/brand_header.dart';
 import 'auth_service.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -161,31 +163,36 @@ class _SignInScreenState extends State<SignInScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Iniciá sesión',
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Ingresá con tus credenciales para acceder según tu rol.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const BrandHeader(),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Iniciá sesión',
+                            style: theme.textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Ingresá con tus credenciales para acceder según tu rol.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
 
-                    TextFormField(
+                          TextFormField(
                       controller: _organization,
                       enabled: !_frozen,
                       autocorrect: false,
@@ -263,7 +270,13 @@ class _SignInScreenState extends State<SignInScreen> {
                           : const Text('Entrar'),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _frozen ? null : () => context.push('/register'),
+                      child: const Text('¿No tenés cuenta? Registrate'),
+                    ),
+
+                    const SizedBox(height: 8),
                     Text(
                       'Tu contraseña se guarda cifrada y nunca viaja en texto '
                       'plano.',
@@ -272,10 +285,13 @@ class _SignInScreenState extends State<SignInScreen> {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ],
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),

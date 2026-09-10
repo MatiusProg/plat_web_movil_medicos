@@ -30,6 +30,7 @@ class PatientSelector extends StatefulWidget {
   const PatientSelector({
     super.key,
     required this.onChanged,
+    this.onSinSeleccion,
     this.selectedId,
     this.label = '¿Para quién es?',
     this.client,
@@ -40,6 +41,15 @@ class PatientSelector extends StatefulWidget {
   /// Avisar de la selección inicial es a propósito: quien usa el selector no
   /// tiene que repetir la regla de "por omisión, uno mismo".
   final ValueChanged<PatientOption> onChanged;
+
+  /// Se llama cuando la carga terminó y **no hay a quién elegir**: la lista
+  /// vino vacía, o falló.
+  ///
+  /// Existe porque sin este aviso el selector se quedaba callado en esos dos
+  /// casos, y la pantalla que lo usa —que espera el primer `onChanged` para
+  /// salir de su estado de carga— se quedaba con el indicador girando para
+  /// siempre, sin mensaje y sin forma de reintentar.
+  final VoidCallback? onSinSeleccion;
 
   final String? selectedId;
   final String label;
@@ -75,10 +85,15 @@ class _PatientSelectorState extends State<PatientSelector> {
       // El titular queda elegido por omisión: reservar para uno mismo es el
       // caso más común y buscarse a uno mismo en una lista sería absurdo.
       final inicial = _opcionPorId(_elegido);
-      if (inicial != null) widget.onChanged(inicial);
+      if (inicial != null) {
+        widget.onChanged(inicial);
+      } else {
+        widget.onSinSeleccion?.call();
+      }
     } on ApiError catch (error) {
       if (!mounted) return;
       setState(() => _error = error.message);
+      widget.onSinSeleccion?.call();
     }
   }
 

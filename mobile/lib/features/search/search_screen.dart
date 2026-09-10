@@ -133,13 +133,35 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(_error!, style: const TextStyle(color: Marca.danger)),
-            ),
           Expanded(
-            child: _resultados.isEmpty && !_cargando
+            // El error manda sobre el estado vacío. Antes se mostraban los
+            // dos a la vez -el texto rojo arriba y, ocupando la pantalla,
+            // "No hay profesionales que coincidan."-, que se contradicen: la
+            // búsqueda no encontró nada porque falló, no porque no haya
+            // nadie. Y sin reintentar, la única salida era volver a teclear.
+            child: _error != null && _resultados.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Marca.danger),
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.tonalIcon(
+                            onPressed: () => _buscar(reiniciar: true),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _resultados.isEmpty && !_cargando
                 ? const Center(child: Text('No hay profesionales que coincidan.'))
                 : ListView.builder(
                     controller: _scroll,

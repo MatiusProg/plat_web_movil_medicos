@@ -41,8 +41,15 @@ class ApiError implements Exception {
   bool get isOffline => code == 'sin_conexion';
 
   /// La sesión no sirve más y hay que volver a entrar.
+  ///
+  /// `token_not_valid` es de SimpleJWT y no del backend: es el que llega
+  /// cuando el token de acceso venció o quedó en la lista negra tras un
+  /// cierre de sesión. Sin él acá, el caso más frecuente de sesión vencida
+  /// no se reconocía como tal.
   bool get isSessionExpired =>
-      code == 'refresh_invalido' || code == 'token_sin_organizacion';
+      code == 'refresh_invalido' ||
+      code == 'token_sin_organizacion' ||
+      code == 'token_not_valid';
 
   @override
   String toString() => 'ApiError($status, $code): $message';
@@ -74,13 +81,36 @@ class ApiError implements Exception {
     }
 
     return ApiError(
-      detail ?? firstField ?? _defaultMessage(status),
+      _traducido(code) ?? detail ?? firstField ?? _defaultMessage(status),
       code,
       status,
       fieldErrors: fields.isEmpty ? null : fields,
       lockedUntil: lockedUntil,
     );
   }
+
+  /// Los códigos cuyo mensaje **no** hay que mostrar tal como viene.
+  ///
+  /// `LANGUAGE_CODE = "es-bo"` traduce lo que escriben Django y DRF, pero no
+  /// alcanza a las librerías de terceros: `djangorestframework-simplejwt`
+  /// contesta en inglés, y su `"Given token not valid for any token type"`
+  /// terminaba en la pantalla del paciente tal cual.
+  ///
+  /// Se traduce por **código** y no por texto —el código es el contrato, el
+  /// texto cambia— y esta tabla gana sobre `detail` sólo para los códigos que
+  /// están acá: cualquier mensaje que el backend de este proyecto escriba a
+  /// propósito para una persona sigue pasando intacto.
+  static const Map<String, String> _porCodigo = {
+    'token_not_valid': 'Tu sesión venció. Volvé a entrar.',
+    'not_authenticated': 'Necesitás iniciar sesión para ver esto.',
+    'authentication_failed': 'Tu sesión no es válida. Volvé a entrar.',
+    'permission_denied': 'No tenés permiso para hacer esto.',
+    'not_found': 'No se encontró lo que buscabas.',
+    'throttled': 'Hiciste demasiados intentos seguidos. Esperá un momento.',
+    'parse_error': 'El servidor respondió algo que no se pudo interpretar.',
+  };
+
+  static String? _traducido(String code) => _porCodigo[code];
 
   static const ApiError offline = ApiError(
     'No se pudo conectar con el servidor. Revisá tu conexión.',

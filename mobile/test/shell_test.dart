@@ -15,8 +15,49 @@ library;
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
 import 'package:mobile/core/session/jwt.dart';
+import 'package:mobile/core/session/session.dart';
+import 'package:mobile/core/session/token_storage.dart';
+
+/// El almacenamiento seguro, pero en un mapa — igual que en `auth_test.dart`
+/// y `register_test.dart`: cada archivo de test arma el suyo a propósito, en
+/// vez de compartir uno entre archivos de test.
+class MemoryStorage extends TokenStorage {
+  final Map<String, String> values = {};
+
+  @override
+  Future<String?> readAccess() async => values['access'];
+
+  @override
+  Future<String?> readRefresh() async => values['refresh'];
+
+  @override
+  Future<String?> readOrganization() async => values['organization'];
+
+  @override
+  Future<void> saveTokens({
+    required String access,
+    required String refresh,
+  }) async {
+    values['access'] = access;
+    values['refresh'] = refresh;
+  }
+
+  @override
+  Future<void> saveOrganization(String slug) async {
+    values['organization'] = slug;
+  }
+
+  @override
+  Future<void> clearTokens() async {
+    values.remove('access');
+    values.remove('refresh');
+  }
+}
 
 /// Arma un JWT de mentira con el `exp` que se le pida.
 ///
@@ -125,6 +166,87 @@ void main() {
 
       expect(error.isSessionExpired, isTrue);
       expect(ApiError.offline.isOffline, isTrue);
+    });
+  });
+
+  group('reconstrucción de la sesión al reabrir la app', () {
+    final usuario = {
+          'id': 'a1b2',
+          'email': 'karen@kolping.com',
+          'full_name': 'Karen Ortega',
+          'organization': 'kolping',
+          'is_platform_admin': false,
+          'roles': [
+            {'code': 'patient', 'name': 'Paciente'},
+          ],
+          'permissions': <String>[],
+        };
+
+    test('con el refresco vigente, se pide y guarda el usuario', () async {
+      final storage = MemoryStorage()
+        ..values['refresh'] = tokenQueVence(const Duration(days: 5))
+        ..values['access'] = tokenQueVence(const Duration(minutes: 20));
+      final requests = <http.Request>[];
+      final mock = MockClient((request) async {
+        requests.add(request);
+        return http.Response(
+          jsonEncode(usuario),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+      final session = Session(
+        storage: storage,
+        meClient: ApiClient(httpClient: mock),
+      );
+
+      await session.restore();
+
+      expect(session.isSignedIn, isTrue);
+      expect(session.user?.fullName, 'Karen Ortega');
+      expect(session.user?.isPatient, isTrue);
+      expect(requests.single.url.path, endsWith('/accounts/me/'));
+    });
+
+    test('sin red, la sesión sigue abierta pero sin datos del usuario',
+        () async {
+      final storage = MemoryStorage()
+        ..values['refresh'] = tokenQueVence(const Duration(days: 5))
+        ..values['access'] = tokenQueVence(const Duration(minutes: 20));
+      final mock = MockClient((request) async {
+        throw http.ClientException('sin conexión, simulado');
+      });
+      final session = Session(
+        storage: storage,
+        meClient: ApiClient(httpClient: mock),
+      );
+
+      await session.restore();
+
+      // El gate por rol simplemente no tiene datos hasta que haya conexión
+      // -las pantallas van a fallar solas con su propio error si hacía
+      // falta-, pero no hay que echar a alguien que sí tenía sesión.
+      expect(session.isSignedIn, isTrue);
+      expect(session.user, isNull);
+    });
+
+    test('con el refresco vencido, no se llega a pedir el usuario', () async {
+      final storage = MemoryStorage()
+        ..values['refresh'] = tokenQueVence(-const Duration(days: 1));
+      final requests = <http.Request>[];
+      final mock = MockClient((request) async {
+        requests.add(request);
+        return http.Response(jsonEncode(usuario), 200);
+      });
+      final session = Session(
+        storage: storage,
+        meClient: ApiClient(httpClient: mock),
+      );
+
+      await session.restore();
+
+      expect(session.isSignedIn, isFalse);
+      expect(requests, isEmpty);
     });
   });
 }
