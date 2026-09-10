@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
 import 'package:mobile/core/session/session_scope.dart';
+import 'package:mobile/core/theme/theme.dart';
 
 import 'search_api.dart';
 
@@ -74,6 +75,15 @@ class _SpecialtiesScreenState extends State<SpecialtiesScreen> {
               for (final e in especialidades)
                 Card(
                   child: ListTile(
+                    leading: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Marca.surfaceTint,
+                      child: const Icon(
+                        Icons.local_hospital_outlined,
+                        color: Marca.primary,
+                        size: 18,
+                      ),
+                    ),
                     title: Text(e.name),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push('/search?specialty=${e.id}'),

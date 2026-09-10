@@ -94,6 +94,9 @@ Map<String, dynamic> get respuestaDeIngreso => {
         'full_name': 'Karen Ortega',
         'organization': 'kolping',
         'is_platform_admin': false,
+        'roles': [
+          {'code': 'patient', 'name': 'Paciente'},
+        ],
         'permissions': ['accounts.role.read'],
       },
     };
@@ -145,6 +148,39 @@ void main() {
 
       expect(session.user!.can('accounts.role.read'), isTrue);
       expect(session.user!.can('scheduling.slot.write'), isFalse);
+    });
+
+    test('el rol de paciente se reconoce y habilita el auto-servicio', () async {
+      final session = Session(storage: MemoryStorage());
+      final backend = fakeBackend(200, respuestaDeIngreso, session: session);
+
+      await AuthService(session: session, client: backend.client).signIn(
+        organization: 'kolping',
+        email: 'karen@kolping.com',
+        password: 'una-clave',
+      );
+
+      expect(session.user!.isPatient, isTrue);
+    });
+
+    test('sin el rol de paciente, el auto-servicio no se habilita', () async {
+      final session = Session(storage: MemoryStorage());
+      final respuesta = {
+        ...respuestaDeIngreso,
+        'user': {
+          ...respuestaDeIngreso['user'] as Map<String, dynamic>,
+          'roles': <Map<String, String>>[],
+        },
+      };
+      final backend = fakeBackend(200, respuesta, session: session);
+
+      await AuthService(session: session, client: backend.client).signIn(
+        organization: 'kolping',
+        email: 'karen@kolping.com',
+        password: 'una-clave',
+      );
+
+      expect(session.user!.isPatient, isFalse);
     });
 
     test('unas credenciales que no son dejan la sesión cerrada', () async {

@@ -16,7 +16,7 @@ toca su bloque y no la línea de al lado.
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views.auth import login, logout, refresh
+from .views.auth import login, logout, me, refresh
 from .views.password_reset import confirm_reset, request_reset, verify_reset
 from .views.registration import register_patient
 from .views.roles import (
@@ -54,6 +54,14 @@ urlpatterns = router.urls + [
     path("login/", login, name="login"),
     path("token/refresh/", refresh, name="token-refresh"),
     path("logout/", logout, name="logout"),
+
+    # ---------- Mobile: reconstrucción de sesión al reabrir la app --------
+    # No tiene historia propia: lo pide `Session.restore()` en
+    # mobile/lib/core/session/session.dart. Deliberadamente NO es
+    # `users/me/` -esa ruta sigue libre para US-05 (ver el comentario arriba
+    # de `router.register("users", ...)`, que va a ser un perfil editable,
+    # no esta lectura simple para reconstruir el rol tras reabrir la app.
+    path("me/", me, name="me"),
 
     # ---------- US-03 (Karen): recuperación de contraseña -----------------
     # Las vistas van en views/password_reset.py y los serializers en

@@ -33,6 +33,7 @@ class CurrentUser {
     required this.fullName,
     required this.organization,
     required this.isPlatformAdmin,
+    required this.roles,
     required this.permissions,
   });
 
@@ -41,6 +42,11 @@ class CurrentUser {
   final String fullName;
   final String? organization;
   final bool isPlatformAdmin;
+
+  /// Los códigos de rol (`patient`, `org_admin`, `practitioner`, ...), sin
+  /// el nombre legible que también manda el backend: nada en la aplicación
+  /// lo necesita todavía.
+  final List<String> roles;
   final List<String> permissions;
 
   /// Atajo de `permissions.contains`, para decidir qué se muestra.
@@ -49,12 +55,28 @@ class CurrentUser {
   /// `user.has_permission`. Esto sólo evita ofrecer lo que va a dar 403.
   bool can(String permission) => permissions.contains(permission);
 
+  /// El rol que habilita las pantallas de auto-servicio del paciente
+  /// (búsqueda de profesionales, personas a cargo, antecedentes propios).
+  ///
+  /// Es un rol, no un permiso suelto: `practitioner` tiene
+  /// `patients.history.read` para leer historiales clínicos en el futuro,
+  /// pero estas pantallas sólo saben mostrar "los míos y los de mis
+  /// dependientes" — gatear por ese permiso dejaría pasar a alguien para
+  /// quien la pantalla no tiene sentido.
+  bool get isPatient => roles.contains('patient');
+
   factory CurrentUser.fromJson(Map<String, dynamic> json) => CurrentUser(
         id: json['id'] as String? ?? '',
         email: json['email'] as String? ?? '',
         fullName: json['full_name'] as String? ?? '',
         organization: json['organization'] as String?,
         isPlatformAdmin: json['is_platform_admin'] as bool? ?? false,
+        // A diferencia de `permissions`, el backend manda cada rol como
+        // {code, name}: acá sólo se queda con el código.
+        roles: (json['roles'] as List?)
+                ?.map((r) => (r as Map<String, dynamic>)['code'] as String)
+                .toList() ??
+            const <String>[],
         permissions:
             (json['permissions'] as List?)?.cast<String>() ?? const <String>[],
       );
@@ -68,7 +90,7 @@ enum SessionStatus {
 }
 
 class Session extends ChangeNotifier implements AuthContext {
-  Session({TokenStorage? storage, ApiClient? refreshClient})
+  Session({TokenStorage? storage, ApiClient? refreshClient, this._meClient})
       : _storage = storage ?? TokenStorage(),
         // Cliente SIN contexto de autenticación: es el que renueva. Si tuviera
         // contexto, pedir un token para renovar dispararía otra renovación.
@@ -76,6 +98,12 @@ class Session extends ChangeNotifier implements AuthContext {
 
   final TokenStorage _storage;
   final ApiClient _refreshClient;
+
+  // Con contexto (`auth: this`), a diferencia de `_refreshClient`: `/me/`
+  // necesita el `Authorization` vigente. No se arma en el inicializador
+  // porque ahí `this` todavía no existe del todo.
+  ApiClient? _meClient;
+  ApiClient get _me => _meClient ??= ApiClient(auth: this);
 
   SessionStatus _status = SessionStatus.unknown;
   CurrentUser? _user;
@@ -120,7 +148,33 @@ class Session extends ChangeNotifier implements AuthContext {
       return;
     }
 
+    await _cargarUsuario();
+    // `_cargarUsuario` pudo haber cerrado la sesión sola -token inválido de
+    // verdad, no sólo sin red-: si ya no hay refresco, no hay qué reabrir.
+    if (_refresh == null) return;
+
     _setStatus(SessionStatus.signedIn);
+  }
+
+  /// Reconstruye [_user] desde `/accounts/me/`.
+  ///
+  /// Lo único que se guarda entre aperturas es el token —el usuario no,
+  /// porque sus permisos cambian (US-04) y una copia vieja mentiría—, así
+  /// que hay que volver a pedirlo cada vez que la aplicación arranca con una
+  /// sesión ya guardada. Sin esto, cualquier pantalla que mire el rol vería
+  /// a todo el mundo como si no tuviera ninguno hasta el próximo login.
+  Future<void> _cargarUsuario() async {
+    try {
+      final data = await _me.get('/accounts/me/');
+      if (data is Map<String, dynamic>) _user = CurrentUser.fromJson(data);
+    } on ApiError catch (error) {
+      // Sin red no se cierra la sesión -mismo criterio que `_renew()`-: el
+      // gate por rol simplemente no tiene datos hasta que haya conexión, y
+      // las pantallas van a fallar solas con su propio error si hacía falta.
+      // Un token realmente inválido ya disparó `signOut()` adentro de
+      // `ApiClient.send()` (`onSessionExpired`); no hay que repetirlo acá.
+      if (error.isOffline) return;
+    }
   }
 
   /// Guarda lo que devolvió el login. Lo llama la pantalla de US-02.

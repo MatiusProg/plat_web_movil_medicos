@@ -77,4 +77,43 @@ class AuthService {
       user: currentUser,
     );
   }
+
+  /// US-01 — Crea la cuenta del paciente y deja a la persona adentro.
+  ///
+  /// El contrato está en `backend/accounts/views/registration.py`:
+  ///
+  ///     POST /accounts/register/   {organization, email, password,
+  ///                                  password_confirmation, document_number,
+  ///                                  first_name, last_name}
+  ///       201 {id, email, organization, role, patient_id}
+  ///       400 validacion           por campo, en la forma de DRF
+  ///
+  /// El backend no devuelve tokens: registrar no es entrar. Por eso, creada
+  /// la cuenta, se llama a [signIn] con las mismas credenciales — se
+  /// reutiliza el ingreso en vez de copiar el `post` que arma la sesión.
+  Future<void> registerPatient({
+    required String organization,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    required String documentNumber,
+    required String firstName,
+    required String lastName,
+  }) async {
+    await _client.post(
+      '/accounts/register/',
+      authenticated: false,
+      body: {
+        'organization': organization,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+        'document_number': documentNumber,
+        'first_name': firstName,
+        'last_name': lastName,
+      },
+    );
+
+    await signIn(organization: organization, email: email, password: password);
+  }
 }

@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
 import 'package:mobile/core/session/session_scope.dart';
+import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/dependents/dependents_api.dart';
 import 'package:mobile/features/dependents/patient_selector.dart';
 
@@ -209,6 +210,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ..addAll(delTipo.map(
           (antecedente) => Card(
             child: ListTile(
+              leading: CircleAvatar(
+                radius: 18,
+                backgroundColor: Marca.surfaceTint,
+                child: const Icon(
+                  Icons.medical_information_outlined,
+                  color: Marca.primary,
+                  size: 18,
+                ),
+              ),
               title: Text(antecedente.description),
               subtitle: Text(
                 antecedente.severity.isEmpty

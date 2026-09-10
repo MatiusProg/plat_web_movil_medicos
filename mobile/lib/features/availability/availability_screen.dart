@@ -61,7 +61,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     );
   }
 
-  void _cargar() => setState(() => _futuro = _pedir());
+  void _cargar() => setState(() {
+        _futuro = _pedir();
+      });
 
   @override
   Widget build(BuildContext context) {

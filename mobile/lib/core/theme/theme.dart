@@ -20,8 +20,13 @@ class Marca {
 
   static const Color primary = Color(0xFF0D8F88); // marca-600
   static const Color primaryDark = Color(0xFF10726E); // marca-700
+  static const Color primaryDeep = Color(0xFF125B59); // marca-800
+  static const Color primaryDarkest = Color(0xFF042F2F); // marca-950
   static const Color primaryLight = Color(0xFF38CEC0); // marca-400
   static const Color surfaceTint = Color(0xFFEEFDFA); // marca-50
+
+  /// El degradé de `BrandHeader`, igual que `.malla-marca` en el frontend web.
+  static const List<Color> gradient = [primaryDarkest, primaryDeep, primaryDark];
 
   static const Color ink900 = Color(0xFF0F172A); // tinta-900
   static const Color ink800 = Color(0xFF1E293B);

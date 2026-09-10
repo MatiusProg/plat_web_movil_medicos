@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
 import 'package:mobile/core/session/session_scope.dart';
+import 'package:mobile/core/theme/theme.dart';
 
 import 'dependents_api.dart';
 
@@ -182,7 +183,11 @@ class _DependentsScreenState extends State<DependentsScreen> {
         final dependiente = dependientes[indice];
         return Card(
           child: ListTile(
-            leading: const Icon(Icons.person_outline),
+            leading: CircleAvatar(
+              radius: 18,
+              backgroundColor: Marca.surfaceTint,
+              child: const Icon(Icons.person_outline, color: Marca.primary, size: 18),
+            ),
             title: Text(dependiente.fullName),
             subtitle: Text(
               [
