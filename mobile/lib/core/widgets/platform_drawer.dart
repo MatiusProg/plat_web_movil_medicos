@@ -8,11 +8,21 @@
 ///
 /// Cada pantalla de estas cuatro secciones agrega `drawer: const
 /// PlatformDrawer()` a su propio `Scaffold`.
+///
+/// **Por qué el menú termina en Inicio y Cerrar sesión.** Entre secciones se
+/// navega con `go`, que reemplaza la pila en vez de apilarla: es lo correcto
+/// para navegación lateral -no tiene sentido acumular Panel sobre Planes
+/// sobre Panel-, pero deja al superadministrador sin historial al que
+/// volver, y el botón atrás del teléfono se queda sin destino. Como el
+/// cierre de sesión vive en la pantalla de inicio y ninguna de estas cuatro
+/// lo tiene, sin estas dos salidas la única forma de salir del panel era
+/// matar la aplicación.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../session/session_scope.dart';
 import '../theme/theme.dart';
 
 class PlatformDrawer extends StatelessWidget {
@@ -20,6 +30,8 @@ class PlatformDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = SessionScope.of(context);
+
     Widget item(IconData icono, String texto, String ruta) => ListTile(
           leading: Icon(icono),
           title: Text(texto),
@@ -65,6 +77,16 @@ class PlatformDrawer extends StatelessWidget {
             Icons.receipt_long_outlined,
             'Suscripciones',
             '/platform/subscriptions',
+          ),
+          const Divider(),
+          item(Icons.home_outlined, 'Inicio', '/home'),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Cerrar sesión'),
+            onTap: () {
+              Navigator.of(context).pop(); // cierra el drawer
+              session.signOut();
+            },
           ),
         ],
       ),

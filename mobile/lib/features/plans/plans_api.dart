@@ -70,6 +70,18 @@ Future<List<Plan>> listPlans(ApiClient client, {bool? isActive}) async {
       .toList();
 }
 
+/// Un plan por su id.
+///
+/// La ruta de edición lleva el id, y hasta ahora la pantalla dependía de que
+/// el objeto le llegara en memoria desde el listado. Cuando no llegaba -la
+/// aplicación se reinició, o se entró a la ruta de otra forma- el formulario
+/// se creía un alta y terminaba **creando un plan duplicado**. Con esto el id
+/// de la ruta alcanza para resolver el plan.
+Future<Plan> getPlan(ApiClient client, String id) async {
+  final data = await client.get('/platform/plans/$id/');
+  return Plan.fromJson(data as Map<String, dynamic>);
+}
+
 /// Los seis límites en `int?`: `null` viaja como ausente en el body -no como
 /// `"null"` ni como `0`, que significaría "cero permitidos"-.
 Map<String, dynamic> _cuerpoDelPlan({

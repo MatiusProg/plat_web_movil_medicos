@@ -75,17 +75,23 @@ class _DependentFormScreenState extends State<DependentFormScreen> {
       _error = null;
     });
 
+    // El `finally` no es de estilo: sin él, cualquier excepción que no sea
+    // `ApiError` -por ejemplo la que tira el cast del cuerpo si el servidor
+    // contesta 201 sin JSON- dejaba `_guardando` en `true` para siempre. El
+    // botón quedaba deshabilitado, sin ningún mensaje, y la única salida era
+    // abandonar el formulario perdiendo todo lo cargado.
+    var salio = false;
     try {
       await crearDependiente(client, _datos, confirmLink: confirmLink);
       if (!mounted) return;
+      salio = true;
       Navigator.of(context).pop(true);
     } on ApiError catch (error) {
       if (!mounted) return;
-      setState(() {
-        _guardando = false;
-        _error = error;
-      });
+      setState(() => _error = error);
       if (error.code == 'documento_existente') await _ofrecerVincular();
+    } finally {
+      if (mounted && !salio) setState(() => _guardando = false);
     }
   }
 

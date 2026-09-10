@@ -107,6 +107,14 @@ class Session extends ChangeNotifier implements AuthContext {
 
   SessionStatus _status = SessionStatus.unknown;
   CurrentUser? _user;
+
+  /// Si en este momento se está pidiendo el perfil a `/accounts/me/`.
+  ///
+  /// La pantalla de inicio lo necesita para distinguir "todavía no llegó" de
+  /// "no se pudo traer": sin esta diferencia, el único camino era suponer un
+  /// rol, y suponer "paciente" le mostraba pantallas ajenas a un
+  /// administrador.
+  bool _cargandoUsuario = false;
   String? _access;
   String? _refresh;
   String? _organization;
@@ -123,6 +131,13 @@ class Session extends ChangeNotifier implements AuthContext {
   SessionStatus get status => _status;
   CurrentUser? get user => _user;
   bool get isSignedIn => _status == SessionStatus.signedIn;
+  bool get cargandoUsuario => _cargandoUsuario;
+
+  /// Hay sesión, ya no se está pidiendo el perfil, y aun así no se sabe quién
+  /// es. Es el estado que la pantalla de inicio tiene que explicar en vez de
+  /// adivinar un rol.
+  bool get perfilNoDisponible =>
+      isSignedIn && !_cargandoUsuario && _user == null;
 
   @override
   String? get organizationSlug => _organization;
@@ -148,12 +163,29 @@ class Session extends ChangeNotifier implements AuthContext {
       return;
     }
 
-    await _cargarUsuario();
-    // `_cargarUsuario` pudo haber cerrado la sesión sola -token inválido de
-    // verdad, no sólo sin red-: si ya no hay refresco, no hay qué reabrir.
-    if (_refresh == null) return;
-
+    // Se entra primero y el perfil se pide después, no al revés: esperar acá
+    // dejaba la pantalla de carga -un degradado sin una sola palabra- hasta
+    // `Config.timeout`, 20 segundos, si `/accounts/me/` no contestaba, y sin
+    // forma de cancelar. Quien tiene sesión guardada entra ya; que todavía no
+    // se sepa su rol lo resuelve la pantalla de inicio, que sabe mostrarlo.
     _setStatus(SessionStatus.signedIn);
+
+    await recargarUsuario();
+  }
+
+  /// Vuelve a pedir el perfil.
+  ///
+  /// Es pública para que la pantalla de inicio pueda ofrecer "Reintentar"
+  /// cuando la carga falló: sin eso, la única salida era cerrar sesión.
+  Future<void> recargarUsuario() async {
+    _cargandoUsuario = true;
+    notifyListeners();
+    try {
+      await _cargarUsuario();
+    } finally {
+      _cargandoUsuario = false;
+      notifyListeners();
+    }
   }
 
   /// Reconstruye [_user] desde `/accounts/me/`.
@@ -241,13 +273,19 @@ class Session extends ChangeNotifier implements AuthContext {
         await _storage.saveTokens(access: _access!, refresh: _refresh!);
       }
     } on ApiError catch (error) {
-      // Sin red no se cierra la sesión: el token sigue siendo válido, lo que
-      // falta es conexión. Cerrarla acá echaría a la gente del sistema cada
-      // vez que entra al ascensor.
-      if (error.isOffline) return;
-      await signOut();
+      // Sólo se cierra la sesión cuando el refresco **no sirve más**: eso es
+      // un 401, o un código de sesión vencida. Todo lo demás -sin red, un 500,
+      // un 502 del proxy, una URL de API mal configurada que da 404- deja el
+      // refresco intacto y no es motivo para echar a nadie: cerrarle la
+      // sesión por una caída del servidor le hace perder lo que estaba
+      // haciendo y encima le miente sobre la causa.
+      if (_refrescoRechazado(error)) await signOut();
     }
   }
+
+  /// Si el backend dijo que este refresco ya no vale.
+  static bool _refrescoRechazado(ApiError error) =>
+      error.status == 401 || error.isSessionExpired;
 
   @override
   Future<void> onSessionExpired() => signOut();

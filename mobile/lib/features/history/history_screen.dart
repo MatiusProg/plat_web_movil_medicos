@@ -66,6 +66,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _cargar();
   }
 
+  /// El selector terminó y no hay a quién elegir.
+  ///
+  /// Se sale del estado de carga con una lista vacía: así la pantalla muestra
+  /// sus secciones vacías en vez del indicador eterno. El selector ya explica
+  /// arriba lo suyo si lo que hubo fue un error.
+  void _sinPersona() {
+    if (!mounted || _paraQuien != null) return;
+    setState(() => _antecedentes = const []);
+  }
+
   Future<void> _agregar() async {
     final paciente = _paraQuien;
     if (paciente == null) return;
@@ -89,6 +99,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       await _cargar();
     } on ApiError catch (error) {
       _avisar(error.message);
+    } catch (_) {
+      // Lo que no es `ApiError` -el cast del cuerpo cuando el servidor
+      // contesta sin JSON, por ejemplo- se escapaba en silencio: el
+      // antecedente no se guardaba y el paciente no se enteraba de nada.
+      _avisar('No se pudo guardar el antecedente. Intentá de nuevo.');
     }
   }
 
@@ -150,6 +165,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           PatientSelector(
             client: widget.client,
             onChanged: _cambiarPersona,
+            // Sin esto, cuando el selector no tenía a quién elegir -lista
+            // vacía, o error- nunca avisaba, y acá abajo quedaba un indicador
+            // de carga girando para siempre.
+            onSinSeleccion: _sinPersona,
             label: '¿De quién son?',
           ),
           const SizedBox(height: 12),

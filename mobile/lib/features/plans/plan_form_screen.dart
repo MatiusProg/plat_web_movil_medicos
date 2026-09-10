@@ -324,3 +324,100 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
     );
   }
 }
+
+
+/// Resuelve el plan de `/platform/plans/:id/edit` antes de abrir el formulario.
+///
+/// **Por qué existe.** La ruta lleva el id, pero `PlanFormScreen` decidía si
+/// era alta o edición mirando un objeto que le llegaba por `state.extra`, o
+/// sea por memoria. Si ese objeto no estaba -la aplicación se reinició, el
+/// sistema restauró el estado, o se entró a la ruta desde cualquier lado que
+/// no fuera el botón "Editar"- el formulario se titulaba "Nuevo plan" y al
+/// guardar hacía `POST`: el superadministrador creía estar editando y creaba
+/// un plan duplicado. La dirección decía `edit` y el efecto era un alta.
+///
+/// Ahora el id manda. Si el objeto vino en memoria se usa -no tiene sentido
+/// pedir de nuevo lo que ya se tiene-, y si no vino se pide al backend.
+class EditarPlanPorId extends StatefulWidget {
+  const EditarPlanPorId({
+    super.key,
+    required this.id,
+    this.precargado,
+    this.client,
+  });
+
+  final String id;
+
+  /// Lo que mandó el listado, cuando se llega desde ahí.
+  final Plan? precargado;
+
+  @visibleForTesting
+  final ApiClient? client;
+
+  @override
+  State<EditarPlanPorId> createState() => _EditarPlanPorIdState();
+}
+
+class _EditarPlanPorIdState extends State<EditarPlanPorId> {
+  ApiClient? _client;
+  Future<Plan>? _futuro;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _client ??= widget.client ?? ApiClient(auth: SessionScope.of(context));
+    final precargado = widget.precargado;
+    _futuro ??= precargado != null
+        ? Future<Plan>.value(precargado)
+        : getPlan(_client!, widget.id);
+  }
+
+  void _reintentar() => setState(() => _futuro = getPlan(_client!, widget.id));
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Plan>(
+      future: _futuro,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Editar plan')),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          final error = snapshot.error;
+          final mensaje = error is ApiError
+              ? error.message
+              : 'No se pudo cargar el plan.';
+          return Scaffold(
+            appBar: AppBar(title: const Text('Editar plan')),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(mensaje, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton.tonalIcon(
+                      onPressed: _reintentar,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return PlanFormScreen(
+          planExistente: snapshot.data,
+          client: widget.client,
+        );
+      },
+    );
+  }
+}
