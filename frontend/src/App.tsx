@@ -22,42 +22,14 @@ import { RecuperarAcceso } from '@/paginas/RecuperarAcceso'
 import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
 import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
+import { Especialidades } from '@/paginas/Especialidades'
+import { Profesionales } from '@/paginas/Profesionales'
 import { Usuarios } from '@/paginas/Usuarios'
+import { Sucursales } from '@/paginas/Sucursales'
 import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
 
 import { RutaProtegida } from '@/rutas/RutaProtegida'
 import { ProveedorSesion } from '@/sesion/ContextoSesion'
-
-
-/**
- * Lienzo oscuro para las tres pantallas de plataforma.
- *
- * `Planes`, `Suscripciones` e `HistorialSuscripcion` están escritas **sólo en
- * oscuro**: sus tarjetas usan `bg-tinta-900` y su texto `text-tinta-100`, sin
- * variantes claras. El resto de la aplicación está escrita al revés, en claro
- * con variantes `dark:`.
- *
- * Mientras el layout imponía fondo oscuro a todo, esas tres se veían bien y las
- * demás no. Al hacer que el área de contenido siga al tema, la cuenta se
- * invierte: por eso estas tres se llevan su propio fondo, igual que `Panel` se
- * lleva el suyo claro.
- *
- * **Esto es un parche, no el diseño.** Lo correcto es escribir esas tres como
- * las demás —claro con `dark:`—, pero son de US-44 y US-45 y no son de esta
- * historia. Cuando alguien las ponga en línea, este envoltorio se borra y las
- * rutas quedan como las otras.
- */
-function PantallaDePlataforma({
-                                  children,
-                              }: {
-    children: React.ReactNode
-}) {
-    return (
-        <div className="min-h-dvh bg-tinta-950 text-tinta-100">
-            {children}
-        </div>
-    )
-}
 
 
 function Protegida({
@@ -163,27 +135,21 @@ export default function App() {
                         <Route
                             path="/planes"
                             element={
-                                <PantallaDePlataforma>
-                                    <Planes />
-                                </PantallaDePlataforma>
+                                <Planes />
                             }
                         />
 
                         <Route
                             path="/suscripciones"
                             element={
-                                <PantallaDePlataforma>
-                                    <Suscripciones />
-                                </PantallaDePlataforma>
+                                <Suscripciones />
                             }
                         />
 
                         <Route
                             path="/suscripciones/:organizationId/historial"
                             element={
-                                <PantallaDePlataforma>
-                                    <HistorialSuscripcion />
-                                </PantallaDePlataforma>
+                                <HistorialSuscripcion />
                             }
                         />
 
@@ -215,7 +181,14 @@ export default function App() {
                         />
 
 
+                        {/* US-11: gestión de sucursales */}
+                        <Route path="/sucursales" element={<Sucursales />} />
+
                         {/* US-13 / US-14: agendas médicas y bloqueos */}
+
+                        {/* US-12: administracion del catalogo medico */}
+                        <Route path="/especialidades" element={<Especialidades />} />
+                        <Route path="/profesionales" element={<Profesionales />} />
 
                         <Route
                             path="/agendas"

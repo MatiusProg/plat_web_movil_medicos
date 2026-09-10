@@ -152,7 +152,7 @@ export function ModalPlan({
         >
 
             <div
-                className="my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-tinta-800 bg-tinta-900 shadow-2xl"
+                className="my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 shadow-2xl"
                 onMouseDown={(
                     evento,
                 ) =>
@@ -160,15 +160,15 @@ export function ModalPlan({
                 }
             >
 
-                <header className="flex items-center justify-between border-b border-tinta-800 px-6 py-5">
+                <header className="flex items-center justify-between border-b border-tinta-200 dark:border-tinta-800 px-6 py-5">
 
                     <div>
 
-                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-400">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-600 dark:text-marca-400">
                             Plataforma
                         </p>
 
-                        <h2 className="mt-1 text-xl font-bold text-tinta-50">
+                        <h2 className="mt-1 text-xl font-bold text-tinta-900 dark:text-tinta-50">
                             {modo === 'crear'
                                 ? 'Nuevo plan'
                                 : 'Editar plan'}
@@ -191,7 +191,7 @@ export function ModalPlan({
                         disabled={
                             guardando
                         }
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-xl text-tinta-500 transition hover:bg-tinta-800 hover:text-tinta-100 disabled:opacity-50"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-xl text-tinta-500 transition hover:bg-tinta-100 dark:hover:bg-tinta-800 hover:text-tinta-800 dark:hover:text-tinta-100 disabled:opacity-50"
                         aria-label="Cerrar"
                     >
                         ×
@@ -259,7 +259,7 @@ export function ModalPlan({
 
                             <div>
 
-                                <label className="mb-2 block text-sm font-semibold text-tinta-300">
+                                <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                                     Descripción
                                 </label>
 
@@ -277,7 +277,7 @@ export function ModalPlan({
                                     }
                                     rows={3}
                                     placeholder="Describe brevemente qué ofrece este plan."
-                                    className="w-full resize-none rounded-xl border border-tinta-800 bg-tinta-950 px-4 py-3 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                                    className="w-full resize-none rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 py-3 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                                 />
 
                             </div>
@@ -287,7 +287,7 @@ export function ModalPlan({
 
                                 <div>
 
-                                    <label className="mb-2 block text-sm font-semibold text-tinta-300">
+                                    <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                                         Precio mensual
                                     </label>
 
@@ -310,10 +310,10 @@ export function ModalPlan({
                                                 )
                                             }
                                             placeholder="890"
-                                            className="h-11 min-w-0 flex-1 rounded-l-xl border border-r-0 border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                                            className="h-11 min-w-0 flex-1 rounded-l-xl border border-r-0 border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                                         />
 
-                                        <div className="flex h-11 items-center rounded-r-xl border border-tinta-800 bg-tinta-800 px-4 text-sm font-semibold text-tinta-300">
+                                        <div className="flex h-11 items-center rounded-r-xl border border-tinta-200 dark:border-tinta-800 bg-tinta-100 dark:bg-tinta-800 px-4 text-sm font-semibold text-tinta-600 dark:text-tinta-300">
 
                                             {
                                                 formulario.currency
@@ -328,7 +328,7 @@ export function ModalPlan({
 
                                 <div>
 
-                                    <label className="mb-2 block text-sm font-semibold text-tinta-300">
+                                    <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                                         Estado
                                     </label>
 
@@ -368,7 +368,7 @@ export function ModalPlan({
                             descripcion="Deja un campo vacío para indicar que el recurso es ilimitado."
                         >
 
-                            <div className="rounded-2xl border border-marca-900 bg-marca-950/40 px-4 py-3 text-sm text-marca-300">
+                            <div className="rounded-2xl border border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950/40 px-4 py-3 text-sm text-marca-700 dark:text-marca-300">
 
                                 Los campos sin valor se interpretan como
 
@@ -577,7 +577,7 @@ export function ModalPlan({
                     </div>
 
 
-                    <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-tinta-800 bg-tinta-900 px-6 py-4">
+                    <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 px-6 py-4">
 
                         <p className="hidden text-xs text-tinta-500 sm:block">
                             Los cambios se aplicarán al guardar.
@@ -594,7 +594,7 @@ export function ModalPlan({
                                 disabled={
                                     guardando
                                 }
-                                className="h-11 rounded-xl border border-tinta-700 px-5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800 disabled:opacity-50"
+                                className="h-11 rounded-xl border border-tinta-300 dark:border-tinta-700 px-5 text-sm font-semibold text-tinta-600 dark:text-tinta-300 transition hover:bg-tinta-100 dark:hover:bg-tinta-800 disabled:opacity-50"
                             >
                                 Cancelar
                             </button>
@@ -641,7 +641,7 @@ function Seccion({
 
             <div className="mb-4">
 
-                <h3 className="text-base font-bold text-tinta-100">
+                <h3 className="text-base font-bold text-tinta-800 dark:text-tinta-100">
                     {titulo}
                 </h3>
 
@@ -681,12 +681,12 @@ function Campo({
     return (
         <div>
 
-            <label className="mb-2 block text-sm font-semibold text-tinta-300">
+            <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
 
                 {etiqueta}
 
                 {requerido && (
-                    <span className="ml-1 text-red-400">
+                    <span className="ml-1 text-red-600 dark:text-red-400">
             *
           </span>
                 )}
@@ -712,7 +712,7 @@ function Campo({
                 placeholder={
                     placeholder
                 }
-                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                className="h-11 w-full rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
             />
 
         </div>
@@ -735,7 +735,7 @@ function CampoLimite({
     return (
         <div>
 
-            <label className="mb-2 block text-sm font-semibold text-tinta-300">
+            <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                 {etiqueta}
             </label>
 
@@ -757,7 +757,7 @@ function CampoLimite({
                 placeholder={
                     placeholder
                 }
-                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                className="h-11 w-full rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
             />
 
 
@@ -791,8 +791,8 @@ function Interruptor({
                 'flex min-h-11 w-full items-center justify-between gap-4 rounded-xl border px-4 py-2 text-left transition',
 
                 activo
-                    ? 'border-emerald-900 bg-emerald-950/40'
-                    : 'border-tinta-800 bg-tinta-950',
+                    ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40'
+                    : 'border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950',
             ].join(' ')}
         >
 
@@ -803,8 +803,8 @@ function Interruptor({
                         'text-sm font-semibold',
 
                         activo
-                            ? 'text-emerald-400'
-                            : 'text-tinta-400',
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-tinta-500 dark:text-tinta-400',
                     ].join(' ')}
                 >
                     {titulo}
@@ -826,7 +826,7 @@ function Interruptor({
 
                     activo
                         ? 'bg-emerald-500'
-                        : 'bg-tinta-700',
+                        : 'bg-tinta-200 dark:bg-tinta-700',
                 ].join(' ')}
             >
 
@@ -864,14 +864,14 @@ function OpcionFuncionalidad({
                 'flex min-h-[92px] items-center justify-between gap-4 rounded-2xl border p-4 transition',
 
                 activo
-                    ? 'border-marca-900 bg-marca-950/40'
-                    : 'border-tinta-800 bg-tinta-950',
+                    ? 'border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950/40'
+                    : 'border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950',
             ].join(' ')}
         >
 
             <div>
 
-                <p className="text-sm font-semibold text-tinta-200">
+                <p className="text-sm font-semibold text-tinta-700 dark:text-tinta-200">
                     {titulo}
                 </p>
 
@@ -895,7 +895,7 @@ function OpcionFuncionalidad({
 
                     activo
                         ? 'bg-marca-600'
-                        : 'bg-tinta-700',
+                        : 'bg-tinta-200 dark:bg-tinta-700',
                 ].join(' ')}
             >
 

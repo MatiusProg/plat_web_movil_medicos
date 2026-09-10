@@ -154,7 +154,7 @@ export function ModalCambiarPlan({
         >
 
             <div
-                className="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-tinta-800 bg-tinta-900 shadow-2xl"
+                className="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 shadow-2xl"
                 onMouseDown={(
                     evento,
                 ) =>
@@ -164,15 +164,15 @@ export function ModalCambiarPlan({
 
                 {/* Cabecera */}
 
-                <header className="flex shrink-0 items-start justify-between border-b border-tinta-800 px-6 py-5">
+                <header className="flex shrink-0 items-start justify-between border-b border-tinta-200 dark:border-tinta-800 px-6 py-5">
 
                     <div>
 
-                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-400">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-600 dark:text-marca-400">
                             Suscripción
                         </p>
 
-                        <h2 className="mt-1 text-xl font-bold text-tinta-50">
+                        <h2 className="mt-1 text-xl font-bold text-tinta-900 dark:text-tinta-50">
                             Cambiar plan
                         </h2>
 
@@ -192,7 +192,7 @@ export function ModalCambiarPlan({
                         disabled={
                             guardando
                         }
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl text-tinta-500 transition hover:bg-tinta-800 hover:text-tinta-100 disabled:opacity-50"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl text-tinta-500 transition hover:bg-tinta-100 dark:hover:bg-tinta-800 hover:text-tinta-800 dark:hover:text-tinta-100 disabled:opacity-50"
                         aria-label="Cerrar"
                     >
                         ×
@@ -214,11 +214,11 @@ export function ModalCambiarPlan({
 
                         {/* Organización */}
 
-                        <div className="rounded-2xl border border-tinta-800 bg-tinta-950 p-4">
+                        <div className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 p-4">
 
                             <div className="flex items-center gap-3">
 
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-marca-950 text-marca-400">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400">
 
                                     <IconoEdificio />
 
@@ -231,7 +231,7 @@ export function ModalCambiarPlan({
                                         Organización
                                     </p>
 
-                                    <p className="mt-1 text-base font-bold text-tinta-50">
+                                    <p className="mt-1 text-base font-bold text-tinta-900 dark:text-tinta-50">
                                         {organizacion}
                                     </p>
 
@@ -246,7 +246,7 @@ export function ModalCambiarPlan({
 
                         <div>
 
-                            <label className="mb-2 block text-sm font-semibold text-tinta-300">
+                            <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                                 Nuevo plan
                             </label>
 
@@ -261,7 +261,7 @@ export function ModalCambiarPlan({
                                         evento.target.value,
                                     )
                                 }
-                                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                                className="h-11 w-full rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 text-sm text-tinta-800 dark:text-tinta-100 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                             >
 
                                 <option value="">
@@ -295,7 +295,7 @@ export function ModalCambiarPlan({
 
 
                             {planSeleccionado && (
-                                <div className="mt-3 rounded-xl border border-marca-900 bg-marca-950/40 px-4 py-3">
+                                <div className="mt-3 rounded-xl border border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950/40 px-4 py-3">
 
                                     <div className="flex flex-wrap items-center justify-between gap-3">
 
@@ -305,7 +305,7 @@ export function ModalCambiarPlan({
                                                 Plan seleccionado
                                             </p>
 
-                                            <p className="mt-1 font-semibold text-marca-300">
+                                            <p className="mt-1 font-semibold text-marca-700 dark:text-marca-300">
                                                 {
                                                     planSeleccionado.name
                                                 }
@@ -320,7 +320,7 @@ export function ModalCambiarPlan({
                                                 Precio mensual
                                             </p>
 
-                                            <p className="mt-1 font-bold text-tinta-100">
+                                            <p className="mt-1 font-bold text-tinta-800 dark:text-tinta-100">
                                                 {planSeleccionado.currency === 'BOB'
                                                     ? 'Bs'
                                                     : planSeleccionado.currency}{' '}
@@ -343,7 +343,7 @@ export function ModalCambiarPlan({
 
                         <div>
 
-                            <label className="mb-2 block text-sm font-semibold text-tinta-300">
+                            <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                                 Fecha de inicio
                             </label>
 
@@ -359,7 +359,7 @@ export function ModalCambiarPlan({
                                         evento.target.value,
                                     )
                                 }
-                                className="h-11 w-full rounded-xl border border-tinta-800 bg-tinta-950 px-4 text-sm text-tinta-100 outline-none transition [color-scheme:dark] focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                                className="h-11 w-full rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 text-sm text-tinta-800 dark:text-tinta-100 outline-none transition [color-scheme:dark] focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                             />
 
                             <p className="mt-1.5 text-xs text-tinta-500">
@@ -374,7 +374,7 @@ export function ModalCambiarPlan({
 
                         <div>
 
-                            <label className="mb-2 block text-sm font-semibold text-tinta-300">
+                            <label className="mb-2 block text-sm font-semibold text-tinta-600 dark:text-tinta-300">
                                 Motivo del cambio
                             </label>
 
@@ -392,7 +392,7 @@ export function ModalCambiarPlan({
                                 placeholder="Ej. Actualización solicitada por la organización"
                                 rows={4}
                                 maxLength={200}
-                                className="w-full resize-none rounded-xl border border-tinta-800 bg-tinta-950 px-4 py-3 text-sm text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
+                                className="w-full resize-none rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 py-3 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-600 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                             />
 
 
@@ -414,17 +414,17 @@ export function ModalCambiarPlan({
 
                         {/* Aviso */}
 
-                        <div className="rounded-2xl border border-amber-900/70 bg-amber-950/30 px-4 py-3">
+                        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/70 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
 
                             <div className="flex gap-3">
 
-                                <div className="mt-0.5 text-amber-400">
+                                <div className="mt-0.5 text-amber-600 dark:text-amber-400">
 
                                     <IconoInformacion />
 
                                 </div>
 
-                                <p className="text-xs leading-5 text-amber-300/90">
+                                <p className="text-xs leading-5 text-amber-700 dark:text-amber-300/90">
                                     Al confirmar, la suscripción vigente
                                     se cerrará y se abrirá la nueva.
                                     La organización conservará su historial
@@ -440,7 +440,7 @@ export function ModalCambiarPlan({
 
                     {/* Botones siempre visibles */}
 
-                    <footer className="shrink-0 border-t border-tinta-800 bg-tinta-900 px-6 py-4">
+                    <footer className="shrink-0 border-t border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 px-6 py-4">
 
                         <div className="flex items-center justify-end gap-3">
 
@@ -452,7 +452,7 @@ export function ModalCambiarPlan({
                                 disabled={
                                     guardando
                                 }
-                                className="h-11 rounded-xl border border-tinta-700 px-5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800 disabled:opacity-50"
+                                className="h-11 rounded-xl border border-tinta-300 dark:border-tinta-700 px-5 text-sm font-semibold text-tinta-600 dark:text-tinta-300 transition hover:bg-tinta-100 dark:hover:bg-tinta-800 disabled:opacity-50"
                             >
                                 Cancelar
                             </button>

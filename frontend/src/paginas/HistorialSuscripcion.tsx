@@ -102,7 +102,7 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-blue-900 bg-blue-950 text-blue-400',
+                'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
 
             dot:
                 'bg-blue-500',
@@ -117,7 +117,7 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-violet-900 bg-violet-950 text-violet-400',
+                'border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400',
 
             dot:
                 'bg-violet-500',
@@ -129,7 +129,7 @@ function estiloPlan(
 
     return {
         badge:
-            'border-marca-900 bg-marca-950 text-marca-400',
+            'border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400',
 
         dot:
             'bg-marca-500',
@@ -270,7 +270,7 @@ export function HistorialSuscripcion() {
                         '/suscripciones',
                     )
                 }
-                className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-tinta-400 transition hover:text-marca-400"
+                className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-tinta-500 dark:text-tinta-400 transition hover:text-marca-600 dark:hover:text-marca-400"
             >
                 <IconoVolver />
 
@@ -282,11 +282,11 @@ export function HistorialSuscripcion() {
 
             <header className="mb-8">
 
-                <p className="text-sm font-medium text-marca-400">
+                <p className="text-sm font-medium text-marca-600 dark:text-marca-400">
                     Plataforma
                 </p>
 
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-50">
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">
                     Historial de suscripción
                 </h1>
 
@@ -300,13 +300,13 @@ export function HistorialSuscripcion() {
 
             {/* Organización */}
 
-            <section className="mb-7 rounded-2xl border border-tinta-800 bg-tinta-900/60 p-5">
+            <section className="mb-7 rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60 p-5">
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
 
                     <div className="flex items-center gap-4">
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-marca-950 text-marca-400">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400">
 
                             <IconoEdificio />
 
@@ -319,7 +319,7 @@ export function HistorialSuscripcion() {
                                 Organización
                             </p>
 
-                            <h2 className="mt-1 text-lg font-semibold text-tinta-50">
+                            <h2 className="mt-1 text-lg font-semibold text-tinta-900 dark:text-tinta-50">
                                 {organizacion}
                             </h2>
 
@@ -334,13 +334,13 @@ export function HistorialSuscripcion() {
                     </div>
 
 
-                    <div className="rounded-xl border border-tinta-800 bg-tinta-950 px-4 py-3 text-right">
+                    <div className="rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 px-4 py-3 text-right">
 
                         <p className="text-xs text-tinta-500">
                             Cambios registrados
                         </p>
 
-                        <p className="mt-1 text-xl font-bold text-tinta-100">
+                        <p className="mt-1 text-xl font-bold text-tinta-800 dark:text-tinta-100">
                             {historial.length}
                         </p>
 
@@ -354,13 +354,13 @@ export function HistorialSuscripcion() {
             {/* Error */}
 
             {error && (
-                <div className="mb-6 rounded-2xl border border-red-900 bg-red-950/40 px-5 py-4">
+                <div className="mb-6 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-5 py-4">
 
-                    <p className="font-semibold text-red-300">
+                    <p className="font-semibold text-red-700 dark:text-red-300">
                         No se pudo cargar el historial
                     </p>
 
-                    <p className="mt-1 text-sm text-red-400">
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                         {error}
                     </p>
 
@@ -381,11 +381,11 @@ export function HistorialSuscripcion() {
 
             ) : (
 
-                <section className="rounded-2xl border border-tinta-800 bg-tinta-900/60">
+                <section className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60">
 
-                    <div className="border-b border-tinta-800 px-6 py-5">
+                    <div className="border-b border-tinta-200 dark:border-tinta-800 px-6 py-5">
 
-                        <h2 className="font-semibold text-tinta-50">
+                        <h2 className="font-semibold text-tinta-900 dark:text-tinta-50">
                             Línea de tiempo
                         </h2>
 
@@ -431,7 +431,7 @@ export function HistorialSuscripcion() {
                                             {/* Línea */}
 
                                             {!ultimo && (
-                                                <div className="absolute left-[17px] top-9 h-[calc(100%-18px)] w-px bg-tinta-700" />
+                                                <div className="absolute left-[17px] top-9 h-[calc(100%-18px)] w-px bg-tinta-200 dark:bg-tinta-700" />
                                             )}
 
 
@@ -441,8 +441,8 @@ export function HistorialSuscripcion() {
                                                 className={[
                                                     'relative z-10 mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border',
                                                     vigente
-                                                        ? 'border-emerald-700 bg-emerald-950'
-                                                        : 'border-tinta-700 bg-tinta-900',
+                                                        ? 'border-emerald-700 bg-emerald-50 dark:bg-emerald-950'
+                                                        : 'border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900',
                                                 ].join(' ')}
                                             >
 
@@ -460,7 +460,7 @@ export function HistorialSuscripcion() {
 
                                             {/* Tarjeta */}
 
-                                            <article className="min-w-0 flex-1 rounded-2xl border border-tinta-800 bg-tinta-950/40 p-5">
+                                            <article className="min-w-0 flex-1 rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-950/40 p-5">
 
                                                 <div className="flex flex-wrap items-start justify-between gap-4">
 
@@ -491,7 +491,7 @@ export function HistorialSuscripcion() {
 
 
                                                             {vigente && (
-                                                                <span className="rounded-full border border-emerald-900 bg-emerald-950 px-3 py-1 text-xs font-semibold text-emerald-400">
+                                                                <span className="rounded-full border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                   PLAN VIGENTE
                                 </span>
                                                             )}
@@ -499,11 +499,11 @@ export function HistorialSuscripcion() {
                                                         </div>
 
 
-                                                        <p className="mt-3 text-sm text-tinta-400">
+                                                        <p className="mt-3 text-sm text-tinta-500 dark:text-tinta-400">
                                                             Vigencia
                                                         </p>
 
-                                                        <p className="mt-1 font-medium text-tinta-200">
+                                                        <p className="mt-1 font-medium text-tinta-700 dark:text-tinta-200">
                                                             {
                                                                 fechaVisual(
                                                                     suscripcion
@@ -532,8 +532,8 @@ export function HistorialSuscripcion() {
                                                             className={[
                                                                 'mt-1 text-sm font-semibold',
                                                                 vigente
-                                                                    ? 'text-emerald-400'
-                                                                    : 'text-tinta-400',
+                                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                                    : 'text-tinta-500 dark:text-tinta-400',
                                                             ].join(' ')}
                                                         >
                                                             {vigente
@@ -546,7 +546,7 @@ export function HistorialSuscripcion() {
                                                 </div>
 
 
-                                                <div className="my-5 h-px bg-tinta-800" />
+                                                <div className="my-5 h-px bg-tinta-100 dark:bg-tinta-800" />
 
 
                                                 <dl className="grid gap-5 sm:grid-cols-2">
@@ -622,7 +622,7 @@ function Dato({
                 {titulo}
             </dt>
 
-            <dd className="mt-1.5 text-sm leading-6 text-tinta-200">
+            <dd className="mt-1.5 text-sm leading-6 text-tinta-700 dark:text-tinta-200">
                 {valor}
             </dd>
         </div>
@@ -638,7 +638,7 @@ function EstadoCargando() {
                 (item) => (
                     <div
                         key={item}
-                        className="h-40 animate-pulse rounded-2xl border border-tinta-800 bg-tinta-900/60"
+                        className="h-40 animate-pulse rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-900/60"
                     />
                 ),
             )}
@@ -650,15 +650,15 @@ function EstadoCargando() {
 
 function EstadoVacio() {
     return (
-        <div className="rounded-2xl border border-dashed border-tinta-700 bg-tinta-900/50 px-6 py-14 text-center">
+        <div className="rounded-2xl border border-dashed border-tinta-300 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-900/50 px-6 py-14 text-center">
 
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-tinta-800 text-tinta-400">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-tinta-100 dark:bg-tinta-800 text-tinta-500 dark:text-tinta-400">
 
                 <IconoHistorial />
 
             </div>
 
-            <h2 className="mt-4 font-semibold text-tinta-200">
+            <h2 className="mt-4 font-semibold text-tinta-700 dark:text-tinta-200">
                 Sin historial disponible
             </h2>
 
