@@ -11,6 +11,40 @@ Proyecto académico — Sistemas de Información 2, Grupo 15.
 
 ---
 
+## Dónde está desplegado
+
+| Qué | Enlace |
+|---|---|
+| **Aplicación web** | <https://platwebmovilmedicos-production-ae19.up.railway.app/> |
+| **API (backend)** | <https://web-production-872fa.up.railway.app/> |
+| Comprobación rápida de que la API responde | <https://web-production-872fa.up.railway.app/api/health/> |
+| Repositorio | <https://github.com/MatiusProg/plat_web_movil_medicos> |
+| Aplicación móvil | Todavía no hay APK publicado; se compila en local siguiendo [docs/entorno/setup-movil.md](docs/entorno/setup-movil.md) |
+
+Backend y frontend son dos servicios del mismo proyecto de Railway; la base de
+datos es Supabase. Cómo se desplegó, con las variables y las confusiones que
+costaron una tarde, está en [docs/entorno/despliegue.md](docs/entorno/despliegue.md).
+
+> **Antes de cualquier defensa o demostración, entrar al panel de Supabase el
+> día anterior y comprobar que el proyecto está activo.** El plan gratuito se
+> pausa a los 7 días sin actividad y el despliegue queda caído sin aviso.
+
+---
+
+## En qué sprint vamos
+
+**Sprint 2 · 12/09/26 – 05/10/26** — reserva, pago y atención de la ficha, más
+el adelanto del subsistema de inteligencia artificial (chatbot RAG sobre
+pgvector). Quién hace qué: [docs/sprints/sprint-2/reparto.md](docs/sprints/sprint-2/reparto.md).
+
+| Sprint | Estado | Documentos |
+|---|---|---|
+| Sprint 0 | Cerrado | [revisión y retrospectiva](docs/sprints/sprint-0/revision-y-retrospectiva.md) |
+| Sprint 1 | Cerrado | [reparto](docs/sprints/sprint-1/reparto.md) · [historias de usuario](docs/sprints/sprint-1/historias-de-usuario.md) |
+| **Sprint 2** | **En curso** | [reparto](docs/sprints/sprint-2/reparto.md) |
+
+---
+
 ## Tecnologías
 
 | Capa | Herramienta | Versión |
@@ -20,7 +54,7 @@ Proyecto académico — Sistemas de Información 2, Grupo 15.
 | Base de datos | PostgreSQL + pgvector + Row Level Security | **16** |
 | Controlador de base de datos | psycopg | **3.3** (no psycopg2) |
 | Frontend web | React + Vite + TailwindCSS | React **19.2** · Vite 8.2 · Tailwind 4.3 |
-| Móvil | Flutter | _(a fijar en la tarea 6 del Sprint 0)_ |
+| Móvil | Flutter | **3.47.2** (`stable`) · Dart 3.13.2 |
 | Base de demostración | Supabase (PostgreSQL gestionado) | — |
 | Hospedaje de la aplicación | Railway | — |
 | Gestión del proyecto | Jira | — |
@@ -212,7 +246,7 @@ commits, proceso de pull request y Definición de Terminado.
 
 ## Equipo — Grupo 15
 
-| Rol | Integrante | Registrto |
+| Rol | Integrante | Registro |
 |---|---|---|
 | Scrum Master | Luis Mateo Hurtado Castro | 222008687 |
 | Product Owner | Alexander Osinaga Blanco | 223043631 |
