@@ -61,7 +61,7 @@ pgvector). Quién hace qué: [docs/sprints/sprint-2/reparto.md](docs/sprints/spr
 
 ### ⚠️ Python 3.13, no 3.14
 
-**Los seis usamos exactamente Python 3.13.** No es una preferencia: es una
+**Todo el equipo usa exactamente Python 3.13.** No es una preferencia: es una
 restricción con una causa concreta.
 
 `djangorestframework-simplejwt` —de la que dependen el inicio de sesión
@@ -253,7 +253,11 @@ commits, proceso de pull request y Definición de Terminado.
 | Developer | Karen Paola Ortega Mancilla | 222056592 |
 | Developer | Luis Miguel Aguayo Quiroz | 218000405 |
 | Developer | José Daniel Iporo Chulque | 216024773 |
-| Developer | Michael Alexander Mamani Samurio | 220153590 |
+| — | Michael Alexander Mamani Samurio | 220153590 — *retiró la materia* |
+
+El equipo trabaja el Sprint 2 con cinco integrantes. Cómo se redistribuyeron
+las historias que quedaron pendientes está en el
+[reparto del Sprint 2](docs/sprints/sprint-2/reparto.md).
 
 ## Licencia
 

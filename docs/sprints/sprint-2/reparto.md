@@ -23,11 +23,11 @@ reparto del sprint anterior, en `../sprint-1/reparto.md`.
 
 Tres cosas, y conviene tenerlas presentes antes de leer el reparto.
 
-**1. El equipo pasó de seis a cinco.** Michael Mamani queda fuera del reparto.
-Sus tres historias del Sprint 1 —US-05, US-09 y US-10, 16 h— entran a este
-sprint repartidas entre quienes ya son dueños de esos módulos. La docente
-mencionó la posibilidad de incorporar un reemplazo; la sección 8 dice
-exactamente qué tomaría esa persona sin obligar a rehacer el reparto.
+**1. El equipo pasó de seis a cinco: Michael Mamani retiró la materia.** Sus
+tres historias del Sprint 1 —US-05, US-09 y US-10, 16 h— entran a este sprint
+repartidas entre quienes ya son dueños de esos módulos. La docente mencionó la
+posibilidad de incorporar un reemplazo; la sección 8 dice exactamente qué
+tomaría esa persona sin obligar a rehacer el reparto.
 
 **2. La Épica 7 (chatbot RAG) se adelanta del Sprint 3 a este sprint.**
 Entran **US-31, US-32 y US-34** —36 h—. Es la prioridad número uno del sprint
@@ -53,17 +53,26 @@ El total del proyecto no cambia: son las mismas 436 h, movidas de sprint.
 | Integrante | Historias | Web | Móvil | Horas |
 |---|---|---|---|---|
 | Ortega Mancilla, Karen Paola | **US-31**, **US-34**, US-05 *(deuda S1)* | US-05 | US-31, US-34, US-05 | **30** |
-| Iporo Chulque, José Daniel | **US-32**, US-22, US-09 *(deuda S1)*, US-10 *(deuda S1)* | US-32 *(backend)*, US-22, US-09, US-10 | — | **28** |
-| Hurtado Castro, Luis Mateo *(SM)* | US-24, US-25 · + documentación | US-24, US-25 | — | **26** |
+| Hurtado Castro, Luis Mateo *(SM)* | **US-32**, US-24, US-25 · + documentación | US-32 *(backend)*, US-24, US-25 | — | **36** |
+| Iporo Chulque, José Daniel | US-22, US-09 *(deuda S1)*, US-10 *(deuda S1)* | US-22, US-09, US-10 | — | **18** |
 | Aguayo Quiroz, Luis Miguel | US-17, US-20 | backend de ambas | US-17, US-20 | **26** |
 | Osinaga Blanco, Alexander *(PO)* | US-18, US-19, US-21 | — | US-18, US-19, US-21 | **32** |
 
-**Total comprometido: 142 horas** · 5 integrantes · 28,4 h por integrante.
+**Total comprometido: 142 horas** · 5 integrantes · 28,4 h de promedio.
 
 **14 historias:** las 8 del Sprint 2 que se conservan, las 3 de deuda del
 Sprint 1 y las 3 del chatbot adelantadas del Sprint 3.
 
-**Ritmo.** El sprint dura 24 días corridos. 28,4 h por persona son ~1,2 h por
+**El reparto no es parejo, y es a propósito.** Las tres historias de IA quedan
+entre **dos personas —Karen y el SM—** porque son el énfasis del proyecto y lo
+que se presenta el 16/09: repartir el chatbot entre tres hace que nadie tenga
+la foto completa del subsistema, que es justamente lo que hay que poder
+defender. Daniel queda con 18 h para **cerrar temprano la deuda del Sprint 1**
+—US-09 y US-10 llevan un sprint sin entregarse y no pueden volver a correrse—
+y sigue siendo el dueño del texto del catálogo: el SM acuerda con él el corpus
+antes de vectorizar nada.
+
+**Ritmo.** El sprint dura 24 días corridos. 28,4 h de promedio son ~1,2 h por
 día y por persona: por debajo del ritmo del Sprint 1 (1,9 h/día), que se
 entregó. La carga total es mayor, pero el sprint también es más largo.
 
@@ -79,10 +88,10 @@ organización. Eso es lo que la docente pidió ver.
 | Quién | Qué lleva el 16/09 | Por qué es lo que hay que mostrar |
 |---|---|---|
 | **Karen** | App `assistant` creada, tabla de fragmentos con `vector` de pgvector, comando `embed_catalog` que indexa las especialidades, y `POST /api/assistant/suggest` devolviendo la especialidad sugerida **con los fragmentos que la respaldan** | Es el RAG completo: recuperar y después responder. Mostrar los fragmentos recuperados es lo que demuestra que no está alucinando |
-| **Daniel** | El corpus administrativo cargado —horarios de sucursal, costos y preparaciones previas— y **la prueba de aislamiento**: la misma pregunta en las dos organizaciones sembradas devuelve catálogos distintos | El apartado 1.1.6 del documento dice que el multi-inquilino alcanza a la IA. Esta es la única evidencia de que se cumple, y es el diferencial del proyecto |
+| **SM** | El corpus administrativo cargado —horarios de sucursal, costos y preparaciones previas—, C1 y C2 del modelo C4 y el guion de la demostración | El corpus es lo que hace que el asistente conteste algo más que especialidades. C1 y C2 son la otra mitad de lo que pidió la docente y no dependen de que el código esté |
+| **Daniel** | **La prueba de aislamiento**: la misma pregunta en las dos organizaciones sembradas devuelve catálogos distintos, y el texto del catálogo revisado para que sea recuperable | El apartado 1.1.6 del documento dice que el multi-inquilino alcanza a la IA. Esta es la única evidencia de que se cumple, y es el diferencial del proyecto |
 | **Alexander** | Pantalla de chat mínima en Flutter contra el endpoint de Karen — armazón, no la historia | Un endpoint en Postman no se ve; una conversación en el celular sí. Desde el 17 la pantalla pasa a Karen |
 | **Luis Aguayo** | Modelo de `appointments` migrado y **el contrato del endpoint de reserva publicado** | Repite lo que le funcionó en el Sprint 1: publicar el contrato antes que la implementación desbloquea a los demás |
-| **SM** | C1 y C2 del modelo C4 y el diagrama de navegación del móvil (sección 5), más el guion de la demostración | Es la otra mitad de lo que pidió la docente, y no depende de que el código esté |
 
 **Lo que NO se promete el 16.** Ninguna historia cerrada, ni pago, ni reserva
 funcionando. Decirlo de entrada evita que el avance se lea como un
@@ -174,71 +183,37 @@ cuenta no son editables por el usuario. Es de Karen porque vive en
 **Archivos:** app `assistant` completa, `accounts/profile.py`. En móvil,
 `mobile/lib/features/assistant/` y `mobile/lib/features/profile/`.
 
-**Depende de:** Daniel, por el corpus de US-32 —pero sólo para ampliarlo: US-31
-arranca con las descripciones de especialidades que ya están cargadas.
+**Depende de:** nadie para arrancar. US-31 se monta sobre las descripciones de
+especialidades que ya están cargadas desde US-12; el corpus administrativo del
+SM sólo lo amplía.
 
-**Dependen de ella:** Daniel (US-32 monta sobre su pipeline) y el Sprint 3
-completo del chatbot.
+**Dependen de ella:** el SM (US-32 monta sobre su pipeline y comparte tabla e
+índice) y el Sprint 3 completo del chatbot.
 
 ---
 
-### José Daniel Iporo — *mostrador, padrón y el chatbot administrativo* — 28 h
+### Luis Mateo Hurtado *(Scrum Master)* — *la historia clínica y el asistente administrativo* — 36 h + documentación
 
-Sigue siendo el dueño de `catalog`, y por eso el corpus administrativo es suyo:
-es el mismo texto que él escribió en US-12. Su bloque es todo web y todo de
-mostrador.
+Toma la Épica 5 completa porque ya es el dueño de `patients/history.py`
+—los antecedentes declarados de US-08— y el encuentro clínico se escribe encima
+de eso. Y toma la segunda mitad del chatbot para que **el subsistema de IA
+quede entre dos personas y no entre tres**: es el énfasis del proyecto, es lo
+que se presenta el 16/09 y lo que hay que poder defender en la revisión, así
+que conviene que quienes lo escriben sean los mismos que lo expliquen.
+
+Es la carga más alta del sprint. Es deliberado y es suya la decisión.
 
 **US-32 — Consultas administrativas al asistente · 10 h · backend · 🟡**
 
 Horarios, sucursales, costos y preparación previa a estudios, respondidos por
-el mismo endpoint de Karen sobre el mismo índice. Su trabajo es el **corpus**:
-qué se vectoriza, con qué granularidad y con qué texto. Un fragmento por
-sucursal con su horario completo se recupera bien; un fragmento con las tres
-sucursales juntas no distingue cuál pidió el paciente.
+el mismo endpoint de Karen y sobre el mismo índice. El trabajo no es el
+endpoint: es el **corpus**. Qué se vectoriza, con qué granularidad y con qué
+texto. Un fragmento por sucursal con su horario completo se recupera bien; un
+fragmento con las tres sucursales juntas no distingue cuál pidió el paciente.
 
-No construye pantalla: la conversación ya la tiene Karen. Acuerda con ella el
-formato del fragmento antes de cargar nada.
-
-**US-22 — Check-in en recepción · 6 h · WEB · 🔴**
-
-Verificación del código del comprobante —QR o documento— y habilitación del
-ingreso a consulta. El código lo emite Alexander en US-19: **acordar el formato
-y la firma el primer día**, o se emite uno y se valida otro. Un comprobante ya
-usado no se acepta dos veces, y el rechazo dice por qué.
-
-> Acá se registra el desenlace *asistió*. Ver la nota de la sección 3: sin eso
-> el Sprint 4 no tiene qué entrenar.
-
-**US-09 — Búsqueda de pacientes · 6 h · WEB · deuda del Sprint 1**
-
-Por documento (exacta) y por nombre o apellido (parcial, sin distinguir
-mayúsculas ni tildes), en menos de 2 segundos con 10.000 registros (RNF-01).
-Eso obliga a un índice de texto sobre el nombre normalizado. El conjunto de
-prueba es **sintético**: el repositorio es público.
-
-**US-10 — ABM de pacientes · 6 h · WEB · deuda del Sprint 1**
-
-Corrección de datos, alta manual desde ventanilla, baja **lógica y nunca
-física**, y fusión de duplicados reasignando fichas, antecedentes y atenciones
-antes de inactivar el registro absorbido. Cada corrección, baja y fusión va a
-la bitácora de US-06 con el valor anterior y el nuevo.
-
-**Archivos:** `assistant/corpus.py` *(acordado con Karen)*, `patients/search.py`,
-`patients/admin_ops.py`, el módulo de check-in dentro de `appointments`
-*(nombre a acordar con Luis Aguayo)*.
-
-**Depende de:** Karen (pipeline de US-31) y Alexander (formato del comprobante).
-
-**Dependen de él:** nadie de forma bloqueante. Es lo que le permite absorber la
-deuda del sprint anterior sin arrastrar al resto.
-
----
-
-### Luis Mateo Hurtado *(Scrum Master)* — *la historia clínica* — 26 h + documentación
-
-Toma la Épica 5 completa porque ya es el dueño de `patients/history.py`
-—los antecedentes declarados de US-08— y el encuentro clínico se escribe encima
-de eso.
+El texto de origen es de Daniel —lo escribió en US-12—: **se acuerda con él
+antes de cargar nada**. Y el formato del fragmento, con Karen, porque comparten
+tabla e índice. No construye pantalla: la conversación ya la tiene Karen.
 
 **US-24 — Registro de la atención · 16 h · WEB · 🔴**
 
@@ -264,19 +239,78 @@ lectura deja asiento en la bitácora.
 
 **Además, como SM y de cara al 06–08/10:**
 
-- **Modelo C4 y las características de calidad** — sección 5.
+- **Modelo C4** — sección 5. Las "8 características" esperan respuesta
+  de la docente.
 - **Diagramas de estado, navegación y tiempo** — sección 5.
 - Abrir `config/urls.py` **una sola vez**, en un commit, al inicio del sprint,
   para incluir `appointments`, `payments`, `encounters` y `assistant`. Después
   queda cerrado para todos.
 - Coordinar la demostración del 16/09 y la del cierre.
 
-**Archivos:** app `encounters` completa, `/api/encounters/`.
+**Archivos:** app `encounters` completa, `/api/encounters/`, y
+`assistant/corpus.py` *(acordado con Karen)*.
 
-**Depende de:** Luis Aguayo (US-17: sin ficha no hay a qué colgar el encuentro).
+**Depende de:** Luis Aguayo (US-17: sin ficha no hay a qué colgar el
+encuentro), Karen (el pipeline de US-31 tiene que existir antes que el corpus
+sirva de algo) y Daniel (el texto del catálogo).
 
 **Dependen de él:** el Sprint 3 completo —US-26 recetas, US-27 historial en el
 móvil— y la Épica 9 de resúmenes del Sprint 4.
+
+> **Riesgo de la concentración.** 36 h más el documento, y en dos frentes que
+> no se parecen: historia clínica y recuperación vectorial. Si algo se atrasa,
+> **lo primero que se suelta es US-25** (10 h, se puede leer el historial por
+> sucursal mientras tanto), no US-32: el chatbot es lo que se está mostrando.
+
+---
+
+### José Daniel Iporo — *mostrador y padrón* — 18 h
+
+La carga más baja del sprint, y con un motivo: **US-09 y US-10 llevan un sprint
+sin entregarse** y no pueden volver a correrse. Con 18 h tiene margen para
+cerrarlas temprano en vez de empujarlas contra la fecha de revisión. Su bloque
+es todo web y todo de mostrador.
+
+Sigue siendo el dueño de `catalog` y, por lo tanto, del **texto** del catálogo:
+lo que el SM vectoriza en US-32 es lo que Daniel escribió en US-12. El corpus
+se acuerda con él antes de cargarlo.
+
+**US-22 — Check-in en recepción · 6 h · WEB · 🔴**
+
+Verificación del código del comprobante —QR o documento— y habilitación del
+ingreso a consulta. El código lo emite Alexander en US-19: **acordar el formato
+y la firma el primer día**, o se emite uno y se valida otro. Un comprobante ya
+usado no se acepta dos veces, y el rechazo dice por qué.
+
+> Acá se registra el desenlace *asistió*. Ver la nota de la sección 3: sin eso
+> el Sprint 4 no tiene qué entrenar.
+
+**US-09 — Búsqueda de pacientes · 6 h · WEB · deuda del Sprint 1**
+
+Por documento (exacta) y por nombre o apellido (parcial, sin distinguir
+mayúsculas ni tildes), en menos de 2 segundos con 10.000 registros (RNF-01).
+Eso obliga a un índice de texto sobre el nombre normalizado. El conjunto de
+prueba es **sintético**: el repositorio es público.
+
+**US-10 — ABM de pacientes · 6 h · WEB · deuda del Sprint 1**
+
+Corrección de datos, alta manual desde ventanilla, baja **lógica y nunca
+física**, y fusión de duplicados reasignando fichas, antecedentes y atenciones
+antes de inactivar el registro absorbido. Cada corrección, baja y fusión va a
+la bitácora de US-06 con el valor anterior y el nuevo.
+
+**Archivos:** `patients/search.py`, `patients/admin_ops.py`, el módulo de
+check-in dentro de `appointments` *(nombre a acordar con Luis Aguayo)*.
+
+**Depende de:** Alexander (formato del comprobante), y de nadie más.
+
+**Dependen de él:** el SM, para el corpus de US-32 —no es código, es acordar qué
+texto del catálogo se vectoriza y con qué granularidad—. Fuera de eso, nadie de
+forma bloqueante: es lo que le permite cerrar la deuda del sprint anterior sin
+arrastrar al resto.
+
+**Suyo también el 16/09:** la prueba de aislamiento sobre el asistente. Ver la
+sección 2.
 
 ---
 
@@ -391,12 +425,11 @@ un acuerdo tomado.
 | **C3 — Componentes** | Los componentes de la API: `accounts`, `tenancy`, `catalog`, `patients`, `scheduling`, `audit` y las nuevas `appointments`, `payments`, `encounters`, `assistant` | Falta |
 | **C4 — Código** | Un solo camino, el más representativo. Propuesta: la recuperación del asistente, que es el énfasis del proyecto | Falta |
 
-> **Las "8 características".** Entendemos que son las ocho características de
-> calidad de la **ISO/IEC 25010** —adecuación funcional, eficiencia de
-> desempeño, compatibilidad, usabilidad, fiabilidad, seguridad, mantenibilidad
-> y portabilidad—, que se cruzarían con los RNF-01 a RNF-18 que ya están en el
-> documento. **Confirmarlo con la docente antes de dibujar nada**: si se
-> refería a otra cosa, es trabajo tirado.
+> **Las "8 características" quedan pendientes a propósito.** La docente las
+> pidió junto con el modelo C4, pero todavía no sabemos a qué se refiere.
+> **Primero se le pregunta, después se dibuja.** Escribir ocho páginas sobre la
+> interpretación equivocada cuesta más que esperar una respuesta, y el C4 se
+> puede avanzar mientras tanto sin depender de esto.
 
 **Los tres diagramas nuevos.** Uno por familia, con el candidato propuesto:
 
@@ -499,7 +532,7 @@ La numeración del Sprint 1 llegó hasta T-24. El Sprint 2 arranca en T-25.
 | T-31 | Registro de la atención | Historia | 16 horas | Hurtado Castro, L.M. | Must have |
 | T-32 | Historial clínico longitudinal | Historia | 10 horas | Hurtado Castro, L.M. | Must have |
 | T-33 | Sugerencia de especialidad por síntomas (RAG) | Historia | 16 horas | Ortega Mancilla, K.P. | Must have |
-| T-34 | Consultas administrativas al asistente | Historia | 10 horas | Iporo Chulque, J.D. | Should have |
+| T-34 | Consultas administrativas al asistente | Historia | 10 horas | Hurtado Castro, L.M. | Should have |
 | T-35 | Derivación a atención de emergencia | Historia | 10 horas | Ortega Mancilla, K.P. | Must have |
 | T-36 | Modelo C4 y diagramas de estado, navegación y tiempo | Técnica | *(a estimar en la reunión)* | Hurtado Castro, L.M. | Must have |
 | *(arrastre S1)* | Edición de perfil — US-05 | Historia | 4 horas | Ortega Mancilla, K.P. | Must have |
