@@ -192,11 +192,15 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     **Paciente** —el asistente es suyo, y es una historia móvil— y
     **Recepción**, que va a querer preguntarle a quién mandar a alguien que
     llega sin saber. El profesional no: no orienta, atiende.
+
+    US-17/US-20 suman los cuatro de fichas —``create``, ``read``, ``cancel``
+    y ``reschedule``— en
+    ``accounts/0006_seed_permissions_sprint_2_appointments``.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()

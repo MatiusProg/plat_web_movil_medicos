@@ -93,6 +93,11 @@ class Organization(models.Model):
     # en la hora local de la organización, no la del servidor.
     timezone = models.CharField(max_length=40, default="America/La_Paz")
 
+    # US-20: horas de anticipación mínimas para cancelar o reprogramar una
+    # ficha sin perder el pago. Es un parámetro por organización y no una
+    # constante en código: cada centro médico define la suya.
+    cancellation_notice_hours = models.PositiveIntegerField(default=24)
+
     status = models.CharField(max_length=12, choices=Status, default=Status.ACTIVE)
     onboarded_at = models.DateField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -150,6 +150,14 @@ const items: ItemMenu[] = [
         icono: 'catalogo',
         requiere: 'catalog.professional.read',
     },
+
+    // US-17 / US-20 — reserva, cancelación y reprogramación de fichas.
+    {
+        etiqueta: 'Mis fichas',
+        ruta: '/mis-fichas',
+        icono: 'agendas',
+        requiere: 'appointments.appointment.read',
+    },
 ]
 
 

@@ -49,8 +49,23 @@ def slot_starts(start: dt.time, end: dt.time, step_minutes: int):
 
 
 def _booked_slots(practitioner_id, date_from, date_to) -> set:
-    """Fichas ya reservadas en el rango. El Sprint 2 lo implementa."""
-    return set()
+    """Fichas ya reservadas en el rango (Sprint 2, US-17).
+
+    Sólo cuentan las fichas que todavía ocupan el turno —`pending_payment` o
+    `confirmed`, ver `Appointment.ACTIVE_STATUSES`—; cancelar o reprogramar
+    libera el turno de inmediato porque deja de estar en este conjunto.
+    """
+    from appointments.models import Appointment
+
+    range_start = dt.datetime.combine(date_from, dt.time.min, tzinfo=dt.timezone.utc)
+    range_end = dt.datetime.combine(date_to, dt.time.max, tzinfo=dt.timezone.utc)
+    filas = Appointment.objects.filter(
+        practitioner_id=practitioner_id,
+        status__in=Appointment.ACTIVE_STATUSES,
+        starts_at__gte=range_start,
+        starts_at__lte=range_end,
+    ).values_list("schedule_id", "starts_at")
+    return set(filas)
 
 
 def generate_slots(schedule: Schedule, date_from: dt.date, date_to: dt.date, *, tz):
@@ -172,6 +187,10 @@ def consolidated_availability(
                 "start": start_aware.isoformat(),
                 "end": end_aware.isoformat(),
                 "branch": {"id": str(branch.id), "name": branch.name},
+                # US-17: el turno se reserva contra `(schedule, start)`, así
+                # que el contrato de disponibilidad tiene que llevar el id de
+                # la regla de la que salió cada espacio.
+                "schedule": {"id": str(schedule.id)},
                 "capacity": schedule.capacity,
                 "reservable": reservable,
                 "reason": reason,
