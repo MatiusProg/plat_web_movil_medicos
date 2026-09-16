@@ -512,6 +512,14 @@ DATABASES["default"]["OPTIONS"].setdefault(
 )
 ```
 
+Y **por un segundo camino**, `tenancy.apps`, que lo fija con un `SET` sobre
+cada conexión ya abierta. No es redundancia por las dudas: el parámetro de
+arranque es el camino correcto y alcanza contra PostgreSQL directo, pero el
+*pooler* de Supabase puede ignorar los parámetros de arranque del cliente, y
+entonces el ajuste se pierde **sin decir nada** y el error es idéntico al que
+se estaba arreglando. Un mecanismo que puede fallar en silencio no se deja
+solo.
+
 Con `DB_SEARCH_PATH` por omisión en `public,extensions`. Sirve igual en local,
 donde la extensión está en `public` y el esquema `extensions` ni existe: un
 esquema inexistente en el `search_path` no es un error en PostgreSQL, se

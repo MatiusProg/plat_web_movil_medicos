@@ -174,8 +174,15 @@ DATABASES["default"].setdefault("OPTIONS", {})
 #
 #  `setdefault` y no asignación: si el `DATABASE_URL` ya trae su propio
 #  `?options=`, manda el de la URL.
+#  Va por dos caminos a propósito. El parámetro de conexión es el correcto y
+#  alcanza contra PostgreSQL directo; pero el *pooler* de Supabase (Supavisor,
+#  puerto 6543) puede ignorar los parámetros de arranque del cliente, y entonces
+#  esto no haría nada y el error sería idéntico. El segundo camino
+#  —`tenancy.apps`, que lo fija con un `SET` sobre cada conexión ya abierta— no
+#  depende de eso. Repetirlo no cuesta nada; que falte, cuesta un despliegue.
+DB_SEARCH_PATH = env("DB_SEARCH_PATH")
 DATABASES["default"]["OPTIONS"].setdefault(
-    "options", f"-c search_path={env('DB_SEARCH_PATH')}",
+    "options", f"-c search_path={DB_SEARCH_PATH}",
 )
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
