@@ -27,6 +27,18 @@ dj-database-url==3.1.2
 django-environ==0.14.0
 django-cors-headers==4.9.0
 
+# ---------- Asistente de orientación (US-31) ----------
+# Tipo de columna `vector`, operadores de distancia e integración con el ORM.
+# Necesita la extensión pgvector EN LA BASE: el paquete de Python no la
+# instala. En Supabase ya está; en un PostgreSQL local hay que agregarla
+# (docs/entorno/sin-docker.md).
+pgvector==0.5.0
+
+# SDK vigente de Google para Gemini. NO es `google-generativeai`, que es el
+# anterior y está descontinuado. Se usa el nivel gratuito: el modelo de
+# embeddings es lo que consume el RAG, y ahí es donde importa que no cobre.
+google-genai==2.23.0
+
 # ---------- Seguridad ----------
 # RNF-04: las contraseñas se almacenan con hash y salt.
 argon2-cffi==25.1.0
@@ -43,17 +55,6 @@ openpyxl==3.1.5
 # sistema operativo, que en Windows hay que bajar aparte y en el contenedor de
 # Railway obligaria a tocar el constructor. reportlab es Python puro.
 reportlab==4.2.5
-
-# ---------- Asistente de orientacion (US-31, US-32, US-34) ----------
-# Campo `vector` de pgvector para Django, mas el operador de distancia coseno y
-# el indice HNSW. La EXTENSION de PostgreSQL ya estaba: la crea backend/init-db
-# y en Supabase viene habilitada.
-pgvector==0.3.6
-# El proveedor de embeddings y de lenguaje. Es OPCIONAL en tiempo de ejecucion:
-# sin OPENAI_API_KEY el asistente usa el proveedor local y funciona igual, sin
-# red. Por eso los imports de `openai` van dentro de las funciones que lo usan.
-# Se fija aca igual para que el entorno desplegado sea reproducible.
-openai==1.109.1
 
 # ---------- Servir en produccion ----------
 # gunicorn NO corre en Windows (necesita fcntl): se instala igual, pero solo

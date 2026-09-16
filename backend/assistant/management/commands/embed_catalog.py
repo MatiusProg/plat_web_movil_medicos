@@ -1,175 +1,148 @@
-"""US-31, pieza 1 — Indexa el catálogo de una organización.
+"""US-31 — Indexa el catálogo de una organización para el asistente.
 
-    python manage.py embed_catalog --organization demo
+    python manage.py embed_catalog --organization morita2
     python manage.py embed_catalog --all
-    python manage.py embed_catalog --organization demo --only specialty
-    python manage.py embed_catalog --all --dry-run     # qué indexaría, sin tocar nada
+    python manage.py embed_catalog --organization morita2 --dry-run
 
-**Corre dentro de ``tenant_context(org.id)``**, como toda tarea fuera del ciclo
-HTTP. Sin contexto, las consultas al catálogo devuelven cero filas y el comando
-terminaría con éxito habiendo indexado nada — el modo de fallo más caro que
-tiene este proyecto, y el que ya pasó una vez con ``catalog/0004_seed_demo``
-(ver ``seed_catalog``).
+Es el paso que convierte el catálogo en algo recuperable: parte las
+descripciones en fragmentos, los vectoriza y los guarda. Sin correrlo,
+``/api/assistant/suggest/`` contesta correctamente que no sabe nada, porque
+efectivamente no hay nada indexado.
 
-**Es un comando y no un endpoint** porque recorre el catálogo entero y llama al
-proveedor de embeddings. Exponerlo por HTTP es poner un botón que gasta cuota y
-tarda minutos.
+**Es idempotente y se puede correr cuantas veces haga falta.** Cada corrida
+borra los fragmentos de las especialidades de esa organización y los reescribe
+(ver ``indexing.py``), así que reindexar después de editar el catálogo es
+volver a correr esto y nada más.
 
-**Reemplaza, no acumula.** Cada fragmento se identifica por su origen y su
-título, así que reindexar actualiza el vector en su lugar. Los fragmentos cuyo
-origen ya no existe —una especialidad dada de baja— se borran: dejarlos es que
-el asistente siga sugiriendo una especialidad que ya no atiende.
+**Hay que reindexar cuando cambia el texto del catálogo, y también cuando
+cambia el proveedor de embeddings.** Lo segundo es menos evidente y peor: un
+índice con vectores de dos modelos distintos no da error, da distancias que no
+significan nada. Por eso el comando avisa si en la tabla ya hay fragmentos
+calculados con otro modelo.
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
 from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization
 
-from ... import corpus, embeddings
-from ...models import KnowledgeChunk
-
-# De a cuántos se vectoriza por llamada al proveedor. Con lotes muy grandes,
-# un fallo de red obliga a rehacer todo el lote; con lotes de uno, son cien
-# viajes. Sesenta y cuatro es el punto cómodo.
-LOTE = 64
+from ...embeddings import EmbeddingError, active_model_name
+from ...indexing import index_specialties, split_into_fragments
+from ...models import CatalogFragment, SourceType
 
 
 class Command(BaseCommand):
-    help = "Indexa el catálogo de una organización para el asistente (US-31)."
+    help = "Vectoriza el catálogo de una organización para el asistente (US-31)."
 
     def add_arguments(self, parser):
         grupo = parser.add_mutually_exclusive_group(required=True)
-        grupo.add_argument("--organization",
-                           help="Slug de la organización a indexar.")
-        grupo.add_argument("--all", action="store_true",
-                           help="Indexar todas las organizaciones.")
-        parser.add_argument(
-            "--only", action="append", dest="source_types",
-            choices=list(KnowledgeChunk.Source.values),
-            help="Indexar sólo este tipo de fuente. Se puede repetir.",
+        grupo.add_argument(
+            "--organization",
+            help="Slug de la organización a indexar (por ejemplo: morita2).",
+        )
+        grupo.add_argument(
+            "--all", action="store_true",
+            help="Indexa todas las organizaciones, una por una y cada una en "
+                 "su propio contexto.",
         )
         parser.add_argument(
             "--dry-run", action="store_true",
-            help="Mostrar qué se indexaría, sin escribir ni llamar al proveedor.",
+            help="Muestra los fragmentos que se generarían y no llama al "
+                 "proveedor ni escribe nada. Sirve para revisar el corpus.",
         )
 
-    def handle(self, *args, **options):
-        proveedor = embeddings.provider_name()
-
+    def handle(self, *args, **opciones):
+        # `organizations` está bajo RLS: sin contexto de plataforma la
+        # búsqueda devuelve cero filas y el comando se queja de que el slug no
+        # existe cuando en realidad existe.
         with platform_admin_context():
-            if options["all"]:
-                organizaciones = list(Organization.objects.all())
+            if opciones["all"]:
+                organizaciones = list(Organization.objects.order_by("slug"))
             else:
-                slug = options["organization"]
+                slug = opciones["organization"]
                 organizaciones = list(Organization.objects.filter(slug=slug))
                 if not organizaciones:
-                    disponibles = ", ".join(
+                    disponibles = list(
                         Organization.objects.values_list("slug", flat=True)
-                    ) or "(ninguna)"
+                    )
                     raise CommandError(
-                        f"No existe la organización «{slug}». "
-                        f"Las que hay: {disponibles}.",
+                        f"No existe una organización con slug «{slug}». "
+                        f"Las que hay son: "
+                        f"{', '.join(disponibles) or '(ninguna)'}."
                     )
 
-        self.stdout.write(f"Proveedor de embeddings: {proveedor}")
-        if proveedor == embeddings.LOCAL:
-            self.stdout.write(self.style.WARNING(
-                "  Sin OPENAI_API_KEY: se usa el proveedor local, que sólo "
-                "captura solapamiento de palabras. Sirve para probar el "
-                "camino completo; no para producción.",
-            ))
+        if not organizaciones:
+            raise CommandError("No hay ninguna organización dada de alta.")
 
-        for organization in organizaciones:
-            self._indexar(organization, options, proveedor)
+        modelo = active_model_name()
+        self.stdout.write(f"Proveedor de embeddings: {self.style.MIGRATE_LABEL(modelo)}")
 
-    def _indexar(self, organization, options, proveedor):
-        self.stdout.write(f"\n{organization.name} ({organization.slug})")
+        for organizacion in organizaciones:
+            self.stdout.write("")
+            self.stdout.write(f"{organizacion.name} ({organizacion.slug})")
 
-        with tenant_context(organization.id):
-            fragmentos = corpus.build(organization, options["source_types"])
+            # Regla 4 del reparto: fuera del ciclo HTTP, todo va envuelto.
+            with tenant_context(organizacion.id):
+                if opciones["dry_run"]:
+                    self._dry_run(organizacion)
+                else:
+                    self._indexar(organizacion, modelo)
 
-            if not fragmentos:
-                self.stdout.write(self.style.WARNING(
-                    "  El catálogo está vacío: no hay nada que indexar. "
-                    "Sembralo con «manage.py seed_catalog» o cargalo por la "
-                    "aplicación.",
-                ))
-                return
+    # ----------------------------------------------------------------------
 
-            if options["dry_run"]:
-                for fragmento in fragmentos:
-                    self.stdout.write(
-                        f"  [{fragmento['source_type']}] {fragmento['title']}"
-                        f"  ({len(fragmento['content'])} caracteres)",
-                    )
-                self.stdout.write(f"  {len(fragmentos)} fragmento(s). "
-                                  "No se escribió nada (--dry-run).")
-                return
+    def _dry_run(self, organizacion):
+        from catalog.models import Specialty
 
-            try:
-                vectores = self._vectorizar(fragmentos)
-            except embeddings.EmbeddingError as error:
-                raise CommandError(
-                    f"El proveedor de embeddings no respondió: {error}. "
-                    "No se modificó el índice.",
-                ) from error
-
-            creados, actualizados, borrados = self._guardar(
-                organization, fragmentos, vectores, proveedor,
-                options["source_types"],
+        total = 0
+        for especialidad in Specialty.objects.filter(
+            organization=organizacion, is_active=True,
+        ).order_by("name"):
+            fragmentos = split_into_fragments(
+                especialidad.name, especialidad.description,
             )
+            total += len(fragmentos)
+            self.stdout.write(f"  {especialidad.name} → {len(fragmentos)} fragmentos")
+            for texto in fragmentos:
+                self.stdout.write(f"      · {texto}")
+        self.stdout.write(f"  (sin escribir) {total} fragmentos en total")
+
+    def _indexar(self, organizacion, modelo):
+        self._avisar_si_hay_otro_modelo(organizacion, modelo)
+
+        try:
+            resumen = index_specialties(organizacion, stdout=self.stdout)
+        except EmbeddingError as error:
+            raise CommandError(str(error)) from error
+
+        if resumen["fragments"] == 0:
+            self.stdout.write(self.style.WARNING(
+                "  No hay especialidades activas: no se indexó nada. "
+                "¿Corriste `seed_catalog` en esta organización?"
+            ))
+            return
 
         self.stdout.write(self.style.SUCCESS(
-            f"  {creados} nuevo(s), {actualizados} actualizado(s), "
-            f"{borrados} borrado(s).",
+            f"  {resumen['fragments']} fragmentos de "
+            f"{resumen['specialties']} especialidades, con {resumen['model']}"
         ))
+        if resumen["empty"]:
+            self.stdout.write(self.style.WARNING(
+                "  Sin descripción, y por lo tanto casi imposibles de "
+                "recuperar: " + ", ".join(resumen["empty"])
+            ))
 
-    def _vectorizar(self, fragmentos):
-        vectores = []
-        for inicio in range(0, len(fragmentos), LOTE):
-            lote = fragmentos[inicio:inicio + LOTE]
-            vectores += embeddings.embed_many([f["content"] for f in lote])
-        return vectores
-
-    def _guardar(self, organization, fragmentos, vectores, proveedor,
-                 source_types):
-        """Escribe el índice. Todo dentro de una transacción.
-
-        Si el guardado se interrumpiera a mitad, el asistente quedaría
-        respondiendo con medio catálogo indexado y el otro medio no — y
-        contestando «no tengo esa información» sobre cosas que sí están, que es
-        indistinguible de un problema de calidad del corpus.
-        """
-        creados = actualizados = 0
-        vistos = []
-
-        with transaction.atomic():
-            for fragmento, vector in zip(fragmentos, vectores):
-                objeto, creado = KnowledgeChunk.objects.update_or_create(
-                    organization=organization,
-                    source_type=fragmento["source_type"],
-                    source_id=fragmento["source_id"],
-                    title=fragmento["title"],
-                    defaults={
-                        "content": fragmento["content"],
-                        "embedding": vector,
-                        "provider": proveedor,
-                    },
-                )
-                vistos.append(objeto.id)
-                creados += int(creado)
-                actualizados += int(not creado)
-
-            # Lo que ya no está en el catálogo se va. Se acota a los tipos que
-            # esta corrida indexó: con `--only specialty` no se pueden borrar
-            # las sucursales, que esta corrida ni miró.
-            obsoletos = KnowledgeChunk.objects.filter(
-                organization=organization,
-            ).exclude(id__in=vistos)
-            if source_types:
-                obsoletos = obsoletos.filter(source_type__in=source_types)
-            borrados, _ = obsoletos.delete()
-
-        return creados, actualizados, borrados
+    def _avisar_si_hay_otro_modelo(self, organizacion, modelo):
+        otros = set(
+            CatalogFragment.objects
+            .filter(organization=organizacion)
+            .exclude(embedding_model=modelo)
+            .exclude(source_type=SourceType.SPECIALTY)
+            .values_list("embedding_model", flat=True)
+        )
+        if otros:
+            self.stdout.write(self.style.WARNING(
+                f"  Ojo: quedan fragmentos de otras fuentes calculados con "
+                f"{', '.join(sorted(otros))}. Mezclar modelos en el mismo "
+                f"índice da distancias que no significan nada: reindexá todo "
+                f"con --all."
+            ))

@@ -103,6 +103,11 @@ GRANT USAGE, CREATE ON SCHEMA public TO app_user;
 -- `psql`, para el SQL Editor y para cualquier cliente que no sea Django.
 ALTER ROLE app_user SET search_path = public, extensions;
 
+-- Y esto, que es lo que costó el despliegue del 16/09 (D-18): tener el
+-- esquema en el search_path no alcanza si el rol no puede usarlo. Un esquema
+-- inaccesible se ignora en silencio y el error es el mismo que sin él.
+GRANT USAGE ON SCHEMA extensions TO app_user;
+
 -- Permite verificar el aislamiento desde el SQL Editor sin abrir otra conexión.
 GRANT app_user TO postgres;
 ```

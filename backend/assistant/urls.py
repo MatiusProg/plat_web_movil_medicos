@@ -1,22 +1,17 @@
-"""Rutas de la app `assistant`. US-31, US-32 y US-34.
+"""Rutas de la app assistant.
 
-`config/urls.py` la incluye bajo `/api/assistant/`.
-
-    POST /api/assistant/suggest/   la consulta al asistente
-    GET  /api/assistant/status/    si el índice está armado y con qué proveedor
-
-No hay verbos para administrar el índice: lo arma `manage.py embed_catalog`.
-Exponerlo por HTTP sería un endpoint que recorre el catálogo entero y llama al
-proveedor de embeddings una vez por fragmento, disparable desde una pantalla.
+US-32 (consultas administrativas) reutiliza este mismo endpoint: amplía el
+corpus, no agrega ruta. Si aparece una segunda, se agrega acá y no en
+``config/urls.py``, que está cerrado.
 """
 
 from django.urls import path
 
-from .views import StatusView, SuggestView
+from .views import SuggestView
 
 app_name = "assistant"
 
 urlpatterns = [
+    # US-31: sugerencia de especialidad por síntomas.
     path("suggest/", SuggestView.as_view(), name="suggest"),
-    path("status/", StatusView.as_view(), name="status"),
 ]

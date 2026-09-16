@@ -59,57 +59,71 @@ BRANCHES = [
 HOURS = [("08:00", "12:00"), ("14:00", "18:00")]
 WEEKDAYS = [0, 1, 2, 3, 4]
 
-# La descripción de una especialidad NO es decorativa: es el corpus del
-# asistente de US-31, que la vectoriza y la recupera por similitud con lo que
-# escribe el paciente. `catalog.models.Specialty.description` ya lo decía desde
-# el Sprint 1.
+# El texto de la descripción es el corpus del asistente (US-31): es lo que
+# `assistant.embed_catalog` parte en fragmentos y vectoriza.
 #
-# Eso cambia cómo hay que escribirla. «Corazón y sistema circulatorio» describe
-# bien la especialidad y **no sirve como corpus**: nadie consulta escribiendo
-# «sistema circulatorio», escribe «me duele el pecho» o «se me hinchan los
-# tobillos». Una descripción que no contiene los términos con los que la gente
-# pregunta no se recupera nunca, y el asistente contesta «no tengo esa
-# información» sobre una especialidad que sí atiende.
+# Por eso está escrito **con las palabras del paciente y no con las del
+# médico**. La recuperación compara el significado de lo que alguien escribe
+# —"me duele el pecho y me falta el aire"— contra el significado del fragmento.
+# Una descripción de seis palabras como "Corazón y sistema circulatorio" no
+# tiene con qué parecerse a esa frase, y la búsqueda por similitud devuelve
+# cualquier cosa. Lo que acerca los dos textos son los **motivos de consulta**.
 #
-# La regla que sale de eso, y que vale también para el catálogo real que cargue
-# cada organización por US-12:
+# Cada especialidad enumera sus motivos en una oración aparte a propósito: el
+# indexador parte por oración, así que cada grupo de motivos termina siendo su
+# propio fragmento y se recupera solo. Es la misma regla de granularidad que el
+# reparto le pone al corpus administrativo de US-32.
 #
-#     la descripción dice QUÉ ATIENDE y POR QUÉ MOTIVOS CONSULTA LA GENTE,
-#     con las palabras de quien consulta, no con las de la profesión
-#
-# Los motivos de consulta son genéricos y verificables; no son diagnósticos ni
-# indicaciones, que es lo que US-34 y `triage.SYSTEM_RULES` prohíben.
+# Datos ficticios (regla 7). No es contenido clínico: es texto de catálogo para
+# que el buscador encuentre la especialidad, no para orientar a nadie.
 SPECIALTIES = [
     ("Medicina general",
-     "Atención clínica de primer contacto, controles de salud y certificados. "
-     "Es la puerta de entrada cuando no se sabe qué especialidad corresponde. "
-     "Motivos frecuentes de consulta: fiebre, gripe, resfrío, tos, dolor de "
-     "garganta, dolor de cabeza, cansancio, malestar general, presión alta, "
-     "control de rutina, chequeo anual, análisis de sangre, dolor de "
-     "estómago, náuseas, diarrea, dolor de espalda y renovación de recetas."),
+     "Atención clínica de primer contacto para personas adultas y controles "
+     "de rutina. "
+     "Motivos de consulta frecuentes: fiebre, dolor de cabeza, dolor de "
+     "garganta, gripe y resfrío, dolor de estómago, náuseas, cansancio o "
+     "debilidad, dolor de espalda. "
+     "También chequeo general, exámenes de laboratorio de rutina, renovación "
+     "de recetas y certificados médicos. "
+     "Es la puerta de entrada cuando el paciente todavía no sabe con qué "
+     "especialista tiene que atenderse."),
+
     ("Cardiología",
-     "Corazón y sistema circulatorio. Motivos frecuentes de consulta: dolor "
-     "en el pecho, palpitaciones, el corazón que se acelera, presión alta o "
-     "baja, falta de aire al caminar o al subir escaleras, hinchazón de "
-     "piernas y tobillos, mareos, desmayos, colesterol alto, control después "
-     "de un infarto y electrocardiograma."),
+     "Corazón, presión arterial y sistema circulatorio. "
+     "Motivos de consulta frecuentes: dolor u opresión en el pecho, "
+     "palpitaciones o sensación de que el corazón se acelera, falta de aire "
+     "al caminar o al subir escaleras, presión alta o presión baja. "
+     "También hinchazón de pies y tobillos, mareos o desmayos, y control de "
+     "colesterol y triglicéridos. "
+     "Seguimiento de quienes ya tienen hipertensión, arritmia o insuficiencia "
+     "cardíaca."),
+
     ("Pediatría",
-     "Salud de niñas y niños desde el nacimiento hasta la adolescencia. "
-     "Motivos frecuentes de consulta: fiebre en bebés y chicos, tos, "
-     "bronquiolitis, otitis y dolor de oído, diarrea y vómitos en niños, "
-     "sarpullido, control de crecimiento y peso, vacunas, dificultad para "
-     "alimentarse, llanto persistente y control del niño sano."),
+     "Salud de bebés, niñas y niños hasta la adolescencia. "
+     "Motivos de consulta frecuentes: fiebre en el niño, tos y resfrío, dolor "
+     "de oído, diarrea y vómitos, erupciones o granitos en la piel del bebé, "
+     "falta de apetito, llanto persistente. "
+     "También control de crecimiento y peso, vacunas y control del niño sano. "
+     "Es la consulta a la que traen los padres cuando quien está enfermo es "
+     "el hijo o la hija."),
+
     ("Dermatología",
-     "Piel, cabello y uñas. Motivos frecuentes de consulta: manchas en la "
-     "piel, lunares que cambian de forma o color, acné y granos, caída del "
-     "cabello, picazón, ronchas y alergia en la piel, eccema, psoriasis, "
-     "hongos en la piel o en las uñas, verrugas y heridas que no cierran."),
+     "Piel, cabello y uñas. "
+     "Motivos de consulta frecuentes: manchas en la piel, lunares que cambian "
+     "de color o de tamaño, acné y granos, picazón, ronchas o alergia en la "
+     "piel, sarpullido. "
+     "También caída del cabello, se me cae el pelo, calvicie, hongos en las "
+     "uñas o entre los dedos, verrugas, dermatitis y psoriasis. "
+     "Heridas o llagas que no terminan de cerrar."),
+
     ("Ginecología",
-     "Salud reproductiva y control ginecológico. Motivos frecuentes de "
-     "consulta: control anual, papanicolau, dolor menstrual fuerte, "
-     "menstruación irregular o ausente, sangrado fuera de fecha, flujo y "
-     "picazón, dolor de ovarios, control de embarazo, métodos "
-     "anticonceptivos, menopausia y sofocos, y estudio de fertilidad."),
+     "Salud reproductiva y control ginecológico de la mujer. "
+     "Motivos de consulta frecuentes: control anual y Papanicolaou, dolor o "
+     "cólicos menstruales, menstruación irregular o ausente, flujo, ardor o "
+     "picazón vaginal, dolor en el bajo vientre. "
+     "También métodos anticonceptivos, control del embarazo y síntomas de la "
+     "menopausia. "
+     "Dolor o bultos en las mamas."),
 ]
 
 PRACTITIONERS = [

@@ -1,37 +1,40 @@
-"""Lo que entra al asistente.
-
-Poca cosa: una pregunta y, opcionalmente, a qué parte del corpus acotarla. La
-validación interesante es el largo mínimo, que no es una formalidad — ver el
-docstring de ``validate_question``.
-"""
+"""Entrada y salida de ``POST /api/assistant/suggest/``."""
 
 from rest_framework import serializers
 
-from .models import KnowledgeChunk
 
+class SuggestRequestSerializer(serializers.Serializer):
+    """Lo que manda el móvil.
 
-class SuggestSerializer(serializers.Serializer):
-    question = serializers.CharField(max_length=2000)
-    # US-32: «¿a qué hora abren?» no debería recuperar una descripción
-    # clínica. La pantalla del chat no lo manda; lo usa el asistente
-    # administrativo de mostrador, que ya sabe de qué está preguntando.
-    source_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=KnowledgeChunk.Source.choices),
-        required=False, allow_empty=True,
+    El tope de 1.000 caracteres no es decorativo: cada consulta se vectoriza,
+    y el largo del texto es lo que consume la cuota del proveedor. Sin tope,
+    una sola petición con un texto pegado puede agotarla.
+    """
+
+    question = serializers.CharField(
+        max_length=1000, trim_whitespace=True,
+        error_messages={"blank": "Contanos qué te pasa para poder orientarte."},
     )
 
-    def validate_question(self, valor):
-        """Una pregunta de tres letras no se puede vectorizar con sentido.
 
-        El proveedor local descarta las palabras de menos de tres caracteres y
-        las vacías, así que «hola» produce el vector nulo y la búsqueda
-        devuelve cualquier cosa ordenada al azar. Es mejor pedir que escriba
-        que contestar con el primer fragmento que salga.
-        """
-        limpio = (valor or "").strip()
-        if len(limpio) < 8:
-            raise serializers.ValidationError(
-                "Contame un poco más para poder orientarte: al menos unas "
-                "palabras sobre lo que te pasa o lo que querés consultar.",
-            )
-        return limpio
+class FragmentSerializer(serializers.Serializer):
+    """Un fragmento recuperado, tal como viaja al cliente.
+
+    **Esto es lo que hace auditable la respuesta.** Sin la lista de fragmentos
+    no hay forma de demostrar que el asistente no alucinó, que es el criterio
+    con el que se muestra US-31 el 16/09. No es información de depuración: es
+    parte del contrato del endpoint.
+    """
+
+    id = serializers.CharField()
+    text = serializers.CharField()
+    source_type = serializers.CharField()
+    source_id = serializers.CharField()
+    source_name = serializers.CharField()
+    similarity = serializers.FloatField()
+
+
+class SpecialtySuggestionSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+    similarity = serializers.FloatField()

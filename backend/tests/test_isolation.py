@@ -13,7 +13,7 @@ import pytest
 from django.db import IntegrityError, ProgrammingError, connection, transaction
 
 from accounts.models import AuditLog, LoginAttempt, Permission, Role, User
-from assistant.models import KnowledgeChunk
+from assistant.models import EMBEDDING_DIMENSIONS, CatalogFragment
 from backups.models import BackupRecord
 from catalog.models import (
     Practitioner,
@@ -188,9 +188,10 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     corte está en el encabezado de ``reporting/permissions.py`` y de
     ``backups/permissions.py``.
 
-    Y US-31 suma el último, ``assistant.query.create``. Es el único permiso
-    del proyecto que recibe también el rol **Paciente**: el asistente es una
-    historia móvil, y el móvil es la aplicación del paciente.
+    Y US-31 suma el último, ``assistant.suggest.use``. Lo reciben el rol
+    **Paciente** —el asistente es suyo, y es una historia móvil— y
+    **Recepción**, que va a querer preguntarle a quién mandar a alguien que
+    llega sin saber. El profesional no: no orienta, atiende.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
@@ -527,19 +528,20 @@ def test_el_asistente_no_ve_el_corpus_de_otra_organizacion(org_a, org_b):
 
     Acá se comprueba la cerradura de la base. La de la aplicación —el filtro
     en el ``WHERE``, antes del ``ORDER BY``— tiene la suya en
-    ``test_us31_us34_asistente.py``. Las dos hacen falta: si alguien borra el
-    filtro por optimizar, esta política es lo único que queda.
+    ``test_us31.py``. Las dos hacen falta: si alguien borra el filtro por
+    optimizar, esta política es lo único que queda.
     """
     with tenant_context(org_b.id):
-        KnowledgeChunk.objects.create(
+        CatalogFragment.objects.create(
             organization=org_b, source_type="specialty",
-            source_id=uuid.uuid4(), title="Traumatología del vecino",
-            content="Fracturas y esguinces.",
-            embedding=[0.0] * 1536, provider="local",
+            source_id=uuid.uuid4(), position=0,
+            text="Traumatología del vecino: fracturas y esguinces.",
+            embedding=[0.0] * EMBEDDING_DIMENSIONS,
+            embedding_model="local",
         )
 
     with tenant_context(org_a.id):
-        assert KnowledgeChunk.objects.count() == 0
+        assert CatalogFragment.objects.count() == 0
 
 
 # --------------------------------------------------------------------------

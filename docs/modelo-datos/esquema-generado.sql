@@ -1309,21 +1309,55 @@ COMMIT;
 
 BEGIN;
 --
--- Creates extension vector
+-- Raw SQL operation
 --
--- (no-op)
+
+DO $do$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
+        BEGIN
+            CREATE EXTENSION vector;
+        EXCEPTION
+            WHEN insufficient_privilege THEN
+                RAISE EXCEPTION 'pgvector esta instalada en el servidor pero '
+                    'este rol no puede habilitarla. Ejecutala una vez como '
+                    'superusuario:  CREATE EXTENSION IF NOT EXISTS vector;  '
+                    '(en Supabase, desde el SQL Editor del panel). '
+                    'Ver docs/entorno/supabase.md';
+            -- Los tres codigos son el mismo problema visto desde tres
+            -- lugares: el archivo de control de la extension no esta en el
+            -- servidor. `feature_not_supported` es el que devuelve
+            -- PostgreSQL 18 en Windows, y es el que mas confunde, porque el
+            -- texto habla de una funcionalidad no soportada y no de un
+            -- paquete que falta.
+            WHEN feature_not_supported OR undefined_file OR undefined_object THEN
+                RAISE EXCEPTION 'pgvector NO esta instalada en el servidor de '
+                    'PostgreSQL. El paquete de Python no la instala: hay que '
+                    'agregarla al servidor, o trabajar contra Supabase, que '
+                    'ya la trae. Ver docs/entorno/sin-docker.md';
+        END;
+    END IF;
+END
+$do$;
+
 --
--- Create model KnowledgeChunk
+-- Create model CatalogFragment
 --
-CREATE TABLE "knowledge_chunks" ("id" uuid NOT NULL PRIMARY KEY, "source_type" varchar(20) NOT NULL, "source_id" uuid NOT NULL, "title" varchar(200) NOT NULL, "content" text NOT NULL, "embedding" vector(1536) NOT NULL, "provider" varchar(20) NOT NULL, "indexed_at" timestamp with time zone NOT NULL, "organization_id" uuid NOT NULL, CONSTRAINT "uq_knowledge_chunk" UNIQUE ("organization_id", "source_type", "source_id", "title"));
-ALTER TABLE "knowledge_chunks" ADD CONSTRAINT "knowledge_chunks_organization_id_4cc0be37_fk_organizations_id" FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id") DEFERRABLE INITIALLY DEFERRED;
-CREATE INDEX "knowledge_chunks_organization_id_4cc0be37" ON "knowledge_chunks" ("organization_id");
-CREATE INDEX "ix_knowledge_chunk_source" ON "knowledge_chunks" ("organization_id", "source_type");
-CREATE INDEX "ix_knowledge_chunk_vec" ON "knowledge_chunks" USING hnsw ("embedding" vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+CREATE TABLE "assistant_catalog_fragments" ("id" uuid NOT NULL PRIMARY KEY, "source_type" varchar(20) NOT NULL, "source_id" uuid NOT NULL, "position" smallint NOT NULL CHECK ("position" >= 0), "text" text NOT NULL, "embedding" vector(768) NOT NULL, "embedding_model" varchar(80) NOT NULL, "created_at" timestamp with time zone NOT NULL, "updated_at" timestamp with time zone NOT NULL, "organization_id" uuid NOT NULL);
+--
+-- Create index ix_fragment_source on field(s) organization, source_type, source_id of model catalogfragment
+--
+CREATE INDEX "ix_fragment_source" ON "assistant_catalog_fragments" ("organization_id", "source_type", "source_id");
+--
+-- Create constraint uq_fragment_source_position on model catalogfragment
+--
+ALTER TABLE "assistant_catalog_fragments" ADD CONSTRAINT "uq_fragment_source_position" UNIQUE ("organization_id", "source_type", "source_id", "position");
+ALTER TABLE "assistant_catalog_fragments" ADD CONSTRAINT "assistant_catalog_fr_organization_id_1f3472e1_fk_organizat" FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "assistant_catalog_fragments_organization_id_1f3472e1" ON "assistant_catalog_fragments" ("organization_id");
 COMMIT;
 
 -- =========================================================================
---  assistant / 0002_rls_and_permissions
+--  assistant / 0002_rls_policies
 -- =========================================================================
 
 BEGIN;
@@ -1331,12 +1365,26 @@ BEGIN;
 -- Raw SQL operation
 --
 
-            ALTER TABLE knowledge_chunks ENABLE ROW LEVEL SECURITY;
-            ALTER TABLE knowledge_chunks FORCE  ROW LEVEL SECURITY;
-            CREATE POLICY tenant_isolation ON knowledge_chunks
-                USING (organization_id = app_current_tenant())
-                WITH CHECK (organization_id = app_current_tenant());
-        
+    ALTER TABLE assistant_catalog_fragments ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE assistant_catalog_fragments FORCE  ROW LEVEL SECURITY;
+    CREATE POLICY tenant_isolation ON assistant_catalog_fragments
+        USING (organization_id = app_current_tenant())
+        WITH CHECK (organization_id = app_current_tenant());
+
+--
+-- Raw SQL operation
+--
+
+    CREATE INDEX IF NOT EXISTS ix_fragment_embedding_cosine
+        ON assistant_catalog_fragments USING hnsw (embedding vector_cosine_ops);
+
+COMMIT;
+
+-- =========================================================================
+--  assistant / 0003_seed_permission
+-- =========================================================================
+
+BEGIN;
 --
 -- Raw Python operation
 --

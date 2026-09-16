@@ -28,7 +28,20 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(list, []),
     DEFAULT_TENANT_ID=(str, ""),
     SECRET_KEY=(str, "clave-insegura-solo-para-desarrollo-local"),
-    OPENAI_API_KEY=(str, ""),
+    # US-31 — asistente. Los proveedores arrancan en `local` a propósito: es
+    # la misma idea que el resto de este bloque, que un clon recién bajado
+    # funcione sin configurar nada ni tener ninguna clave.
+    GEMINI_API_KEY=(str, ""),
+    ASSISTANT_EMBEDDING_PROVIDER=(str, "local"),
+    ASSISTANT_EMBEDDING_MODEL=(str, "gemini-embedding-001"),
+    ASSISTANT_CHAT_PROVIDER=(str, "local"),
+    # `-lite` y no el flash grande: medido el 16/09, `gemini-3.5-flash`
+    # contesta 503 "high demand" en el nivel gratuito —cinco de cinco
+    # intentos— y `gemini-3.5-flash-lite` responde en 0,8 s. El endpoint
+    # degrada solo a `plantilla` cuando el modelo no está, así que esto no
+    # rompe nada; sólo decide si la demostración se ve redactada o armada.
+    ASSISTANT_CHAT_MODEL=(str, "gemini-3.5-flash-lite"),
+    ASSISTANT_MIN_SIMILARITY=(float, -1.0),
 )
 environ.Env.read_env(REPO_ROOT / ".env")
 
@@ -38,13 +51,6 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 # UUID de la organización con la que se trabaja en desarrollo.
 DEFAULT_TENANT_ID = env("DEFAULT_TENANT_ID") or None
-
-# US-31 — Proveedor del asistente. **Vacía es un modo válido, no un error**:
-# sin clave, `assistant.embeddings` usa el proveedor local y el asistente
-# funciona de punta a punta sin red. El porqué está en el encabezado de ese
-# módulo. En Railway se carga con el botón de aplicar cambios, no con
-# «Redeploy» (regla del reparto del Sprint 2).
-OPENAI_API_KEY = env("OPENAI_API_KEY")
 
 
 # --------------------------------------------------------------------------
@@ -83,8 +89,8 @@ INSTALLED_APPS = [
     "reporting",
     # Característica general 6: copias de seguridad y restauración.
     "backups",
-    # US-31, US-32 y US-34: el asistente de orientación. RAG sobre pgvector,
-    # con el catálogo de cada organización como único corpus.
+    # US-31: el asistente. Guarda los fragmentos del catálogo con su embedding
+    # en una columna `vector` de pgvector.
     "assistant",
 ]
 
@@ -382,3 +388,58 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+
+# --------------------------------------------------------------------------
+#  US-31 — Asistente de orientación (RAG sobre pgvector)
+# --------------------------------------------------------------------------
+# La clave del proveedor **no se versiona** (regla 11 del Sprint 2): va en el
+# .env, y en Railway con el botón de aplicar cambios, no con Redeploy.
+GEMINI_API_KEY = env("GEMINI_API_KEY")
+
+# "gemini" o "local". El proveedor local es determinista y no sale a la red:
+# es el que deja correr las pruebas y la demostración sin clave y sin
+# conexión. El porqué está en assistant/embeddings.py.
+ASSISTANT_EMBEDDING_PROVIDER = env("ASSISTANT_EMBEDDING_PROVIDER")
+ASSISTANT_EMBEDDING_MODEL = env("ASSISTANT_EMBEDDING_MODEL")
+ASSISTANT_CHAT_PROVIDER = env("ASSISTANT_CHAT_PROVIDER")
+ASSISTANT_CHAT_MODEL = env("ASSISTANT_CHAT_MODEL")
+
+# Similitud mínima para que un fragmento cuente como recuperado. Por debajo,
+# el asistente contesta que no sabe en lugar de sugerir la especialidad menos
+# lejana, que con cinco especialidades siempre existe.
+#
+# El valor depende del proveedor —los dos espacios no tienen la misma escala—
+# así que -1 significa "elegilo vos según el proveedor". Fijar la variable en
+# el .env gana siempre.
+#
+# El 0,12 del proveedor local está medido sobre el catálogo de demostración:
+# las preguntas que sí corresponden a una especialidad puntúan entre 0,15 y
+# 0,55, y una pregunta ajena ("cuánto sale alquilar un departamento") llega a
+# 0,105. El margen es de tres centésimas, y eso es una propiedad del método,
+# no un defecto de la calibración: comparar por palabras compartidas no
+# separa mucho mejor que eso.
+#
+# **El 0,62 de Gemini está medido, y desmiente lo que decía este comentario.**
+# Acá se afirmaba que con Gemini el hueco era holgado y que el umbral se podía
+# poner alto sin miedo; el valor puesto era 0,35, escrito sin medir. Medición
+# del 16/09 sobre `morita2` con `gemini-embedding-001`, 17 preguntas:
+#
+#     preguntas del catálogo   0,637 – 0,762   (10 preguntas)
+#     preguntas ajenas         0,518 – 0,608   ( 7 preguntas)
+#
+# El hueco real es de **0,029**, casi el mismo que el del proveedor local: los
+# espacios de Gemini no separan más, puntúan más alto todo. Con 0,35, "cuánto
+# sale alquilar un departamento" recuperaba Medicina general con 0,55 y el
+# asistente contestaba con una especialidad — exactamente lo que este umbral
+# existe para impedir, y lo que se muestra en el punto (c) de la demostración.
+#
+# Un margen de tres centésimas es estrecho: al cambiar el corpus o el modelo
+# hay que volver a medirlo, no heredarlo. El procedimiento es el del script de
+# medición: preguntas que sí tienen especialidad contra preguntas ajenas, y el
+# umbral al medio del hueco.
+_umbral = env("ASSISTANT_MIN_SIMILARITY")
+ASSISTANT_MIN_SIMILARITY = (
+    _umbral if _umbral >= 0
+    else (0.12 if ASSISTANT_EMBEDDING_PROVIDER == "local" else 0.62)
+)
