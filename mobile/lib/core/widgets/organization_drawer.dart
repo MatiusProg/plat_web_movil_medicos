@@ -91,6 +91,14 @@ const seccionesDeOrganizacion = <SeccionDeOrganizacion>[
     permiso: 'audit.log.read',
   ),
 
+  // Característica general 5 — reportes que arma el usuario.
+  SeccionDeOrganizacion(
+    icono: Icons.table_chart_outlined,
+    etiqueta: 'Reportes',
+    ruta: '/org/reportes',
+    permiso: 'reporting.report.run',
+  ),
+
   // US-04 — usuarios, roles y permisos.
   SeccionDeOrganizacion(
     icono: Icons.people_outline,

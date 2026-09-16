@@ -19,7 +19,7 @@ Proyecto académico — Sistemas de Información 2, Grupo 15.
 | **API (backend)** | <https://web-production-872fa.up.railway.app/> |
 | Comprobación rápida de que la API responde | <https://web-production-872fa.up.railway.app/api/health/> |
 | Repositorio | <https://github.com/MatiusProg/plat_web_movil_medicos> |
-| Aplicación móvil | Todavía no hay APK publicado; se compila en local siguiendo [docs/entorno/setup-movil.md](docs/entorno/setup-movil.md) |
+| **Aplicación móvil (APK)** | <https://github.com/MatiusProg/plat_web_movil_medicos/releases/latest> — cómo instalarla y cómo publicar una versión nueva, en [docs/entorno/apk.md](docs/entorno/apk.md) |
 
 Backend y frontend son dos servicios del mismo proyecto de Railway; la base de
 datos es Supabase. Cómo se desplegó, con las variables y las confusiones que
@@ -242,6 +242,7 @@ docs/
 | tocar la base de datos | [docs/modelo-datos/sprint-0.md](docs/modelo-datos/sprint-0.md) |
 | saber qué se rompió y por qué | [docs/registro-de-defectos.md](docs/registro-de-defectos.md) |
 | instalar Flutter | [docs/entorno/setup-movil.md](docs/entorno/setup-movil.md) |
+| **instalar la aplicación en un teléfono, o publicar una APK nueva** | **[docs/entorno/apk.md](docs/entorno/apk.md)** — el enlace de descarga no cambia nunca; el porqué está ahí |
 
 ---
 

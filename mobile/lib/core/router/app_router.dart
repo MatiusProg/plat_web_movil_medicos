@@ -32,6 +32,7 @@ import '../../features/subscriptions/subscription_history_screen.dart';
 import '../../features/subscriptions/subscriptions_api.dart';
 import '../../features/subscriptions/subscriptions_screen.dart';
 import '../../features/audit/audit_screen.dart';
+import '../../features/reporting/reports_screen.dart';
 import '../../features/catalog/branches_screen.dart';
 import '../../features/catalog/professionals_admin_screen.dart';
 import '../../features/catalog/specialties_admin_screen.dart';
@@ -84,6 +85,7 @@ class Routes {
   static const String orgSpecialties = 'org-specialties';
   static const String orgProfessionals = 'org-professionals';
   static const String orgAudit = 'org-audit';
+  static const String orgReports = 'org-reports';
   static const String orgUsers = 'org-users';
   static const String orgRoles = 'org-roles';
 }
@@ -214,6 +216,17 @@ GoRouter buildRouter(Session session) {
           permiso: 'audit.log.read',
           titulo: 'Bitácora',
           child: AuditScreen(),
+        ),
+      ),
+
+      // ---------- Característica general 5: reportes personalizables ----
+      GoRoute(
+        path: '/org/reportes',
+        name: Routes.orgReports,
+        builder: (context, state) => const ConPermiso(
+          permiso: 'reporting.report.run',
+          titulo: 'Reportes',
+          child: ReportsScreen(),
         ),
       ),
 
