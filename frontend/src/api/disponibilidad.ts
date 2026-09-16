@@ -11,6 +11,8 @@ export interface Espacio {
   start: string
   end: string
   branch: { id: string; name: string }
+  /** US-17: el turno se reserva contra `(schedule, start)`. */
+  schedule: { id: string }
   capacity: number
   reservable: boolean
   /** `profesional_inactivo` | `sucursal_inactiva` | `null`. */

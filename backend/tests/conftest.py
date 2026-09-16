@@ -57,6 +57,12 @@ PERMISOS_PACIENTE = [
     "catalog.specialty.read",
     "catalog.professional.read",
     "scheduling.slot.read",
+    # US-17/US-20: reservar, consultar, cancelar y reprogramar las propias
+    # fichas (y las de los dependientes a cargo).
+    "appointments.appointment.create",
+    "appointments.appointment.read",
+    "appointments.appointment.cancel",
+    "appointments.appointment.reschedule",
 ]
 
 

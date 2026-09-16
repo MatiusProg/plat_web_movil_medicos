@@ -14,6 +14,7 @@ import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
 import { BuscarProfesionales } from '@/paginas/BuscarProfesionales'
 import { Disponibilidad } from '@/paginas/Disponibilidad'
 import { InicioSesion } from '@/paginas/InicioSesion'
+import { MisFichas } from '@/paginas/MisFichas'
 import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
@@ -211,6 +212,16 @@ export default function App() {
                             path="/disponibilidad"
                             element={
                                 <Disponibilidad />
+                            }
+                        />
+
+
+                        {/* US-17 / US-20: reserva, cancelación y reprogramación de fichas */}
+
+                        <Route
+                            path="/mis-fichas"
+                            element={
+                                <MisFichas />
                             }
                         />
 

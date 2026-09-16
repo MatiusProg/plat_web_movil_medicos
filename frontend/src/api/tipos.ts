@@ -55,6 +55,20 @@ export type CodigoError =
   | 'rol_de_administracion'
   | 'rol_del_sistema'
   | 'revocacion_propia'
+  // US-17 — reserva de ficha.
+  | 'turno_ocupado'
+  | 'turno_invalido'
+  | 'turno_pasado'
+  | 'agenda_invalida'
+  | 'paciente_invalido'
+  | 'profesional_invalido'
+  | 'sucursal_invalida'
+  | 'reserva_invalida'
+  // US-20 — cancelación y reprogramación.
+  | 'ficha_no_activa'
+  | 'ficha_pasada'
+  | 'cancelacion_invalida'
+  | 'reprogramacion_invalida'
   | 'sin_conexion'
   | 'desconocido'
 

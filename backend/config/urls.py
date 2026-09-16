@@ -18,21 +18,24 @@ nueva es la única razón para abrir este archivo, así que se abre una vez para
 las dos y no una vez por cada una.
 
 **Sprint 2.** El sprint crea cuatro apps —``appointments``, ``payments``,
-``encounters`` y ``assistant``— y el reparto pide abrir este archivo **una
-sola vez**, al inicio, para incluir las cuatro. De momento está la línea de
-``assistant``, porque US-31 se muestra en el corte del 16/09; las otras tres
-entran en la misma pasada del SM cuando sus apps existan.
+``encounters`` y ``assistant``—. El reparto pedía abrir este archivo **una
+sola vez**, al inicio, para incluir las cuatro juntas; ``assistant`` entró así
+para el corte del 16/09. ``appointments`` entra ahora, aparte, porque US-17 es
+la ruta crítica del sprint y no podía esperar a que ``payments`` y
+``encounters`` existieran (avisar al SM). ``payments`` y ``encounters`` quedan
+para cuando Alexander y el SM las tengan listas.
 
     tu historia toca…          agregá la ruta en…
-    organizaciones y planes    tenancy/urls.py      (US-43, US-44, US-45)
-    usuarios, roles, login     accounts/urls.py     (US-01, US-02, US-04)
-    sucursales, profesionales  catalog/urls.py      (US-11, US-12, US-16)
-    agendas y disponibilidad   scheduling/urls.py   (US-13, US-14, US-15)
-    pacientes                  patients/urls.py     (US-07 en adelante)
-    bitácora                   audit/urls.py        (US-06)
-    reportes                   reporting/urls.py    (característica 5)
-    copias de seguridad        backups/urls.py      (característica 6)
-    asistente                  assistant/urls.py    (US-31, US-32, US-34)
+    organizaciones y planes    tenancy/urls.py       (US-43, US-44, US-45)
+    usuarios, roles, login     accounts/urls.py      (US-01, US-02, US-04)
+    sucursales, profesionales  catalog/urls.py       (US-11, US-12, US-16)
+    agendas y disponibilidad   scheduling/urls.py    (US-13, US-14, US-15)
+    pacientes                  patients/urls.py      (US-07 en adelante)
+    fichas                     appointments/urls.py  (US-17, US-20)
+    bitácora                   audit/urls.py         (US-06)
+    reportes                   reporting/urls.py     (característica 5)
+    copias de seguridad        backups/urls.py       (característica 6)
+    asistente                  assistant/urls.py     (US-31, US-32, US-34)
 """
 
 from django.urls import include, path
@@ -73,4 +76,5 @@ urlpatterns = [
     path("api/reporting/", include("reporting.urls")),
     path("api/backups/", include("backups.urls")),
     path("api/assistant/", include("assistant.urls")),
+    path("api/appointments/", include("appointments.urls")),
 ]

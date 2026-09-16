@@ -79,6 +79,9 @@ INSTALLED_APPS = [
     "catalog",
     "patients",
     "scheduling",
+    # US-17/US-20: la ficha. Depende de `scheduling` (deriva el turno de una
+    # `Schedule`), `catalog` y `patients`.
+    "appointments",
     # US-06: la bitácora. No trae modelos —lee `accounts.AuditLog`—, pero es
     # una app igual porque tiene su propio prefijo de rutas, su permiso y su
     # middleware.
@@ -245,6 +248,11 @@ LOGIN_LOCKOUT_MINUTES = 15
 # US-15: tope de días que se pueden pedir de disponibilidad de una vez, para
 # que nadie pida un año entero. Pasado el tope, el endpoint responde 400.
 AVAILABILITY_MAX_HORIZON_DAYS = env.int("AVAILABILITY_MAX_HORIZON_DAYS", default=30)
+
+# US-17: minutos que una ficha `pending_payment` retiene el turno antes de que
+# la disponibilidad vuelva a ofrecerlo. Sin esto, un carrito abandonado
+# bloquea un cupo para siempre.
+APPOINTMENT_HOLD_MINUTES = env.int("APPOINTMENT_HOLD_MINUTES", default=15)
 
 # US-07 (g): tope de dependientes por titular. Es configurable y no una
 # constante porque el número correcto depende del centro médico —una familia
