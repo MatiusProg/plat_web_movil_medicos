@@ -205,8 +205,13 @@ backend/
   tenancy/       organizaciones, planes, suscripciones, métricas, alertas
                  + el middleware que fija el contexto de inquilino
   accounts/      usuarios, roles, permisos, bitácora, intentos de login
-  catalog/       sucursales (y en el Sprint 1: especialidades y agendas)
+  audit/         la consulta de la bitácora (US-06)
+  catalog/       sucursales, especialidades y profesionales
+  scheduling/    agendas médicas, bloqueos y disponibilidad
   patients/      pacientes y pacientes a cargo
+  reporting/     reportes personalizables y su exportación (característica 5)
+  backups/       copias de seguridad y restauración (característica 6)
+  assistant/     el asistente de orientación sobre pgvector (US-31/32/34)
   tests/         pruebas de aislamiento multi-inquilino
   init-db/       SQL de arranque del contenedor local
 frontend/
@@ -231,6 +236,7 @@ docs/
 | entender por qué Python 3.13 y no 3.14 | [docs/entorno/versiones.md](docs/entorno/versiones.md) |
 | conectarte a Supabase o traerte datos | [docs/entorno/supabase.md](docs/entorno/supabase.md) |
 | **desplegar en Railway** | **[docs/entorno/despliegue.md](docs/entorno/despliegue.md)** — variables, orden y las confusiones que cuestan una tarde |
+| **saber cómo va el proyecto contra las 8 características de la materia** | **[docs/caracteristicas-generales.md](docs/caracteristicas-generales.md)** — qué está cumplido, dónde, y qué falta |
 | **escribir código del backend** | **[docs/convenciones-de-codigo.md](docs/convenciones-de-codigo.md)** — dónde va cada cosa, y las reglas que no se rompen |
 | **escribir código del frontend web** | **[docs/frontend/decisiones.md](docs/frontend/decisiones.md)** — el stack, el idioma del código y lo que falta acordar |
 | tocar la base de datos | [docs/modelo-datos/sprint-0.md](docs/modelo-datos/sprint-0.md) |

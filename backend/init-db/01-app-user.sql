@@ -11,6 +11,19 @@
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- Y TAMBIÉN en template1. No es redundante: pytest crea su propia base
+-- (`test_plataforma`) conectado como `app_user`, y `CREATE DATABASE` copia
+-- template1. `app_user` es NOSUPERUSER y `vector` no es una extensión
+-- «trusted», así que no puede crearla él: sin esta línea, la base de pruebas
+-- nace sin la extensión y toda migración del asistente (US-31) falla con
+-- «type "vector" does not exist».
+--
+-- En Supabase esto no hace falta: la extensión ya viene habilitada y ahí no
+-- se corren pruebas.
+\connect template1
+CREATE EXTENSION IF NOT EXISTS vector;
+\connect plataforma
+
 CREATE ROLE app_user WITH
     LOGIN
     PASSWORD 'app_local_pass'

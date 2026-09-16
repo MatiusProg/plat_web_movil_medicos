@@ -2,19 +2,21 @@
 /// 16/09. La historia es US-31 (y US-34 para la derivación a emergencia), de
 /// Karen; desde el 17/09 este módulo pasa a ella.
 ///
-/// **El contrato del endpoint todavía no está publicado.** El que se supone
-/// acá es el del plan del sprint:
+/// **Contrato real del endpoint**, publicado el 16/09 junto con
+/// `backend/assistant/views.py`:
 ///
 ///     POST /api/assistant/suggest/   {"message": "…"}
-///     → {"answer": "…",
-///        "specialty": {"id": "…", "name": "…"} | null,
-///        "fragments": [{"text": "…", "source": "…"}],
-///        "emergency": false}
+///     → {"answer": {"text": "…", "source": "template|model|unavailable"},
+///        "triage": {"is_emergency": false, "reasons": […], "message": "…"},
+///        "specialty": {"id": "…", "name": "…", "rank": 1} | null,
+///        "fragments": [{"content": "…", "title": "…", "distance": 0.31, …}],
+///        "provider": "local"}
 ///
-/// Por eso la lectura de la respuesta vive **sólo en este archivo** y acepta
-/// también los nombres alternativos más probables (`reply`, `sources`,
-/// `is_emergency`, …): si el endpoint real usa otros, se corrige acá y la
-/// pantalla no se entera.
+/// Dos cosas no eran como las suponía el plan del sprint: `answer` es un
+/// objeto —el backend distingue una plantilla de una respuesta del modelo— y
+/// la urgencia viaja dentro de `triage`, no en la raíz. La lectura sigue
+/// viviendo **sólo en este archivo** y sigue aceptando la forma supuesta y los
+/// nombres alternativos, así que la pantalla no se entera de cuál llega.
 library;
 
 import 'package:mobile/core/api/client.dart';
@@ -88,11 +90,17 @@ class AssistantReply {
         .whereType<AssistantFragment>()
         .toList();
 
-    // Un objeto de emergencia (con motivo, por ejemplo) también cuenta.
-    final emergency = _first(json, const ['emergency', 'is_emergency']);
+    // US-34 viaja dentro de `triage`; se acepta igual en la raíz, y un objeto
+    // de emergencia (con motivo, por ejemplo) también cuenta.
+    final triage = _first(json, const ['triage']);
+    final emergency =
+        (triage is Map<String, dynamic>
+            ? _first(triage, const ['is_emergency', 'emergency'])
+            : null) ??
+        _first(json, const ['emergency', 'is_emergency']);
 
     return AssistantReply(
-      answer: _firstString(json, const ['answer', 'reply', 'message']) ?? '',
+      answer: _texto(_first(json, const ['answer', 'reply', 'message'])) ?? '',
       specialtyId: specialtyId,
       specialtyName: specialtyName,
       fragments: fragments,
@@ -104,6 +112,16 @@ class AssistantReply {
 Object? _first(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {
     if (json[key] != null) return json[key];
+  }
+  return null;
+}
+
+/// El texto de `answer`. El backend lo manda como objeto `{text, source}` y el
+/// plan del sprint lo suponía un String pelado; se aceptan los dos.
+String? _texto(Object? value) {
+  if (value is String) return value.trim().isEmpty ? null : value;
+  if (value is Map<String, dynamic>) {
+    return _firstString(value, const ['text', 'answer', 'message']);
   }
   return null;
 }
