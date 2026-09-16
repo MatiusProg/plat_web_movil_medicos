@@ -7,11 +7,13 @@ Toda tabla nueva con ``organization_id`` tiene que sumar su caso acá.
 """
 
 import datetime as dt
+import uuid
 
 import pytest
 from django.db import IntegrityError, ProgrammingError, connection, transaction
 
 from accounts.models import AuditLog, LoginAttempt, Permission, Role, User
+from assistant.models import KnowledgeChunk
 from backups.models import BackupRecord
 from catalog.models import (
     Practitioner,
@@ -185,11 +187,15 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     partidas así y no en un permiso por app a propósito; el porqué de cada
     corte está en el encabezado de ``reporting/permissions.py`` y de
     ``backups/permissions.py``.
+
+    Y US-31 suma el último, ``assistant.query.create``. Es el único permiso
+    del proyecto que recibe también el rol **Paciente**: el asistente es una
+    historia móvil, y el móvil es la aplicación del paciente.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()
@@ -513,6 +519,27 @@ def test_no_se_ve_un_registro_de_respaldo_de_otra_organizacion(
 
     with tenant_context(org_b.id):
         assert BackupRecord.objects.count() == 0
+
+
+def test_el_asistente_no_ve_el_corpus_de_otra_organizacion(org_a, org_b):
+    """US-31. «El riesgo del chatbot no es que responda mal, es que responda
+    con datos de otro inquilino» —reparto del Sprint 2—.
+
+    Acá se comprueba la cerradura de la base. La de la aplicación —el filtro
+    en el ``WHERE``, antes del ``ORDER BY``— tiene la suya en
+    ``test_us31_us34_asistente.py``. Las dos hacen falta: si alguien borra el
+    filtro por optimizar, esta política es lo único que queda.
+    """
+    with tenant_context(org_b.id):
+        KnowledgeChunk.objects.create(
+            organization=org_b, source_type="specialty",
+            source_id=uuid.uuid4(), title="Traumatología del vecino",
+            content="Fracturas y esguinces.",
+            embedding=[0.0] * 1536, provider="local",
+        )
+
+    with tenant_context(org_a.id):
+        assert KnowledgeChunk.objects.count() == 0
 
 
 # --------------------------------------------------------------------------

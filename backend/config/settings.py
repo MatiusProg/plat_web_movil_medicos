@@ -27,6 +27,7 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(list, []),
     DEFAULT_TENANT_ID=(str, ""),
     SECRET_KEY=(str, "clave-insegura-solo-para-desarrollo-local"),
+    OPENAI_API_KEY=(str, ""),
 )
 environ.Env.read_env(REPO_ROOT / ".env")
 
@@ -36,6 +37,13 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 # UUID de la organización con la que se trabaja en desarrollo.
 DEFAULT_TENANT_ID = env("DEFAULT_TENANT_ID") or None
+
+# US-31 — Proveedor del asistente. **Vacía es un modo válido, no un error**:
+# sin clave, `assistant.embeddings` usa el proveedor local y el asistente
+# funciona de punta a punta sin red. El porqué está en el encabezado de ese
+# módulo. En Railway se carga con el botón de aplicar cambios, no con
+# «Redeploy» (regla del reparto del Sprint 2).
+OPENAI_API_KEY = env("OPENAI_API_KEY")
 
 
 # --------------------------------------------------------------------------
@@ -74,6 +82,9 @@ INSTALLED_APPS = [
     "reporting",
     # Característica general 6: copias de seguridad y restauración.
     "backups",
+    # US-31, US-32 y US-34: el asistente de orientación. RAG sobre pgvector,
+    # con el catálogo de cada organización como único corpus.
+    "assistant",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con

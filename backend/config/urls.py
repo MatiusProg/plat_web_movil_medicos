@@ -26,6 +26,7 @@ las dos y no una vez por cada una.
     bitácora                   audit/urls.py        (US-06)
     reportes                   reporting/urls.py    (característica 5)
     copias de seguridad        backups/urls.py      (característica 6)
+    asistente                  assistant/urls.py    (US-31, US-32, US-34)
 """
 
 from django.urls import include, path
@@ -65,4 +66,5 @@ urlpatterns = [
     path("api/audit/", include("audit.urls")),
     path("api/reporting/", include("reporting.urls")),
     path("api/backups/", include("backups.urls")),
+    path("api/assistant/", include("assistant.urls")),
 ]

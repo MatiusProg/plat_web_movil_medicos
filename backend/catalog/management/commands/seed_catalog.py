@@ -59,12 +59,57 @@ BRANCHES = [
 HOURS = [("08:00", "12:00"), ("14:00", "18:00")]
 WEEKDAYS = [0, 1, 2, 3, 4]
 
+# La descripción de una especialidad NO es decorativa: es el corpus del
+# asistente de US-31, que la vectoriza y la recupera por similitud con lo que
+# escribe el paciente. `catalog.models.Specialty.description` ya lo decía desde
+# el Sprint 1.
+#
+# Eso cambia cómo hay que escribirla. «Corazón y sistema circulatorio» describe
+# bien la especialidad y **no sirve como corpus**: nadie consulta escribiendo
+# «sistema circulatorio», escribe «me duele el pecho» o «se me hinchan los
+# tobillos». Una descripción que no contiene los términos con los que la gente
+# pregunta no se recupera nunca, y el asistente contesta «no tengo esa
+# información» sobre una especialidad que sí atiende.
+#
+# La regla que sale de eso, y que vale también para el catálogo real que cargue
+# cada organización por US-12:
+#
+#     la descripción dice QUÉ ATIENDE y POR QUÉ MOTIVOS CONSULTA LA GENTE,
+#     con las palabras de quien consulta, no con las de la profesión
+#
+# Los motivos de consulta son genéricos y verificables; no son diagnósticos ni
+# indicaciones, que es lo que US-34 y `triage.SYSTEM_RULES` prohíben.
 SPECIALTIES = [
-    ("Medicina general", "Atención clínica de primer contacto y controles."),
-    ("Cardiología", "Corazón y sistema circulatorio."),
-    ("Pediatría", "Salud de niñas y niños hasta la adolescencia."),
-    ("Dermatología", "Piel, cabello y uñas."),
-    ("Ginecología", "Salud reproductiva y control ginecológico."),
+    ("Medicina general",
+     "Atención clínica de primer contacto, controles de salud y certificados. "
+     "Es la puerta de entrada cuando no se sabe qué especialidad corresponde. "
+     "Motivos frecuentes de consulta: fiebre, gripe, resfrío, tos, dolor de "
+     "garganta, dolor de cabeza, cansancio, malestar general, presión alta, "
+     "control de rutina, chequeo anual, análisis de sangre, dolor de "
+     "estómago, náuseas, diarrea, dolor de espalda y renovación de recetas."),
+    ("Cardiología",
+     "Corazón y sistema circulatorio. Motivos frecuentes de consulta: dolor "
+     "en el pecho, palpitaciones, el corazón que se acelera, presión alta o "
+     "baja, falta de aire al caminar o al subir escaleras, hinchazón de "
+     "piernas y tobillos, mareos, desmayos, colesterol alto, control después "
+     "de un infarto y electrocardiograma."),
+    ("Pediatría",
+     "Salud de niñas y niños desde el nacimiento hasta la adolescencia. "
+     "Motivos frecuentes de consulta: fiebre en bebés y chicos, tos, "
+     "bronquiolitis, otitis y dolor de oído, diarrea y vómitos en niños, "
+     "sarpullido, control de crecimiento y peso, vacunas, dificultad para "
+     "alimentarse, llanto persistente y control del niño sano."),
+    ("Dermatología",
+     "Piel, cabello y uñas. Motivos frecuentes de consulta: manchas en la "
+     "piel, lunares que cambian de forma o color, acné y granos, caída del "
+     "cabello, picazón, ronchas y alergia en la piel, eccema, psoriasis, "
+     "hongos en la piel o en las uñas, verrugas y heridas que no cierran."),
+    ("Ginecología",
+     "Salud reproductiva y control ginecológico. Motivos frecuentes de "
+     "consulta: control anual, papanicolau, dolor menstrual fuerte, "
+     "menstruación irregular o ausente, sangrado fuera de fecha, flujo y "
+     "picazón, dolor de ovarios, control de embarazo, métodos "
+     "anticonceptivos, menopausia y sofocos, y estudio de fertilidad."),
 ]
 
 PRACTITIONERS = [

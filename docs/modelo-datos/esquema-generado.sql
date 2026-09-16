@@ -1304,6 +1304,46 @@ ALTER TABLE backup_records ADD CONSTRAINT fk_backup_records_users_same_org
 COMMIT;
 
 -- =========================================================================
+--  assistant / 0001_initial
+-- =========================================================================
+
+BEGIN;
+--
+-- Creates extension vector
+--
+-- (no-op)
+--
+-- Create model KnowledgeChunk
+--
+CREATE TABLE "knowledge_chunks" ("id" uuid NOT NULL PRIMARY KEY, "source_type" varchar(20) NOT NULL, "source_id" uuid NOT NULL, "title" varchar(200) NOT NULL, "content" text NOT NULL, "embedding" vector(1536) NOT NULL, "provider" varchar(20) NOT NULL, "indexed_at" timestamp with time zone NOT NULL, "organization_id" uuid NOT NULL, CONSTRAINT "uq_knowledge_chunk" UNIQUE ("organization_id", "source_type", "source_id", "title"));
+ALTER TABLE "knowledge_chunks" ADD CONSTRAINT "knowledge_chunks_organization_id_4cc0be37_fk_organizations_id" FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "knowledge_chunks_organization_id_4cc0be37" ON "knowledge_chunks" ("organization_id");
+CREATE INDEX "ix_knowledge_chunk_source" ON "knowledge_chunks" ("organization_id", "source_type");
+CREATE INDEX "ix_knowledge_chunk_vec" ON "knowledge_chunks" USING hnsw ("embedding" vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+COMMIT;
+
+-- =========================================================================
+--  assistant / 0002_rls_and_permissions
+-- =========================================================================
+
+BEGIN;
+--
+-- Raw SQL operation
+--
+
+            ALTER TABLE knowledge_chunks ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE knowledge_chunks FORCE  ROW LEVEL SECURITY;
+            CREATE POLICY tenant_isolation ON knowledge_chunks
+                USING (organization_id = app_current_tenant())
+                WITH CHECK (organization_id = app_current_tenant());
+        
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- =========================================================================
 --  Como regenerar este archivo
 --
 --    backend/.venv/Scripts/python scripts/generar_esquema.py    (Windows)

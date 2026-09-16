@@ -56,6 +56,13 @@ class Action:
     REPORT_SAVE = "report.save"
     REPORT_DELETE = "report.delete"
 
+    # ---------- Asistente — US-31, US-32 y US-34 ------------------------
+    # Se audita la consulta, nunca su texto: quien le cuenta sus síntomas a un
+    # chatbot está escribiendo información de salud, y una bitácora que la
+    # copie es una historia clínica paralela sin ninguna de las protecciones
+    # de una. Ver `assistant/views.py::_audit`.
+    ASSISTANT_QUERY = "assistant.query"
+
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
     BACKUP_DOWNLOAD = "backup.download"
@@ -89,6 +96,7 @@ LABELS = {
     Action.REPORT_EMAIL: "Reporte enviado por correo",
     Action.REPORT_SAVE: "Reporte guardado",
     Action.REPORT_DELETE: "Reporte eliminado",
+    Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",
