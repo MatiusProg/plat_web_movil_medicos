@@ -5,7 +5,7 @@
 /// **Contrato real del endpoint** (`backend/assistant/views.py`, US-31 de
 /// Karen, integrado el 16/09):
 ///
-///     POST /api/assistant/suggest/   {"message": "…"}
+///     POST /api/assistant/suggest/   {"question": "…"}
 ///     → {"emergency": false,
 ///        "answer": "…",
 ///        "generated_by": "gemini|plantilla|regla",
@@ -154,7 +154,10 @@ Future<AssistantReply> consultarAsistente(
 
   final data = await client.post(
     '/assistant/suggest/',
-    body: {'message': mensaje},
+    // `question`, no `message`: es como se llama el campo en
+    // `assistant/serializers.py`. Con el nombre equivocado la respuesta es un
+    // 400 y la pantalla no muestra nada.
+    body: {'question': mensaje},
   );
   if (data is! Map<String, dynamic>) {
     throw const FormatException('Respuesta del asistente sin formato.');

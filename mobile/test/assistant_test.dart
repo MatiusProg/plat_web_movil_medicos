@@ -154,7 +154,7 @@ void main() {
 
     expect(capturada.method, 'POST');
     expect(capturada.url.path, endsWith('/assistant/suggest/'));
-    expect(jsonDecode(capturada.body), {'message': 'me duele la cabeza'});
+    expect(jsonDecode(capturada.body), {'question': 'me duele la cabeza'});
   });
 
   testWidgets('muestra la sugerencia con sus fragmentos', (tester) async {
