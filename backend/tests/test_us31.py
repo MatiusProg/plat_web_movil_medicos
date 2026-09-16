@@ -129,8 +129,16 @@ def preguntar(api_client, user, texto):
 def test_describir_un_sintoma_devuelve_la_especialidad_que_corresponde(
     api_client, catalogo_indexado_a, paciente_a,
 ):
+    """El síntoma no puede ser uno que la barrera de emergencia corte.
+
+    Esta prueba pedía Cardiología para "tengo dolor en el pecho al subir
+    escaleras", que es una señal de ``triage.py``: la barrera derivaba antes
+    de recuperar nada y la prueba fallaba contra su propio diseño. El dolor
+    de pecho de esfuerzo se deriva —ver la prueba de más abajo—, así que el
+    camino feliz se describe con un motivo cardiológico que no es urgencia.
+    """
     respuesta = preguntar(
-        api_client, paciente_a, "tengo dolor en el pecho al subir escaleras",
+        api_client, paciente_a, "tengo la presión alta y palpitaciones",
     )
 
     assert respuesta.status_code == 200
@@ -229,6 +237,27 @@ def test_una_urgencia_corta_el_flujo_y_no_sugiere_reservar_ficha(
         "una urgencia no se contesta con una especialidad para reservar"
     )
     assert "emergencias" in cuerpo["answer"].lower()
+
+
+@pytest.mark.parametrize("pregunta", [
+    "me duele el pecho cuando subo escaleras",
+    "tengo dolor en el pecho al subir escaleras",
+    "siento presión en el pecho",
+])
+def test_las_formas_de_decir_dolor_de_pecho_derivan_todas(
+    api_client, catalogo_indexado_a, paciente_a, pregunta,
+):
+    """Tres maneras de contar el mismo síntoma, una sola respuesta.
+
+    La coincidencia de ``triage.py`` es por subcadena, así que cada forma de
+    decirlo hay que ponerla. Sin esta prueba, "me duele el pecho" contestaba
+    Cardiología y "dolor en el pecho" derivaba a emergencias: el paciente
+    recibía una respuesta distinta según cómo redactara.
+    """
+    cuerpo = preguntar(api_client, paciente_a, pregunta).json()
+
+    assert cuerpo["emergency"] is True, f"«{pregunta}» tendría que derivar"
+    assert cuerpo["specialty"] is None
 
 
 # --------------------------------------------------------------------------

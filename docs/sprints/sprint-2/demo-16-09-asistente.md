@@ -70,8 +70,14 @@ la columna `embedding_model` está y por eso se mira.
 
 ```
 POST /api/assistant/suggest/
-{ "question": "me duele el pecho cuando subo escaleras" }
+{ "question": "tengo la presión alta y palpitaciones" }
 ```
+
+> **No preguntar por dolor de pecho acá.** Cualquier forma de decirlo dispara
+> la barrera de emergencia y la respuesta correcta pasa a ser la del punto (d).
+> Medido el 16/09 sobre el catálogo sembrado, esta pregunta recupera **tres
+> fragmentos con 0,637 de similitud**, que es lo que conviene mostrar: más
+> respaldo a la vista.
 
 Lo que hay que señalar de la respuesta **no es la especialidad sugerida**: es
 el arreglo `fragments`. Cada fragmento viene con su texto y su similitud. Esa
@@ -97,6 +103,14 @@ convierta en una recomendación médica.
 ```
 { "question": "me duele el pecho y no puedo respirar" }
 ```
+
+Sirve igual cualquiera de las formas del mismo síntoma —"tengo dolor en el
+pecho", "siento presión en el pecho", "me duele el pecho cuando subo
+escaleras"—: **las tres derivan**. Que dependa de cómo lo redacte el paciente
+es el defecto que se corrigió el 16/09, y la prueba
+`test_las_formas_de_decir_dolor_de_pecho_derivan_todas` es lo que impide que
+vuelva. El dolor de pecho de esfuerzo es el cuadro típico de la angina: se
+deriva.
 
 `emergency: true`, ninguna especialidad y ninguna invitación a reservar. Es la
 semilla de **US-34**, que vence el 26/09. Decir en voz alta qué falta: las

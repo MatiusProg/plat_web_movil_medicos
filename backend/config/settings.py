@@ -34,7 +34,12 @@ env = environ.Env(
     ASSISTANT_EMBEDDING_PROVIDER=(str, "local"),
     ASSISTANT_EMBEDDING_MODEL=(str, "gemini-embedding-001"),
     ASSISTANT_CHAT_PROVIDER=(str, "local"),
-    ASSISTANT_CHAT_MODEL=(str, "gemini-3.5-flash"),
+    # `-lite` y no el flash grande: medido el 16/09, `gemini-3.5-flash`
+    # contesta 503 "high demand" en el nivel gratuito —cinco de cinco
+    # intentos— y `gemini-3.5-flash-lite` responde en 0,8 s. El endpoint
+    # degrada solo a `plantilla` cuando el modelo no está, así que esto no
+    # rompe nada; sólo decide si la demostración se ve redactada o armada.
+    ASSISTANT_CHAT_MODEL=(str, "gemini-3.5-flash-lite"),
     ASSISTANT_MIN_SIMILARITY=(float, -1.0),
 )
 environ.Env.read_env(REPO_ROOT / ".env")
@@ -373,10 +378,28 @@ ASSISTANT_CHAT_MODEL = env("ASSISTANT_CHAT_MODEL")
 # 0,55, y una pregunta ajena ("cuánto sale alquilar un departamento") llega a
 # 0,105. El margen es de tres centésimas, y eso es una propiedad del método,
 # no un defecto de la calibración: comparar por palabras compartidas no
-# separa mucho mejor que eso. Con Gemini el hueco es holgado, y por eso el
-# umbral de gemini se puede poner alto sin miedo.
+# separa mucho mejor que eso.
+#
+# **El 0,62 de Gemini está medido, y desmiente lo que decía este comentario.**
+# Acá se afirmaba que con Gemini el hueco era holgado y que el umbral se podía
+# poner alto sin miedo; el valor puesto era 0,35, escrito sin medir. Medición
+# del 16/09 sobre `morita2` con `gemini-embedding-001`, 17 preguntas:
+#
+#     preguntas del catálogo   0,637 – 0,762   (10 preguntas)
+#     preguntas ajenas         0,518 – 0,608   ( 7 preguntas)
+#
+# El hueco real es de **0,029**, casi el mismo que el del proveedor local: los
+# espacios de Gemini no separan más, puntúan más alto todo. Con 0,35, "cuánto
+# sale alquilar un departamento" recuperaba Medicina general con 0,55 y el
+# asistente contestaba con una especialidad — exactamente lo que este umbral
+# existe para impedir, y lo que se muestra en el punto (c) de la demostración.
+#
+# Un margen de tres centésimas es estrecho: al cambiar el corpus o el modelo
+# hay que volver a medirlo, no heredarlo. El procedimiento es el del script de
+# medición: preguntas que sí tienen especialidad contra preguntas ajenas, y el
+# umbral al medio del hueco.
 _umbral = env("ASSISTANT_MIN_SIMILARITY")
 ASSISTANT_MIN_SIMILARITY = (
     _umbral if _umbral >= 0
-    else (0.12 if ASSISTANT_EMBEDDING_PROVIDER == "local" else 0.35)
+    else (0.12 if ASSISTANT_EMBEDDING_PROVIDER == "local" else 0.62)
 )

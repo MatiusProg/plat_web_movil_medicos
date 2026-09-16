@@ -175,12 +175,13 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     US-06 suma ``audit.log.read`` y **borra** ``users.audit.read``, que el seed
     del Sprint 0 declaró antes de que existiera la app ``audit`` y que ninguna
     vista consultó nunca: el neto es cero. US-07 suma los dos de los pacientes
-    a cargo y US-08 los dos de los antecedentes.
+    a cargo y US-08 los dos de los antecedentes. US-31 suma
+    ``assistant.suggest.use``, el permiso del asistente de orientación.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 1
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()

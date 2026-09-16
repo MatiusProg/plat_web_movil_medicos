@@ -35,7 +35,23 @@ from .embeddings import normalize_text
 # que lo que devuelve `normalize_text`.
 EMERGENCY_SIGNALS = [
     # Cardiorrespiratorias.
+    #
+    # Las cuatro formas de decir lo mismo están todas, y no es redundancia:
+    # la coincidencia es por subcadena, así que "me duele el pecho" no la
+    # dispara por tener "dolor en el pecho" en la lista. Dos frases que un
+    # paciente usa como sinónimos tienen que terminar en la misma respuesta;
+    # que una derive a emergencias y la otra ofrezca una ficha de cardiología
+    # para el jueves es peor que cualquiera de las dos decisiones tomada a
+    # propósito. Verificado el 16/09 contra el endpoint: "me duele el pecho
+    # cuando subo escaleras" contestaba Cardiología y "tengo dolor en el
+    # pecho al subir escaleras" derivaba.
+    #
+    # Se derivan las dos, y la razón es clínica: el dolor de pecho que
+    # aparece con el esfuerzo es el cuadro típico de la angina. Es la
+    # política que este módulo ya declara arriba — se prefiere sobre-derivar.
     "dolor en el pecho", "dolor de pecho", "opresion en el pecho",
+    "duele el pecho", "duele mucho el pecho", "presion en el pecho",
+    "dolor en el torax", "dolor de torax",
     "no puedo respirar", "me falta el aire", "me cuesta respirar",
     "se me cierra el pecho",
     # Neurológicas.
