@@ -73,10 +73,8 @@ class Routes {
   static const String platformPlanNew = 'platform-plan-new';
   static const String platformPlanEdit = 'platform-plan-edit';
   static const String platformSubscriptions = 'platform-subscriptions';
-  static const String platformSubscriptionChange =
-      'platform-subscription-change';
-  static const String platformSubscriptionHistory =
-      'platform-subscription-history';
+  static const String platformSubscriptionChange = 'platform-subscription-change';
+  static const String platformSubscriptionHistory = 'platform-subscription-history';
 
   // La cara de la organización.
   static const String organizationHome = 'organization-home';
@@ -280,8 +278,9 @@ GoRouter buildRouter(Session session) {
       GoRoute(
         path: '/search',
         name: Routes.search,
-        builder: (context, state) =>
-            SearchScreen(specialtyId: state.uri.queryParameters['specialty']),
+        builder: (context, state) => SearchScreen(
+          specialtyId: state.uri.queryParameters['specialty'],
+        ),
       ),
 
       // ---------- US-07 (SM): personas a cargo ---------------------------
@@ -312,8 +311,10 @@ GoRouter buildRouter(Session session) {
       GoRoute(
         path: '/history',
         name: Routes.history,
-        builder: (context, state) =>
-            const SoloPacientes(titulo: 'Antecedentes', child: HistoryScreen()),
+        builder: (context, state) => const SoloPacientes(
+          titulo: 'Antecedentes',
+          child: HistoryScreen(),
+        ),
       ),
 
       // ---------- US-31 (Karen): asistente de orientación ---------------
@@ -517,9 +518,8 @@ class _HomeScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Centro médico: ${session.organizationSlug ?? "—"}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Marca.ink500,
-                  ),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: Marca.ink500),
                 ),
               ],
             ),
@@ -529,35 +529,36 @@ class _HomeScreen extends StatelessWidget {
             child: session.cargandoUsuario
                 ? const _CargandoPerfil()
                 : session.perfilNoDisponible
-                ? _PerfilNoDisponible(onReintentar: session.recargarUsuario)
-                : esPaciente
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: _accesosDePaciente(context),
-                  )
-                : esSuperadmin
-                // ------ US-45 (Luis Miguel): panel del superadmin
-                ? _accesoTarjeta(
-                    context,
-                    icono: Icons.dashboard_outlined,
-                    titulo: 'Panel de la plataforma',
-                    subtitulo:
-                        'Organizaciones, planes y alertas de aislamiento',
-                    onTap: () => context.push('/platform/dashboard'),
-                  )
-                // ------ La cara de quien administra un centro
-                // médico. El cartel de "esto es para pacientes"
-                // queda sólo para quien de verdad no tiene ni una
-                // sección habilitada.
-                : _tieneSeccionesDeOrganizacion(user)
-                ? _accesoTarjeta(
-                    context,
-                    icono: Icons.medical_services_outlined,
-                    titulo: 'Panel del centro médico',
-                    subtitulo: 'Agendas, catálogo, usuarios y bitácora',
-                    onTap: () => context.push('/org'),
-                  )
-                : _avisoNoPaciente(theme),
+                    ? _PerfilNoDisponible(onReintentar: session.recargarUsuario)
+                    : esPaciente
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: _accesosDePaciente(context),
+                          )
+                        : esSuperadmin
+                            // ------ US-45 (Luis Miguel): panel del superadmin
+                            ? _accesoTarjeta(
+                                context,
+                                icono: Icons.dashboard_outlined,
+                                titulo: 'Panel de la plataforma',
+                                subtitulo:
+                                    'Organizaciones, planes y alertas de aislamiento',
+                                onTap: () => context.push('/platform/dashboard'),
+                              )
+                            // ------ La cara de quien administra un centro
+                            // médico. El cartel de "esto es para pacientes"
+                            // queda sólo para quien de verdad no tiene ni una
+                            // sección habilitada.
+                            : _tieneSeccionesDeOrganizacion(user)
+                                ? _accesoTarjeta(
+                                    context,
+                                    icono: Icons.medical_services_outlined,
+                                    titulo: 'Panel del centro médico',
+                                    subtitulo:
+                                        'Agendas, catálogo, usuarios y bitácora',
+                                    onTap: () => context.push('/org'),
+                                  )
+                                : _avisoNoPaciente(theme),
           ),
         ],
       ),
@@ -568,43 +569,43 @@ class _HomeScreen extends StatelessWidget {
   /// ícono en vez de botones en columna -más jerarquía visual, menos "es un
   /// formulario más".
   List<Widget> _accesosDePaciente(BuildContext context) => [
-    _accesoTarjeta(
-      context,
-      icono: Icons.search,
-      titulo: 'Buscar profesionales',
-      subtitulo: 'Especialidades, sedes y disponibilidad',
-      // `push`, no `go`: así el botón atrás del teléfono vuelve acá en
-      // lugar de cerrar la aplicación.
-      onTap: () => context.push('/specialties'),
-    ),
-    const SizedBox(height: 12),
-    // ---------- US-07 (SM): personas a cargo -----------------------
-    _accesoTarjeta(
-      context,
-      icono: Icons.family_restroom,
-      titulo: 'Personas a mi cargo',
-      subtitulo: 'Dependientes y su información',
-      onTap: () => context.push('/dependents'),
-    ),
-    const SizedBox(height: 12),
-    // ---------- US-08 (SM): antecedentes -----------------------------
-    _accesoTarjeta(
-      context,
-      icono: Icons.medical_information_outlined,
-      titulo: 'Mis antecedentes',
-      subtitulo: 'Alergias, condiciones y medicación declaradas',
-      onTap: () => context.push('/history'),
-    ),
-    const SizedBox(height: 12),
-    // ---------- US-31 (Karen): asistente de orientación --------------
-    _accesoTarjeta(
-      context,
-      icono: Icons.forum_outlined,
-      titulo: 'Asistente de orientación',
-      subtitulo: 'Contá tus síntomas y te sugiere una especialidad',
-      onTap: () => context.push('/assistant'),
-    ),
-  ];
+        _accesoTarjeta(
+          context,
+          icono: Icons.search,
+          titulo: 'Buscar profesionales',
+          subtitulo: 'Especialidades, sedes y disponibilidad',
+          // `push`, no `go`: así el botón atrás del teléfono vuelve acá en
+          // lugar de cerrar la aplicación.
+          onTap: () => context.push('/specialties'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-07 (SM): personas a cargo -----------------------
+        _accesoTarjeta(
+          context,
+          icono: Icons.family_restroom,
+          titulo: 'Personas a mi cargo',
+          subtitulo: 'Dependientes y su información',
+          onTap: () => context.push('/dependents'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-08 (SM): antecedentes -----------------------------
+        _accesoTarjeta(
+          context,
+          icono: Icons.medical_information_outlined,
+          titulo: 'Mis antecedentes',
+          subtitulo: 'Alergias, condiciones y medicación declaradas',
+          onTap: () => context.push('/history'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-31 (Karen): asistente de orientación --------------
+        _accesoTarjeta(
+          context,
+          icono: Icons.forum_outlined,
+          titulo: 'Asistente de orientación',
+          subtitulo: 'Contá tus síntomas y te sugiere una especialidad',
+          onTap: () => context.push('/assistant'),
+        ),
+      ];
 
   Widget _accesoTarjeta(
     BuildContext context, {
@@ -645,28 +646,29 @@ class _HomeScreen extends StatelessWidget {
       seccionesDeOrganizacion.any((seccion) => user.can(seccion.permiso));
 
   Widget _avisoNoPaciente(ThemeData theme) => Card(
-    color: theme.colorScheme.surfaceContainerHighest,
-    margin: EdgeInsets.zero,
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Esta sección de la aplicación es para pacientes. '
-              'Iniciá sesión desde la plataforma web para administrar '
-              'tu organización.',
-              style: theme.textTheme.bodyMedium,
-            ),
+        color: theme.colorScheme.surfaceContainerHighest,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Esta sección de la aplicación es para pacientes. '
+                  'Iniciá sesión desde la plataforma web para administrar '
+                  'tu organización.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
+
 
 /// Se entró al formulario de agenda sin saber de qué profesional es.
 ///
@@ -677,30 +679,31 @@ class _FaltaLaRegla extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Regla de agenda')),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'No sabemos de qué profesional es esta regla. Entrá desde '
-              'Agendas y elegí uno.',
-              textAlign: TextAlign.center,
+        appBar: AppBar(title: const Text('Regla de agenda')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'No sabemos de qué profesional es esta regla. Entrá desde '
+                  'Agendas y elegí uno.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.go('/org/agendas'),
+                  icon: const Icon(Icons.event_note_outlined),
+                  label: const Text('Ir a Agendas'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            FilledButton.tonalIcon(
-              onPressed: () => context.go('/org/agendas'),
-              icon: const Icon(Icons.event_note_outlined),
-              label: const Text('Ir a Agendas'),
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
+
 
 /// Se entró a "cambiar plan" sin saber qué suscripción se cambia.
 ///
@@ -711,30 +714,31 @@ class _FaltaLaSuscripcion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Cambiar plan')),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'No sabemos qué suscripción querés cambiar. Entrá desde el '
-              'listado y elegí la organización.',
-              textAlign: TextAlign.center,
+        appBar: AppBar(title: const Text('Cambiar plan')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'No sabemos qué suscripción querés cambiar. Entrá desde el '
+                  'listado y elegí la organización.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.go('/platform/subscriptions'),
+                  icon: const Icon(Icons.list_alt),
+                  label: const Text('Ir a Suscripciones'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            FilledButton.tonalIcon(
-              onPressed: () => context.go('/platform/subscriptions'),
-              icon: const Icon(Icons.list_alt),
-              label: const Text('Ir a Suscripciones'),
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
+
 
 /// Mientras se pide el perfil a `/accounts/me/`.
 ///
@@ -746,20 +750,21 @@ class _CargandoPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(vertical: 32),
-    child: Column(
-      children: [
-        SizedBox(
-          width: 28,
-          height: 28,
-          child: CircularProgressIndicator(strokeWidth: 3),
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            SizedBox(height: 16),
+            Text('Cargando tu perfil…'),
+          ],
         ),
-        SizedBox(height: 16),
-        Text('Cargando tu perfil…'),
-      ],
-    ),
-  );
+      );
 }
+
 
 /// Hay sesión pero no se pudo traer el perfil.
 ///
