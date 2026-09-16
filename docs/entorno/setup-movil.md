@@ -169,3 +169,11 @@ Bajar 20 GB seis veces es medio Sprint 0 perdido en algo que no es trabajo.
 `mobile/android/local.properties` contiene la ruta del SDK de **cada máquina**.
 Está en `.gitignore` y no debe subirse: si entra al repositorio, genera
 conflicto en cada `git pull` para los otros cinco.
+
+---
+
+## Cuando lo que hace falta no es compilar, sino instalar
+
+Este documento es para **trabajar** en el móvil. Para instalar la aplicación ya
+compilada en un teléfono —o para publicar una versión nueva después de un
+cambio— está [apk.md](apk.md).
