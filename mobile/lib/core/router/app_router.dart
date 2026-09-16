@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/assistant/assistant_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
@@ -63,6 +64,7 @@ class Routes {
   static const String dependents = 'dependents';
   static const String dependentForm = 'dependent-form';
   static const String history = 'history';
+  static const String assistant = 'assistant';
   static const String platformDashboard = 'platform-dashboard';
   static const String platformOrganizations = 'platform-organizations';
   static const String platformOrganizationForm = 'platform-organization-form';
@@ -299,6 +301,17 @@ GoRouter buildRouter(Session session) {
         builder: (context, state) => const SoloPacientes(
           titulo: 'Antecedentes',
           child: HistoryScreen(),
+        ),
+      ),
+
+      // ---------- US-31 (Karen): asistente de orientación ---------------
+      // Armazón de la pantalla para el corte del 16/09 (Alexander).
+      GoRoute(
+        path: '/assistant',
+        name: Routes.assistant,
+        builder: (context, state) => const SoloPacientes(
+          titulo: 'Asistente de orientación',
+          child: AssistantScreen(),
         ),
       ),
 
@@ -539,7 +552,7 @@ class _HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Los tres accesos de auto-servicio del paciente, como tarjetas con
+  /// Los accesos de auto-servicio del paciente, como tarjetas con
   /// ícono en vez de botones en columna -más jerarquía visual, menos "es un
   /// formulario más".
   List<Widget> _accesosDePaciente(BuildContext context) => [
@@ -569,6 +582,15 @@ class _HomeScreen extends StatelessWidget {
           titulo: 'Mis antecedentes',
           subtitulo: 'Alergias, condiciones y medicación declaradas',
           onTap: () => context.push('/history'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-31 (Karen): asistente de orientación --------------
+        _accesoTarjeta(
+          context,
+          icono: Icons.forum_outlined,
+          titulo: 'Asistente de orientación',
+          subtitulo: 'Contá tus síntomas y te sugiere una especialidad',
+          onTap: () => context.push('/assistant'),
         ),
       ];
 
