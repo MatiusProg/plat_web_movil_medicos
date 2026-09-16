@@ -96,8 +96,11 @@ CREATE ROLE app_user WITH
 
 GRANT USAGE, CREATE ON SCHEMA public TO app_user;
 
--- Sin esto las migraciones fallan con un error que NO menciona el search_path:
--- Supabase instala pgvector en el esquema `extensions`, no en `public`.
+-- Supabase instala pgvector en el esquema `extensions`, no en `public`. Desde
+-- D-18 la conexión de Django fija su propio `search_path` (`DB_SEARCH_PATH` en
+-- `config/settings.py`), así que esto ya no es lo único que separa al
+-- despliegue de «type "vector" does not exist». Se deja igual: sirve para
+-- `psql`, para el SQL Editor y para cualquier cliente que no sea Django.
 ALTER ROLE app_user SET search_path = public, extensions;
 
 -- Permite verificar el aislamiento desde el SQL Editor sin abrir otra conexión.

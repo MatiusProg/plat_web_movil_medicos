@@ -24,6 +24,7 @@ env = environ.Env(
     DATABASE_URL=(
         str, "postgresql://app_user:app_local_pass@localhost:5432/plataforma"
     ),
+    DB_SEARCH_PATH=(str, "public,extensions"),  # D-18, ver más abajo
     CSRF_TRUSTED_ORIGINS=(list, []),
     DEFAULT_TENANT_ID=(str, ""),
     SECRET_KEY=(str, "clave-insegura-solo-para-desarrollo-local"),
@@ -150,6 +151,39 @@ DATABASES = {
 }
 DATABASES["default"]["ATOMIC_REQUESTS"] = False  # lo maneja TenantMiddleware
 DATABASES["default"].setdefault("OPTIONS", {})
+
+# --------------------------------------------------------------------------
+#  `search_path` de la conexión — D-18
+# --------------------------------------------------------------------------
+#  **Supabase instala pgvector en el esquema `extensions`, no en `public`.** El
+#  tipo `vector` sólo se resuelve si ese esquema está en el `search_path`, y si
+#  no lo está la migración del asistente falla con un error que no lo menciona:
+#
+#      django.db.utils.ProgrammingError: type "vector" does not exist
+#
+#  Hasta ahora eso dependía de un `ALTER ROLE app_user SET search_path = public,
+#  extensions` corrido a mano en el panel de Supabase —documentado en
+#  `docs/entorno/supabase.md`, pero fuera del repositorio—. Un ajuste que vive
+#  sólo en la base no se revisa en un pull request, no viaja con el código y no
+#  sobrevive a recrear el rol o a conectarse con otro: por eso la conexión lo
+#  fija por su cuenta.
+#
+#  Un esquema que no existe en el `search_path` **no es un error** en
+#  PostgreSQL: simplemente se ignora. Por eso la misma línea sirve en local,
+#  donde la extensión está en `public` y no hay esquema `extensions`.
+#
+#  `setdefault` y no asignación: si el `DATABASE_URL` ya trae su propio
+#  `?options=`, manda el de la URL.
+#  Va por dos caminos a propósito. El parámetro de conexión es el correcto y
+#  alcanza contra PostgreSQL directo; pero el *pooler* de Supabase (Supavisor,
+#  puerto 6543) puede ignorar los parámetros de arranque del cliente, y entonces
+#  esto no haría nada y el error sería idéntico. El segundo camino
+#  —`tenancy.apps`, que lo fija con un `SET` sobre cada conexión ya abierta— no
+#  depende de eso. Repetirlo no cuesta nada; que falte, cuesta un despliegue.
+DB_SEARCH_PATH = env("DB_SEARCH_PATH")
+DATABASES["default"]["OPTIONS"].setdefault(
+    "options", f"-c search_path={DB_SEARCH_PATH}",
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

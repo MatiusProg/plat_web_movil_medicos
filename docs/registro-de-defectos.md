@@ -466,3 +466,69 @@ tabla con datos, aplicada en dos bases distintas, para resolver un problema
 inexistente, es justo lo que la regla 5 del reparto pide no hacer. Si alguna
 vez la política de lectura de `audit_log` se cerrara, esto habría que
 revisarlo.
+
+---
+
+# Sprint 2
+
+## Defectos
+
+### D-18 · El despliegue se cayó con «type "vector" does not exist»
+
+**Síntoma.** El primer despliegue después de mergear el asistente quedó abajo.
+El arranque de Railway corre `manage.py migrate` (`scripts/start.sh`) y murió
+en la primera migración de la app nueva:
+
+    Applying assistant.0001_initial...
+    django.db.utils.ProgrammingError: type "vector" does not exist
+    LINE 1: ..."content" text NOT NULL, "embedding" vector(153...
+
+El backend entero quedó caído, no sólo el asistente: sin migraciones no hay
+gunicorn. En local las 356 pruebas estaban —y siguen— en verde.
+
+**Causa.** **Supabase instala pgvector en el esquema `extensions`, no en
+`public`.** El tipo `vector` existe, pero sin ese esquema en el `search_path`
+de la conexión no se resuelve, y el error no menciona el `search_path` por
+ningún lado.
+
+Lo que lo dejó pasar es más interesante que el error. `VectorExtension()` —la
+primera operación de la migración— **no falló**: la operación de Django se
+saltea sola si la extensión ya está instalada, sin mirar en qué esquema quedó
+ni si el tipo se puede nombrar. Su presencia en la migración daba la impresión
+de que la extensión estaba cubierta, y lo que hacía falta era otra cosa.
+
+La pieza que faltaba —`ALTER ROLE app_user SET search_path = public,
+extensions`— **estaba documentada** desde el Sprint 0, en la sección 2.1 de
+`docs/entorno/supabase.md`. Vivía sólo en la base, corrida a mano una vez en el
+panel: no se revisa en un pull request, no viaja con el código, y nadie se
+entera de que falta hasta que una migración la necesita, tres sprints después.
+
+**Corrección.** La conexión fija su propio `search_path`, en
+`config/settings.py`:
+
+```python
+DATABASES["default"]["OPTIONS"].setdefault(
+    "options", f"-c search_path={env('DB_SEARCH_PATH')}",
+)
+```
+
+Y **por un segundo camino**, `tenancy.apps`, que lo fija con un `SET` sobre
+cada conexión ya abierta. No es redundancia por las dudas: el parámetro de
+arranque es el camino correcto y alcanza contra PostgreSQL directo, pero el
+*pooler* de Supabase puede ignorar los parámetros de arranque del cliente, y
+entonces el ajuste se pierde **sin decir nada** y el error es idéntico al que
+se estaba arreglando. Un mecanismo que puede fallar en silencio no se deja
+solo.
+
+Con `DB_SEARCH_PATH` por omisión en `public,extensions`. Sirve igual en local,
+donde la extensión está en `public` y el esquema `extensions` ni existe: un
+esquema inexistente en el `search_path` no es un error en PostgreSQL, se
+ignora. Es `setdefault` para que un `?options=` puesto a mano en el
+`DATABASE_URL` siga mandando.
+
+**Regla que deja.** Un ajuste que la aplicación necesita para arrancar no puede
+vivir sólo en la base de datos. Si la única copia está en un documento y en una
+sentencia que alguien corrió una vez en un panel, no es configuración: es una
+suposición. Lo mismo vale para la otra que sigue viva —`CREATE EXTENSION`, que
+`app_user` no tiene permiso de correr— con la diferencia de que ésa falla
+ruidosamente y al crear el proyecto, no tres sprints después.
