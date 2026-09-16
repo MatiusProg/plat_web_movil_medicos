@@ -27,6 +27,18 @@ dj-database-url==3.1.2
 django-environ==0.14.0
 django-cors-headers==4.9.0
 
+# ---------- Asistente de orientación (US-31) ----------
+# Tipo de columna `vector`, operadores de distancia e integración con el ORM.
+# Necesita la extensión pgvector EN LA BASE: el paquete de Python no la
+# instala. En Supabase ya está; en un PostgreSQL local hay que agregarla
+# (docs/entorno/sin-docker.md).
+pgvector==0.5.0
+
+# SDK vigente de Google para Gemini. NO es `google-generativeai`, que es el
+# anterior y está descontinuado. Se usa el nivel gratuito: el modelo de
+# embeddings es lo que consume el RAG, y ahí es donde importa que no cobre.
+google-genai==2.23.0
+
 # ---------- Seguridad ----------
 # RNF-04: las contraseñas se almacenan con hash y salt.
 argon2-cffi==25.1.0

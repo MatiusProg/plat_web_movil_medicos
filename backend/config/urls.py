@@ -12,6 +12,12 @@ pull request traería un conflicto. La única excepción es incluir una app
 ``audit``. Con ésas dos el Sprint 1 no crea ninguna app más, así que el archivo
 vuelve a estar cerrado.
 
+**Sprint 2.** El sprint crea cuatro apps —``appointments``, ``payments``,
+``encounters`` y ``assistant``— y el reparto pide abrir este archivo **una
+sola vez**, al inicio, para incluir las cuatro. De momento está la línea de
+``assistant``, porque US-31 se muestra en el corte del 16/09; las otras tres
+entran en la misma pasada del SM cuando sus apps existan.
+
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py      (US-43, US-44, US-45)
     usuarios, roles, login     accounts/urls.py     (US-01, US-02, US-04)
@@ -19,6 +25,7 @@ vuelve a estar cerrado.
     agendas y disponibilidad   scheduling/urls.py   (US-13, US-14, US-15)
     pacientes                  patients/urls.py     (US-07 en adelante)
     bitácora                   audit/urls.py        (US-06)
+    asistente                  assistant/urls.py    (US-31, US-32, US-34)
 """
 
 from django.urls import include, path
@@ -56,4 +63,5 @@ urlpatterns = [
     path("api/scheduling/", include("scheduling.urls")),
     path("api/patients/", include("patients.urls")),
     path("api/audit/", include("audit.urls")),
+    path("api/assistant/", include("assistant.urls")),
 ]

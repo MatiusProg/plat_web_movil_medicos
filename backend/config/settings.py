@@ -27,6 +27,15 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(list, []),
     DEFAULT_TENANT_ID=(str, ""),
     SECRET_KEY=(str, "clave-insegura-solo-para-desarrollo-local"),
+    # US-31 — asistente. Los proveedores arrancan en `local` a propósito: es
+    # la misma idea que el resto de este bloque, que un clon recién bajado
+    # funcione sin configurar nada ni tener ninguna clave.
+    GEMINI_API_KEY=(str, ""),
+    ASSISTANT_EMBEDDING_PROVIDER=(str, "local"),
+    ASSISTANT_EMBEDDING_MODEL=(str, "gemini-embedding-001"),
+    ASSISTANT_CHAT_PROVIDER=(str, "local"),
+    ASSISTANT_CHAT_MODEL=(str, "gemini-3.5-flash"),
+    ASSISTANT_MIN_SIMILARITY=(float, -1.0),
 )
 environ.Env.read_env(REPO_ROOT / ".env")
 
@@ -68,6 +77,9 @@ INSTALLED_APPS = [
     # una app igual porque tiene su propio prefijo de rutas, su permiso y su
     # middleware.
     "audit",
+    # US-31: el asistente. Guarda los fragmentos del catálogo con su embedding
+    # en una columna `vector` de pgvector.
+    "assistant",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
@@ -331,3 +343,40 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+
+# --------------------------------------------------------------------------
+#  US-31 — Asistente de orientación (RAG sobre pgvector)
+# --------------------------------------------------------------------------
+# La clave del proveedor **no se versiona** (regla 11 del Sprint 2): va en el
+# .env, y en Railway con el botón de aplicar cambios, no con Redeploy.
+GEMINI_API_KEY = env("GEMINI_API_KEY")
+
+# "gemini" o "local". El proveedor local es determinista y no sale a la red:
+# es el que deja correr las pruebas y la demostración sin clave y sin
+# conexión. El porqué está en assistant/embeddings.py.
+ASSISTANT_EMBEDDING_PROVIDER = env("ASSISTANT_EMBEDDING_PROVIDER")
+ASSISTANT_EMBEDDING_MODEL = env("ASSISTANT_EMBEDDING_MODEL")
+ASSISTANT_CHAT_PROVIDER = env("ASSISTANT_CHAT_PROVIDER")
+ASSISTANT_CHAT_MODEL = env("ASSISTANT_CHAT_MODEL")
+
+# Similitud mínima para que un fragmento cuente como recuperado. Por debajo,
+# el asistente contesta que no sabe en lugar de sugerir la especialidad menos
+# lejana, que con cinco especialidades siempre existe.
+#
+# El valor depende del proveedor —los dos espacios no tienen la misma escala—
+# así que -1 significa "elegilo vos según el proveedor". Fijar la variable en
+# el .env gana siempre.
+#
+# El 0,12 del proveedor local está medido sobre el catálogo de demostración:
+# las preguntas que sí corresponden a una especialidad puntúan entre 0,15 y
+# 0,55, y una pregunta ajena ("cuánto sale alquilar un departamento") llega a
+# 0,105. El margen es de tres centésimas, y eso es una propiedad del método,
+# no un defecto de la calibración: comparar por palabras compartidas no
+# separa mucho mejor que eso. Con Gemini el hueco es holgado, y por eso el
+# umbral de gemini se puede poner alto sin miedo.
+_umbral = env("ASSISTANT_MIN_SIMILARITY")
+ASSISTANT_MIN_SIMILARITY = (
+    _umbral if _umbral >= 0
+    else (0.12 if ASSISTANT_EMBEDDING_PROVIDER == "local" else 0.35)
+)
