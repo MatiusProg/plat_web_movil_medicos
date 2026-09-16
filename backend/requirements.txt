@@ -31,6 +31,19 @@ django-cors-headers==4.9.0
 # RNF-04: las contraseñas se almacenan con hash y salt.
 argon2-cffi==25.1.0
 
+# ---------- Reportes exportables (caracteristica general 5) ----------
+# La consigna pide exportar a Excel, HTML, eMail y PDF. HTML y el correo salen
+# de la biblioteca estandar y de Django; los otros dos necesitan estas dos.
+#
+# Las dos se importan DENTRO de la funcion que las usa, no arriba del modulo:
+# asi, un despliegue al que le falte una falla en el unico endpoint que la
+# necesita y no al arrancar el proceso. Ver reporting/exporters.py.
+openpyxl==3.1.5
+# reportlab y no weasyprint: weasyprint necesita GTK/Pango instalados en el
+# sistema operativo, que en Windows hay que bajar aparte y en el contenedor de
+# Railway obligaria a tocar el constructor. reportlab es Python puro.
+reportlab==4.2.5
+
 # ---------- Servir en produccion ----------
 # gunicorn NO corre en Windows (necesita fcntl): se instala igual, pero solo
 # se ejecuta en el contenedor de Railway, que es Linux. En local se sigue

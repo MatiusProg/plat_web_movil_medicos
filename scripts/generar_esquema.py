@@ -48,6 +48,11 @@ MIGRACIONES = [
     ("patients", "0002_us07_dependents"),
     ("patients", "0003_us08_history"),
     ("patients", "0004_us08_rls"),
+    # Características generales de la materia: 5 (reportes) y 6 (respaldos).
+    ("reporting", "0001_initial"),
+    ("reporting", "0002_rls_and_permissions"),
+    ("backups", "0001_initial"),
+    ("backups", "0002_rls_and_permissions"),
 ]
 
 CABECERA = """\

@@ -1168,6 +1168,142 @@ BEGIN;
 COMMIT;
 
 -- =========================================================================
+--  reporting / 0001_initial
+-- =========================================================================
+
+BEGIN;
+--
+-- Create model SavedReport
+--
+CREATE TABLE "saved_reports" ("id" uuid NOT NULL PRIMARY KEY, "name" varchar(120) NOT NULL, "description" varchar(300) NOT NULL, "dataset" varchar(40) NOT NULL, "definition" jsonb NOT NULL, "is_shared" boolean NOT NULL, "created_at" timestamp with time zone NOT NULL, "updated_at" timestamp with time zone NOT NULL, "organization_id" uuid NOT NULL, "owner_id" uuid NULL);
+--
+-- Create index ix_saved_report_dataset on field(s) organization, dataset of model savedreport
+--
+CREATE INDEX "ix_saved_report_dataset" ON "saved_reports" ("organization_id", "dataset");
+--
+-- Create constraint uq_saved_report_name on model savedreport
+--
+ALTER TABLE "saved_reports" ADD CONSTRAINT "uq_saved_report_name" UNIQUE ("organization_id", "owner_id", "name");
+ALTER TABLE "saved_reports" ADD CONSTRAINT "saved_reports_organization_id_e03d22f7_fk_organizations_id" FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id") DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE "saved_reports" ADD CONSTRAINT "saved_reports_owner_id_73a10834_fk_users_id" FOREIGN KEY ("owner_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "saved_reports_organization_id_e03d22f7" ON "saved_reports" ("organization_id");
+CREATE INDEX "saved_reports_owner_id_73a10834" ON "saved_reports" ("owner_id");
+COMMIT;
+
+-- =========================================================================
+--  reporting / 0002_rls_and_permissions
+-- =========================================================================
+
+BEGIN;
+--
+-- Raw SQL operation
+--
+
+            ALTER TABLE saved_reports ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE saved_reports FORCE  ROW LEVEL SECURITY;
+            CREATE POLICY tenant_isolation ON saved_reports
+                USING (organization_id = app_current_tenant())
+                WITH CHECK (organization_id = app_current_tenant());
+        
+--
+-- Raw SQL operation
+--
+
+DO $do$
+DECLARE c text;
+BEGIN
+    FOR c IN
+        SELECT conname FROM pg_constraint
+         WHERE conrelid = 'saved_reports'::regclass AND contype = 'f'
+           AND confrelid = 'users'::regclass
+           AND conkey = ARRAY[
+               (SELECT attnum FROM pg_attribute
+                 WHERE attrelid = 'saved_reports'::regclass
+                   AND attname = 'owner_id')
+           ]
+    LOOP
+        EXECUTE format('ALTER TABLE saved_reports DROP CONSTRAINT %I', c);
+    END LOOP;
+END
+$do$;
+
+ALTER TABLE saved_reports ADD CONSTRAINT fk_saved_reports_users_same_org
+    FOREIGN KEY (owner_id, organization_id)
+    REFERENCES users (id, organization_id) ON DELETE SET NULL;
+
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- =========================================================================
+--  backups / 0001_initial
+-- =========================================================================
+
+BEGIN;
+--
+-- Create model BackupRecord
+--
+CREATE TABLE "backup_records" ("id" uuid NOT NULL PRIMARY KEY, "kind" varchar(10) NOT NULL, "filename" varchar(200) NOT NULL, "size_bytes" bigint NOT NULL CHECK ("size_bytes" >= 0), "row_counts" jsonb NOT NULL, "checksum" varchar(64) NOT NULL, "ip_address" inet NULL, "created_at" timestamp with time zone NOT NULL, "organization_id" uuid NOT NULL, "performed_by_id" uuid NULL);
+--
+-- Create index ix_backup_records_org on field(s) organization, -created_at of model backuprecord
+--
+CREATE INDEX "ix_backup_records_org" ON "backup_records" ("organization_id", "created_at" DESC);
+ALTER TABLE "backup_records" ADD CONSTRAINT "backup_records_organization_id_dc2cd63c_fk_organizations_id" FOREIGN KEY ("organization_id") REFERENCES "organizations" ("id") DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE "backup_records" ADD CONSTRAINT "backup_records_performed_by_id_18ba6d92_fk_users_id" FOREIGN KEY ("performed_by_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "backup_records_organization_id_dc2cd63c" ON "backup_records" ("organization_id");
+CREATE INDEX "backup_records_performed_by_id_18ba6d92" ON "backup_records" ("performed_by_id");
+COMMIT;
+
+-- =========================================================================
+--  backups / 0002_rls_and_permissions
+-- =========================================================================
+
+BEGIN;
+--
+-- Raw SQL operation
+--
+
+            ALTER TABLE backup_records ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE backup_records FORCE  ROW LEVEL SECURITY;
+            CREATE POLICY tenant_isolation ON backup_records
+                USING (organization_id = app_current_tenant())
+                WITH CHECK (organization_id = app_current_tenant());
+        
+--
+-- Raw SQL operation
+--
+
+DO $do$
+DECLARE c text;
+BEGIN
+    FOR c IN
+        SELECT conname FROM pg_constraint
+         WHERE conrelid = 'backup_records'::regclass AND contype = 'f'
+           AND confrelid = 'users'::regclass
+           AND conkey = ARRAY[
+               (SELECT attnum FROM pg_attribute
+                 WHERE attrelid = 'backup_records'::regclass
+                   AND attname = 'performed_by_id')
+           ]
+    LOOP
+        EXECUTE format('ALTER TABLE backup_records DROP CONSTRAINT %I', c);
+    END LOOP;
+END
+$do$;
+
+ALTER TABLE backup_records ADD CONSTRAINT fk_backup_records_users_same_org
+    FOREIGN KEY (performed_by_id, organization_id)
+    REFERENCES users (id, organization_id) ON DELETE SET NULL;
+
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- =========================================================================
 --  Como regenerar este archivo
 --
 --    backend/.venv/Scripts/python scripts/generar_esquema.py    (Windows)

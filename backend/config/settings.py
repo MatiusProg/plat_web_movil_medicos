@@ -68,6 +68,12 @@ INSTALLED_APPS = [
     # una app igual porque tiene su propio prefijo de rutas, su permiso y su
     # middleware.
     "audit",
+    # Característica general 5 de la materia: reportes que arma el usuario,
+    # con sus columnas, sus criterios y su orden, exportables a Excel, PDF,
+    # HTML y correo.
+    "reporting",
+    # Característica general 6: copias de seguridad y restauración.
+    "backups",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
