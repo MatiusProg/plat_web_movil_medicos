@@ -79,7 +79,7 @@ Future<Session> sesionCon(List<String> permisos) async {
             'organization': 'pruebas',
             'is_platform_admin': false,
             'roles': [
-              {'code': 'org_admin', 'name': 'Administrador'}
+              {'code': 'org_admin', 'name': 'Administrador'},
             ],
             'permissions': permisos,
           }),
@@ -104,8 +104,9 @@ Future<void> montarPanel(WidgetTester tester, Session session) async {
 }
 
 void main() {
-  testWidgets('con todos los permisos se ven las nueve secciones',
-      (tester) async {
+  testWidgets('con todos los permisos se ven las diez secciones', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 3200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -118,6 +119,7 @@ void main() {
       'catalog.specialty.read',
       'catalog.professional.read',
       'audit.log.read',
+      'reporting.report.run',
       'users.user.read',
       'users.role.read',
     ]);
@@ -127,6 +129,7 @@ void main() {
     expect(find.text('Disponibilidad'), findsOneWidget);
     expect(find.text('Sucursales'), findsOneWidget);
     expect(find.text('Bitácora'), findsOneWidget);
+    expect(find.text('Reportes'), findsOneWidget);
     expect(find.text('Roles y permisos'), findsOneWidget);
   });
 
@@ -143,19 +146,22 @@ void main() {
     expect(find.text('Disponibilidad'), findsOneWidget);
 
     expect(find.text('Bitácora'), findsNothing);
+    expect(find.text('Reportes'), findsNothing);
     expect(find.text('Roles y permisos'), findsNothing);
     expect(find.text('Usuarios'), findsNothing);
     expect(find.text('Sucursales'), findsNothing);
   });
 
-  testWidgets('sin ningún permiso se explica, no se muestra una pantalla vacía',
-      (tester) async {
-    final session = await sesionCon(const []);
-    await montarPanel(tester, session);
+  testWidgets(
+    'sin ningún permiso se explica, no se muestra una pantalla vacía',
+    (tester) async {
+      final session = await sesionCon(const []);
+      await montarPanel(tester, session);
 
-    expect(
-      find.textContaining('todavía no tiene permisos de administración'),
-      findsOneWidget,
-    );
-  });
+      expect(
+        find.textContaining('todavía no tiene permisos de administración'),
+        findsOneWidget,
+      );
+    },
+  );
 }
