@@ -526,6 +526,22 @@ esquema inexistente en el `search_path` no es un error en PostgreSQL, se
 ignora. Es `setdefault` para que un `?options=` puesto a mano en el
 `DATABASE_URL` siga mandando.
 
+**Lo que finalmente lo destrabó, y es la mitad que faltaba.** Con el
+`search_path` arreglado el despliegue seguía cayendo igual. La extensión
+estaba, el esquema estaba en el `search_path` — y `app_user` **no tenía
+permiso de uso sobre ese esquema**. Supabase se lo da a sus propios roles
+(`postgres`, `anon`, `authenticated`, `service_role`), no a uno creado a mano.
+Un esquema al que el rol no puede acceder **se ignora en el `search_path`
+aunque esté escrito**, y el error es exactamente el mismo:
+
+```sql
+GRANT USAGE ON SCHEMA extensions TO app_user;
+```
+
+Se comprueba con
+`SELECT has_schema_privilege('app_user', 'extensions', 'usage');`. Ya está en
+la sección 2.1 de `docs/entorno/supabase.md`, junto al `ALTER ROLE`.
+
 **Regla que deja.** Un ajuste que la aplicación necesita para arrancar no puede
 vivir sólo en la base de datos. Si la única copia está en un documento y en una
 sentencia que alguien corrió una vez en un panel, no es configuración: es una
