@@ -12,6 +12,9 @@ Al terminar tenés que ver lo mismo que los demás: **`21 passed`**.
 > **Verificado el 2026-08-23.** Las 6 migraciones del Sprint 0 y las 21 pruebas
 > de aislamiento se corrieron contra una base **sin pgvector**, que es como
 > queda un PostgreSQL recién instalado. Todo pasa.
+>
+> ⚠️ **Eso dejó de valer el 15/09/26, con US-31.** Hoy hace falta pgvector
+> para correr cualquier prueba. Ver la sección *pgvector: ya no es opcional*.
 
 ---
 
@@ -21,9 +24,10 @@ El único componente del proyecto que Docker aporta hoy es **PostgreSQL 16**.
 Nada más: Django, las pruebas y el resto corren en tu Python.
 
 La única diferencia real con el contenedor es **pgvector**, la extensión para
-búsqueda por similitud. **En el Sprint 0 no se usa**: no hay ninguna columna de
-tipo vector en el modelo. Recién hace falta en el **Sprint 3**, para el chatbot.
-Ese problema se resuelve entonces — abajo está el plan.
+búsqueda por similitud. En el Sprint 0 no se usaba, y esta guía decía que
+recién haría falta en el Sprint 3. **Desde el Sprint 2 (US-31) es
+obligatoria**: hay una columna de tipo `vector` en el modelo y sin la
+extensión no se crea ni la base de pruebas. Ver la sección de abajo.
 
 Todo lo demás es idéntico: las mismas migraciones, las mismas políticas de
 aislamiento y las mismas 21 pruebas.
@@ -154,25 +158,50 @@ Y después `python manage.py migrate`.
 
 ---
 
-## Lo único que te va a faltar: pgvector, en el Sprint 3
+## pgvector: ya no es opcional — Sprint 2, US-31
 
-El chatbot con RAG guarda *embeddings* en columnas de tipo `vector`. Eso
-necesita la extensión pgvector, que el instalador de EDB **no trae**.
+> **Esto cambió el 15/09/26.** La guía decía que pgvector recién hacía falta en
+> el Sprint 3. El reparto del Sprint 2 adelantó la Épica 7, US-31 creó una
+> columna de tipo `vector` y, con ella, **la extensión pasó a ser parte del
+> esquema**.
+>
+> Consecuencia directa y sin rodeos: **sin pgvector no corre ninguna prueba**,
+> ni las del asistente ni las de las otras historias. La base de pruebas se
+> crea aplicando todas las migraciones, y `assistant/0001_initial` se detiene
+> ahí. No es que fallen las pruebas de US-31: no se llega a crear la base.
 
-**No es un problema ahora.** Cuando llegue el Sprint 3 hay tres caminos, en
-orden de conveniencia:
+El síntoma es claro, porque la migración lo dice con todas las letras:
 
-1. **Instalar pgvector sobre tu PostgreSQL.** Hay binarios para Windows en
-   `github.com/pgvector/pgvector`; se copian dos archivos dentro de la carpeta
-   de PostgreSQL y después `CREATE EXTENSION vector;`. Es el camino limpio.
-2. **Que para entonces la máquina corra Docker.** A veces sólo falta activar la
-   virtualización en la BIOS, que es gratis. Ver el paso 0 de
-   [primeros-pasos.md](primeros-pasos.md).
-3. **Trabajar esa historia contra Supabase**, que ya tiene pgvector. Requiere
-   pedirle las credenciales al Scrum Master y coordinar, así que es el último
-   recurso.
+```
+django.db.utils.ProgrammingError: pgvector NO esta instalada en el servidor
+de PostgreSQL. El paquete de Python no la instala: hay que agregarla al
+servidor, o trabajar contra Supabase, que ya la trae.
+```
 
-Conviene resolverlo **antes** de que empiece el Sprint 3, no el mismo día.
+**Ojo con una confusión que cuesta media hora:** `pip install pgvector`
+instala el *cliente* —el tipo de columna para Django y los operadores de
+distancia— y **no** la extensión del servidor. Tener el paquete de Python no
+cambia nada del lado de PostgreSQL.
+
+### Los tres caminos, en orden de conveniencia
+
+1. **Instalar pgvector sobre tu PostgreSQL.** Es el camino limpio y el único
+   que te deja correr la suite entera en local. El repositorio oficial
+   (`github.com/pgvector/pgvector`) **no publica binarios de Windows**: el
+   camino oficial es compilar con las herramientas de C++ de Visual Studio y
+   `nmake`. Hay binarios ya compilados de terceros —el más conocido es
+   `github.com/andreiramani/pgvector_pgsql_windows`, que sí cubre PostgreSQL
+   18—, pero son de una persona y no del proyecto: **es una decisión tuya**
+   meter un binario de terceros en tu servidor de base de datos. Después de
+   copiar los archivos, `CREATE EXTENSION vector;` una sola vez.
+2. **Trabajar contra Supabase**, que ya la trae. Es lo más rápido para salir
+   del paso —apuntás `DATABASE_URL` al proyecto compartido y listo— y es lo
+   que se usó para la demostración del 16/09. Lo que **no** resuelve es correr
+   las pruebas: `app_user` es `NOCREATEDB` y pytest necesita crear una base de
+   pruebas. Y correrlas como `postgres` sería peor que no correrlas, porque
+   `postgres` omite RLS y las de aislamiento pasarían sin probar nada.
+3. **Docker.** A veces sólo falta activar la virtualización en la BIOS, que es
+   gratis. Ver el paso 0 de [primeros-pasos.md](primeros-pasos.md).
 
 ---
 

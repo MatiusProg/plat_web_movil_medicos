@@ -2,21 +2,23 @@
 /// 16/09. La historia es US-31 (y US-34 para la derivación a emergencia), de
 /// Karen; desde el 17/09 este módulo pasa a ella.
 ///
-/// **Contrato real del endpoint**, publicado el 16/09 junto con
-/// `backend/assistant/views.py`:
+/// **Contrato real del endpoint** (`backend/assistant/views.py`, US-31 de
+/// Karen, integrado el 16/09):
 ///
 ///     POST /api/assistant/suggest/   {"message": "…"}
-///     → {"answer": {"text": "…", "source": "template|model|unavailable"},
-///        "triage": {"is_emergency": false, "reasons": […], "message": "…"},
-///        "specialty": {"id": "…", "name": "…", "rank": 1} | null,
-///        "fragments": [{"content": "…", "title": "…", "distance": 0.31, …}],
-///        "provider": "local"}
+///     → {"emergency": false,
+///        "answer": "…",
+///        "generated_by": "gemini|plantilla|regla",
+///        "specialty": {"id": "…", "name": "…", "similarity": 0.71} | null,
+///        "alternatives": [{…}],
+///        "fragments": [{"text": "…", "source_name": "…", "similarity": …}],
+///        "retrieval": {"embedding_model": "…"}}
 ///
-/// Dos cosas no eran como las suponía el plan del sprint: `answer` es un
-/// objeto —el backend distingue una plantilla de una respuesta del modelo— y
-/// la urgencia viaja dentro de `triage`, no en la raíz. La lectura sigue
-/// viviendo **sólo en este archivo** y sigue aceptando la forma supuesta y los
-/// nombres alternativos, así que la pantalla no se entera de cuál llega.
+/// Es el que suponía el plan del sprint, así que la pantalla lo lee sin
+/// cambios. La lectura vive **sólo en este archivo** y sigue aceptando además
+/// la otra forma que llegó a existir —`answer` como objeto `{text, source}` y
+/// la urgencia dentro de `triage`—, porque no cuesta nada y evita que un
+/// cambio de contrato deje la pantalla muda sin que nadie se entere.
 library;
 
 import 'package:mobile/core/api/client.dart';
@@ -43,7 +45,12 @@ class AssistantFragment {
     if (text == null) return null;
     return AssistantFragment(
       text: text,
-      source: _firstString(json, const ['source', 'title', 'name']),
+      source: _firstString(json, const [
+        'source',
+        'source_name',
+        'title',
+        'name',
+      ]),
     );
   }
 }

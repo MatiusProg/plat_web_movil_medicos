@@ -55,7 +55,8 @@ MIGRACIONES = [
     ("backups", "0002_rls_and_permissions"),
     # US-31, US-32 y US-34: el asistente sobre pgvector.
     ("assistant", "0001_initial"),
-    ("assistant", "0002_rls_and_permissions"),
+    ("assistant", "0002_rls_policies"),
+    ("assistant", "0003_seed_permission"),
 ]
 
 CABECERA = """\

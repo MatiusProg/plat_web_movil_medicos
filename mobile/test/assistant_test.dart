@@ -43,54 +43,67 @@ Future<void> _preguntar(WidgetTester tester, String texto) async {
 void main() {
   group('lectura de la respuesta', () {
     test('lee el contrato real del endpoint', () {
-      // Tal cual lo devuelve `backend/assistant/views.py`: `answer` es un
-      // objeto y la urgencia viaja dentro de `triage`.
+      // Tal cual lo devuelve `backend/assistant/views.py`.
       final r = AssistantReply.fromJson({
-        'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
-        'answer': {'text': 'Te conviene Cardiología.', 'source': 'model'},
-        'specialty': {'id': 's1', 'name': 'Cardiología', 'rank': 1},
+        'emergency': false,
+        'answer': 'Te conviene Cardiología.',
+        'generated_by': 'gemini',
+        'specialty': {'id': 's1', 'name': 'Cardiología', 'similarity': 0.71},
+        'alternatives': [
+          {'id': 's2', 'name': 'Medicina General', 'similarity': 0.55},
+        ],
         'fragments': [
           {
             'id': 'f1',
-            'rank': 1,
+            'text': 'Cardiología atiende hipertensión.',
             'source_type': 'specialty',
-            'source_label': 'Especialidad',
             'source_id': 's1',
-            'title': 'Cardiología',
-            'content': 'Cardiología atiende hipertensión.',
-            'distance': 0.31,
+            'source_name': 'Cardiología',
+            'similarity': 0.71,
           },
         ],
-        'provider': 'local',
+        'retrieval': {'embedding_model': 'local'},
       });
 
       expect(r.answer, 'Te conviene Cardiología.');
       expect(r.specialtyId, 's1');
       expect(r.specialtyName, 'Cardiología');
       expect(r.fragments.single.text, 'Cardiología atiende hipertensión.');
+      // `source_name` es como se llama en el endpoint; la pantalla lo muestra
+      // como el origen del fragmento.
       expect(r.fragments.single.source, 'Cardiología');
       expect(r.emergency, isFalse);
     });
 
     test('lee una urgencia del contrato real', () {
       final r = AssistantReply.fromJson({
-        'triage': {
-          'is_emergency': true,
-          'reasons': ['dolor de pecho'],
-          'message': 'Esto puede ser una urgencia.',
-        },
-        'answer': {
-          'text': 'Esto puede ser una urgencia.',
-          'source': 'template',
-        },
+        'emergency': true,
+        'answer': 'Esto puede ser una urgencia.',
+        'generated_by': 'regla',
         'specialty': null,
+        'alternatives': [],
         'fragments': [],
-        'provider': 'local',
       });
 
       expect(r.emergency, isTrue);
       expect(r.specialtyName, isNull);
       expect(r.answer, 'Esto puede ser una urgencia.');
+    });
+
+    test('tolera la otra forma: answer objeto y la urgencia en triage', () {
+      final r = AssistantReply.fromJson({
+        'triage': {'is_emergency': true, 'reasons': [], 'message': ''},
+        'answer': {'text': 'Puede ser una urgencia.', 'source': 'template'},
+        'specialty': null,
+        'fragments': [
+          {'content': 'Texto del fragmento.', 'title': 'Cardiología'},
+        ],
+      });
+
+      expect(r.answer, 'Puede ser una urgencia.');
+      expect(r.emergency, isTrue);
+      expect(r.fragments.single.text, 'Texto del fragmento.');
+      expect(r.fragments.single.source, 'Cardiología');
     });
 
     test('lee también el contrato que suponía el plan del sprint', () {
@@ -130,10 +143,7 @@ void main() {
     late http.Request capturada;
     final mock = MockClient((req) async {
       capturada = req;
-      return _json({
-        'answer': {'text': 'ok', 'source': 'model'},
-        'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
-      }, 200);
+      return _json({'emergency': false, 'answer': 'ok'}, 200);
     });
 
     await consultarAsistente(
@@ -152,16 +162,17 @@ void main() {
       tester,
       MockClient(
         (_) async => _json({
-          'answer': {'text': 'Te conviene Cardiología.', 'source': 'model'},
-          'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
-          'specialty': {'id': 's1', 'name': 'Cardiología', 'rank': 1},
+          'emergency': false,
+          'answer': 'Te conviene Cardiología.',
+          'generated_by': 'gemini',
+          'specialty': {'id': 's1', 'name': 'Cardiología', 'similarity': 0.71},
           'fragments': [
             {
-              'title': 'Cardiología',
-              'content': 'Cardiología atiende hipertensión.',
+              'text': 'Cardiología atiende hipertensión.',
+              'source_name': 'Cardiología',
+              'similarity': 0.71,
             },
           ],
-          'provider': 'local',
         }, 200),
       ),
     );
@@ -183,15 +194,11 @@ void main() {
       tester,
       MockClient(
         (_) async => _json({
-          'answer': {'text': 'Puede ser una urgencia.', 'source': 'template'},
-          'triage': {
-            'is_emergency': true,
-            'reasons': ['dolor de pecho'],
-            'message': 'Puede ser una urgencia.',
-          },
-          'specialty': {'id': 's1', 'name': 'Cardiología', 'rank': 1},
+          'emergency': true,
+          'answer': 'Puede ser una urgencia.',
+          'generated_by': 'regla',
+          'specialty': {'id': 's1', 'name': 'Cardiología', 'similarity': 0.71},
           'fragments': [],
-          'provider': 'local',
         }, 200),
       ),
     );
@@ -212,10 +219,7 @@ void main() {
       MockClient((_) async {
         llamadas++;
         if (llamadas == 1) return _json({'detail': 'caído'}, 503);
-        return _json({
-          'answer': {'text': 'Ahora sí.', 'source': 'model'},
-          'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
-        }, 200);
+        return _json({'emergency': false, 'answer': 'Ahora sí.'}, 200);
       }),
     );
 

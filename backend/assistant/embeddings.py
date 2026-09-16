@@ -1,215 +1,230 @@
-"""US-31 — De un texto a su vector.
+"""US-31, pieza 1 — Cómo se convierte un texto en un vector.
 
-El proveedor es **enchufable** y eso no es una floritura de diseño: la clave de
-OpenAI no se versiona (regla del reparto) y no está en la máquina de todos los
-integrantes. Sin un camino alternativo, ni las pruebas ni la demostración
-podrían correr en una máquina sin clave, y la historia sería imposible de
-revisar.
+El resto de la app no sabe quién calcula los embeddings. Pide
+``embed_documents()`` o ``embed_query()`` y recibe listas de 768 números
+normalizadas. Eso permite dos cosas: cambiar de proveedor sin tocar la
+recuperación, y **correr la demostración sin conexión**.
 
-Dos proveedores:
+---
 
-- ``openai`` — ``text-embedding-3-small``, 1536 dimensiones. Se usa cuando hay
-  ``OPENAI_API_KEY``. Es el de producción.
-- ``local`` — proyección por *hashing* sobre la misma cantidad de dimensiones,
-  sin red y sin clave. **No es un modelo de lenguaje**: es una bolsa de
-  palabras proyectada y normalizada, así que sólo captura solapamiento léxico
-  —«dolor de cabeza» recupera «dolores de cabeza», pero no «cefalea»—. Alcanza
-  para probar el aislamiento y el camino completo, que es lo que se muestra el
-  16/09, y **no alcanza para producción**. Está dicho acá y en la respuesta de
-  la API, que devuelve qué proveedor la generó.
+**Por qué Gemini.** El nivel gratuito incluye el modelo de embeddings, que es
+lo que US-31 consume de verdad: un vector por fragmento del catálogo y otro
+por cada pregunta. Chat gratuito ofrecen varios; embeddings gratuitos, no
+tantos.
 
-**Cada fragmento guarda con qué proveedor se vectorizó, y la búsqueda sólo mira
-los del proveedor vigente.** Es la trampa que más caro sale en un RAG: dos
-modelos distintos producen vectores del mismo tamaño y completamente
-incomparables, así que mezclarlos no da ningún error — da resultados absurdos
-que parecen un problema de calidad del corpus. Con el filtro por proveedor,
-cambiar de modelo deja el índice viejo invisible hasta que se reindexe, que es
-lo correcto.
+**Por qué 768 dimensiones y no las 3072 que entrega por omisión.** La
+dimensión *es* la definición de la columna ``vector(N)``: cambiarla después es
+un ALTER TABLE más recalcular todo el índice. 768 es uno de los tamaños que
+Google recomienda para recuperación, ocupa la cuarta parte y no se nota en la
+calidad con un corpus de este tamaño.
+
+**Por qué se normaliza a mano.** ``gemini-embedding-001`` normaliza los
+vectores de 3072, pero **no los truncados**. Guardados sin normalizar, la
+distancia coseno sigue dando un orden razonable pero el producto interno no, y
+un índice creado sobre otro operador deja de coincidir con lo que la consulta
+calcula. Normalizar una sola vez acá evita esa clase de error, que no falla:
+sólo devuelve mal.
+
+**Por qué ``task_type``.** Google entrena el modelo para que la pregunta y el
+documento caigan en lugares distintos del espacio: un fragmento se indexa como
+RETRIEVAL_DOCUMENT y una consulta se calcula como RETRIEVAL_QUERY. Usar el
+mismo valor para los dos funciona y recupera peor. Hacerlo bien es gratis.
+
+---
+
+**El proveedor local.** No es un simulacro vacío: proyecta el texto sobre 768
+dimensiones con una función determinista de sus palabras y trigramas. No
+entiende sinónimos —"infarto" no se parece a "ataque al corazón"—, pero sí
+reconoce las palabras que comparten la pregunta y el fragmento, y con un
+corpus escrito en el vocabulario del paciente eso alcanza para que la
+demostración funcione.
+
+Existe por un motivo concreto: si mañana a las 18:50 se cae la red de la
+universidad o se agota la cuota, ``ASSISTANT_EMBEDDING_PROVIDER=local`` deja
+el asistente en pie. Lo que **no** hace es disimular: ``active_model_name()``
+devuelve ``local-hash-768``, ese nombre queda guardado en cada fragmento y
+viaja en la respuesta del endpoint. Quien mire la demostración ve con qué se
+calculó.
 """
 
 import hashlib
-import logging
 import math
-import os
 import re
 import unicodedata
 
 from django.conf import settings
 
-logger = logging.getLogger(__name__)
+from .models import EMBEDDING_DIMENSIONS
 
-# `text-embedding-3-small` de OpenAI. El proveedor local usa la misma cantidad
-# para que las dos poblaciones convivan en la misma columna sin ALTER TABLE.
-DIMENSIONS = 1536
-
-OPENAI = "openai"
-LOCAL = "local"
-
-OPENAI_MODEL = "text-embedding-3-small"
+LOCAL_MODEL_NAME = f"local-hash-{EMBEDDING_DIMENSIONS}"
 
 
-class EmbeddingError(Exception):
-    """No se pudo vectorizar. La vista la traduce a «no puedo responder»."""
+class EmbeddingError(RuntimeError):
+    """El proveedor no pudo calcular los embeddings.
 
-
-def provider_name() -> str:
-    """Qué proveedor está vigente ahora mismo.
-
-    Se resuelve en cada llamada y no una vez al importar: en las pruebas se
-    cambia la variable de entorno con ``monkeypatch`` y el módulo ya está
-    importado.
+    Siempre se propaga: un vector inventado se guarda igual de bien que uno
+    real y después recupera cualquier cosa, sin que nada avise.
     """
-    if _api_key():
-        return OPENAI
-    return LOCAL
-
-
-def embed(text: str) -> list[float]:
-    """El vector de un texto, con el proveedor vigente."""
-    return embed_many([text])[0]
-
-
-def embed_many(texts: list[str]) -> list[list[float]]:
-    """Vectoriza en lote. Una llamada de red para todo el corpus, no una por
-    fragmento: indexar cien fragmentos de a uno son cien viajes."""
-    limpios = [(t or "").strip() for t in texts]
-    if provider_name() == OPENAI:
-        return _openai(limpios)
-    return [_local(t) for t in limpios]
 
 
 # --------------------------------------------------------------------------
-#  OpenAI
+#  Utilidades comunes
 # --------------------------------------------------------------------------
-def _api_key() -> str:
-    """La clave, del entorno. Nunca del código ni del repositorio."""
-    return (
-        getattr(settings, "OPENAI_API_KEY", "")
-        or os.environ.get("OPENAI_API_KEY", "")
-    ).strip()
+
+def normalize_text(text: str) -> str:
+    """Minúsculas y sin tildes, igual que ``catalog.normalize_text``."""
+    lowered = (text or "").strip().lower()
+    decomposed = unicodedata.normalize("NFKD", lowered)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
-def _openai(texts: list[str]) -> list[list[float]]:
-    """Llama a la API de *embeddings*.
+def _l2_normalize(vector: list[float]) -> list[float]:
+    norm = math.sqrt(sum(value * value for value in vector))
+    if norm == 0.0:
+        # Un vector nulo deja indefinida toda distancia coseno. Se devuelve un
+        # eje cualquiera: no se parece a nada, que es lo correcto para un
+        # texto vacío.
+        neutral = [0.0] * EMBEDDING_DIMENSIONS
+        neutral[0] = 1.0
+        return neutral
+    return [value / norm for value in vector]
 
-    El import va adentro por lo mismo que en ``reporting.exporters``: si falta
-    el paquete, falla el endpoint que lo necesita y no el arranque del proceso.
-    """
-    try:
-        from openai import OpenAI
-    except ImportError as error:  # pragma: no cover - depende del entorno
+
+def _check_dimensions(vector: list[float]) -> list[float]:
+    if len(vector) != EMBEDDING_DIMENSIONS:
         raise EmbeddingError(
-            "El paquete «openai» no está instalado en este entorno.",
-        ) from error
-
-    try:
-        cliente = OpenAI(api_key=_api_key(), timeout=20.0)
-        respuesta = cliente.embeddings.create(
-            model=OPENAI_MODEL, input=texts,
+            f"El proveedor devolvió un vector de {len(vector)} dimensiones y "
+            f"la columna espera {EMBEDDING_DIMENSIONS}. Revisá "
+            f"ASSISTANT_EMBEDDING_MODEL: mezclar dimensiones no da un error "
+            f"claro de base de datos, da filas que no se pueden comparar."
         )
-    except Exception as error:  # noqa: BLE001
-        # Cualquier fallo del proveedor —red, cuota, clave vencida— llega acá.
-        # No se degrada solo a `local`: mezclar dos poblaciones de vectores en
-        # el mismo índice es exactamente lo que el filtro por proveedor
-        # existe para impedir. Se falla, y la vista responde «no puedo
-        # responder ahora».
-        logger.warning("El proveedor de embeddings no respondió: %s", error)
-        raise EmbeddingError(str(error)) from error
-
-    return [dato.embedding for dato in respuesta.data]
+    return vector
 
 
 # --------------------------------------------------------------------------
-#  Local, sin red
+#  Proveedor local, determinista
 # --------------------------------------------------------------------------
-# Se parte en palabras y en bigramas. Los bigramas son los que hacen que
-# «dolor de pecho» se parezca más a «dolor de pecho» que a un texto que
-# mencione «dolor» y «pecho» separados por tres párrafos.
-_PALABRA = re.compile(r"[a-z0-9]+")
 
-# Palabras que aparecen en todos los fragmentos y no distinguen ninguno. Con
-# ellas dentro, todo se parece a todo.
-_VACIAS = frozenset("""
-a al algo ante antes aqui con como cual cuando de del desde donde dos el ella
-ellas ellos en entre era es esa ese eso esta este esto ha hace hasta hay la las
-le les lo los mas me mi mucho muy no nos o para pero por porque que quien se
-ser si sin sobre son su sus tambien tiene todo todos tu un una uno unos y ya
+_WORD = re.compile(r"[a-z0-9]+")
+
+# Palabras que aparecen en casi toda frase en español y por lo tanto no
+# distinguen nada. Sin filtrarlas, un fragmento con muchas palabras de relleno
+# —"es la consulta a la que traen los padres cuando quien está enfermo…"— se
+# parece un poco a cualquier pregunta, y con un corpus chico ese "un poco"
+# alcanza para ganarle a la especialidad correcta.
+#
+# Sólo afecta al proveedor local: Gemini resuelve esto solo, y mucho mejor.
+_STOPWORDS = frozenset("""
+    que como cuando quien quienes cual cuales donde porque para por con sin
+    los las del una uno unos unas este esta esto estos estas ese esa eso esos
+    esas aquel sus mis tus nos les lel son ser soy eres est estan estoy estar
+    esta estas tengo tiene tienen tener hacer hace hago haya hay mas muy pero
+    tambien desde hasta entre sobre todo toda todos todas otra otro otros
+    otras cada ante bajo segun tras ya sea ni ni o u y a al de en el la lo le
+    se me te su mi tu un
 """.split())
 
 
-def _normalizar(texto: str) -> str:
-    """Minúsculas y sin tildes.
+def _tokens(text: str) -> list[str]:
+    """Palabras de tres letras o más, más sus trigramas.
 
-    Es el mismo criterio que ``catalog.normalize_text`` usa para la búsqueda de
-    US-16, y por la misma razón: nadie escribe «cefalea» con tilde dos veces
-    igual, y «Neurología» y «neurologia» tienen que caer en el mismo término.
+    Los trigramas son los que hacen que "cardiaco" se parezca a "cardiologia"
+    y que un error de tipeo no rompa la búsqueda.
     """
-    plano = unicodedata.normalize("NFKD", texto.lower())
-    return "".join(c for c in plano if not unicodedata.combining(c))
-
-
-def _terminos(texto: str) -> list[str]:
-    palabras = [
-        p for p in _PALABRA.findall(_normalizar(texto))
-        if len(p) > 2 and p not in _VACIAS
+    words = [
+        w for w in _WORD.findall(normalize_text(text))
+        if len(w) >= 3 and w not in _STOPWORDS
     ]
-    bigramas = [
-        f"{a}_{b}" for a, b in zip(palabras, palabras[1:])
+    trigrams = [
+        word[i:i + 3]
+        for word in words
+        for i in range(len(word) - 2)
     ]
-    return palabras + bigramas
+    return words + trigrams
 
 
-def shares_terms(a: str, b: str, minimum: int = 2) -> bool:
-    """¿Estos dos textos comparten al menos ``minimum`` términos de verdad?
-
-    **Existe por una limitación real del proveedor local, medida y no supuesta.**
-    Proyectar sobre 1536 dimensiones con la función de hash hace que dos
-    términos distintos caigan a veces en el mismo casillero. Con un fragmento de
-    unos 40 términos y una consulta de unos 15, la probabilidad de al menos una
-    colisión ronda el 35 %: una de cada tres preguntas se parece un poco a un
-    fragmento con el que no comparte una sola palabra.
-
-    Eso rompe lo único que el umbral de distancia tenía que garantizar —que una
-    pregunta ajena al catálogo no recupere nada—. Se vio con «cuánto cuesta un
-    pasaje en avión a Madrid», que recuperaba una especialidad.
-
-    Bajar el umbral no lo arregla: una colisión pesa exactamente lo mismo que
-    una coincidencia real, así que no hay corte que separe una de la otra. Lo
-    que sí las separa es **mirar los términos**, que acá se puede porque el
-    proveedor local *es* léxico. No aplica al proveedor denso, donde compartir
-    palabras no es lo que hace que dos textos se parezcan —«cefalea» y «dolor de
-    cabeza» no comparten ninguna— y este filtro estaría de más.
-
-    Dos y no uno: un solo término compartido suele ser una palabra genérica que
-    sobrevivió a la lista de vacías —«centro», «consulta», «médico»—.
-    """
-    comunes = set(_terminos(a)) & set(_terminos(b))
-    return len(comunes) >= minimum
+def _local_embedding(text: str) -> list[float]:
+    vector = [0.0] * EMBEDDING_DIMENSIONS
+    for token in _tokens(text):
+        digest = hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest()
+        index = int.from_bytes(digest[:4], "big") % EMBEDDING_DIMENSIONS
+        # El signo sale de otro byte del mismo resumen. Sin él, dos textos
+        # cualesquiera dan vectores con todas las componentes positivas y
+        # terminan pareciéndose entre sí.
+        sign = 1.0 if digest[4] % 2 == 0 else -1.0
+        vector[index] += sign
+    return _l2_normalize(vector)
 
 
-def _local(texto: str) -> list[float]:
-    """La proyección por hashing, normalizada a longitud 1.
+# --------------------------------------------------------------------------
+#  Proveedor Gemini
+# --------------------------------------------------------------------------
 
-    Normalizar es imprescindible: pgvector ordena por distancia coseno, que es
-    ``1 - producto punto`` **sólo** entre vectores unitarios. Sin normalizar,
-    un fragmento largo gana por tener más masa y no por parecerse más, que es
-    el defecto que hace que el RAG devuelva siempre el texto más extenso.
-    """
-    vector = [0.0] * DIMENSIONS
-    for termino in _terminos(texto):
-        digest = hashlib.blake2b(termino.encode("utf-8"), digest_size=8).digest()
-        indice = int.from_bytes(digest[:4], "big") % DIMENSIONS
-        # El bit de signo reparte los términos entre valores positivos y
-        # negativos; sin eso, todos los vectores apuntan al mismo octante y
-        # cualquier par de textos da una similitud alta.
-        signo = 1.0 if digest[4] & 1 else -1.0
-        vector[indice] += signo
+def _gemini_client():
+    api_key = settings.GEMINI_API_KEY
+    if not api_key:
+        raise EmbeddingError(
+            "Falta GEMINI_API_KEY en el .env. La clave no se versiona (regla "
+            "11 del Sprint 2). Para trabajar sin ella: "
+            "ASSISTANT_EMBEDDING_PROVIDER=local"
+        )
+    try:
+        from google import genai
+    except ImportError as error:
+        raise EmbeddingError(
+            "Falta el paquete google-genai. Corré "
+            "pip install -r requirements.txt"
+        ) from error
+    return genai.Client(api_key=api_key)
 
-    norma = math.sqrt(sum(v * v for v in vector))
-    if norma == 0.0:
-        # Un texto sin términos útiles —«hola», puntuación suelta—. Se devuelve
-        # el vector nulo: su distancia a todo es la misma, así que no recupera
-        # nada por parecido y la vista contesta que no encontró contexto. Es
-        # mejor que inventar un vector al azar, que recuperaría cualquier cosa.
-        return vector
-    return [v / norma for v in vector]
+
+def _gemini_embeddings(texts: list[str], task_type: str) -> list[list[float]]:
+    from google.genai import types
+
+    client = _gemini_client()
+    try:
+        result = client.models.embed_content(
+            model=settings.ASSISTANT_EMBEDDING_MODEL,
+            contents=texts,
+            config=types.EmbedContentConfig(
+                task_type=task_type,
+                output_dimensionality=EMBEDDING_DIMENSIONS,
+            ),
+        )
+    except Exception as error:
+        # Se envuelve a propósito: quien llama sólo necesita saber que el
+        # proveedor falló, no distinguir entre cuota agotada, DNS y clave mal
+        # copiada. El mensaje original viaja adentro.
+        raise EmbeddingError(f"Gemini no respondió: {error}") from error
+
+    return [
+        _l2_normalize(_check_dimensions(list(item.values)))
+        for item in result.embeddings
+    ]
+
+
+# --------------------------------------------------------------------------
+#  Interfaz pública
+# --------------------------------------------------------------------------
+
+def active_model_name() -> str:
+    """Con qué se están calculando los vectores, ahora mismo."""
+    if settings.ASSISTANT_EMBEDDING_PROVIDER == "gemini":
+        return settings.ASSISTANT_EMBEDDING_MODEL
+    return LOCAL_MODEL_NAME
+
+
+def embed_documents(texts: list[str]) -> list[list[float]]:
+    """Vectoriza fragmentos del catálogo, para guardar."""
+    if not texts:
+        return []
+    if settings.ASSISTANT_EMBEDDING_PROVIDER == "gemini":
+        return _gemini_embeddings(texts, task_type="RETRIEVAL_DOCUMENT")
+    return [_local_embedding(text) for text in texts]
+
+
+def embed_query(text: str) -> list[float]:
+    """Vectoriza lo que escribió el paciente, para buscar."""
+    if settings.ASSISTANT_EMBEDDING_PROVIDER == "gemini":
+        return _gemini_embeddings([text], task_type="RETRIEVAL_QUERY")[0]
+    return _local_embedding(text)

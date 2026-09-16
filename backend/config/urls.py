@@ -17,6 +17,12 @@ generales 5 y 6 de la materia, y se agregaron juntas por lo mismo: una app
 nueva es la única razón para abrir este archivo, así que se abre una vez para
 las dos y no una vez por cada una.
 
+**Sprint 2.** El sprint crea cuatro apps —``appointments``, ``payments``,
+``encounters`` y ``assistant``— y el reparto pide abrir este archivo **una
+sola vez**, al inicio, para incluir las cuatro. De momento está la línea de
+``assistant``, porque US-31 se muestra en el corte del 16/09; las otras tres
+entran en la misma pasada del SM cuando sus apps existan.
+
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py      (US-43, US-44, US-45)
     usuarios, roles, login     accounts/urls.py     (US-01, US-02, US-04)

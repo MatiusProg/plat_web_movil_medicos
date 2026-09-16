@@ -156,7 +156,7 @@ No está hecho. Es la segunda cosa que hay que llevar al Planning.
 > componentes que faciliten la entrada de datos, y mecanismos de asistencia en
 > línea en caso de dudas.*
 
-**La asistencia en línea es el asistente de orientación** (US-31, US-32, US-34),
+**La asistencia en línea es el asistente de orientación** (US-31 y US-34),
 entregado en este sprint. No es un manual ni un tooltip: es un chatbot RAG que
 responde sobre el catálogo real de cada organización.
 
@@ -178,6 +178,12 @@ distinguir mayúsculas ni tildes (US-16), disponibilidad consolidada entre sedes
 **Sigue faltando** la ayuda contextual por pantalla — un «¿qué es esto?» en cada
 formulario. El asistente cubre la duda del paciente, no la del recepcionista
 sobre un campo concreto.
+
+**Y falta US-32**, el asistente administrativo: hoy el corpus son las
+descripciones de las especialidades, así que el asistente orienta sobre *a qué
+especialidad ir*, no sobre horarios de sucursal, costos ni preparaciones
+previas. Indexar esas fuentes es agregar dos tipos de fragmento al mismo
+índice; el modelo ya los prevé (`SourceType`).
 
 ---
 
