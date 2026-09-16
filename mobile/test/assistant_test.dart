@@ -42,7 +42,58 @@ Future<void> _preguntar(WidgetTester tester, String texto) async {
 
 void main() {
   group('lectura de la respuesta', () {
-    test('lee el contrato supuesto', () {
+    test('lee el contrato real del endpoint', () {
+      // Tal cual lo devuelve `backend/assistant/views.py`: `answer` es un
+      // objeto y la urgencia viaja dentro de `triage`.
+      final r = AssistantReply.fromJson({
+        'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
+        'answer': {'text': 'Te conviene Cardiología.', 'source': 'model'},
+        'specialty': {'id': 's1', 'name': 'Cardiología', 'rank': 1},
+        'fragments': [
+          {
+            'id': 'f1',
+            'rank': 1,
+            'source_type': 'specialty',
+            'source_label': 'Especialidad',
+            'source_id': 's1',
+            'title': 'Cardiología',
+            'content': 'Cardiología atiende hipertensión.',
+            'distance': 0.31,
+          },
+        ],
+        'provider': 'local',
+      });
+
+      expect(r.answer, 'Te conviene Cardiología.');
+      expect(r.specialtyId, 's1');
+      expect(r.specialtyName, 'Cardiología');
+      expect(r.fragments.single.text, 'Cardiología atiende hipertensión.');
+      expect(r.fragments.single.source, 'Cardiología');
+      expect(r.emergency, isFalse);
+    });
+
+    test('lee una urgencia del contrato real', () {
+      final r = AssistantReply.fromJson({
+        'triage': {
+          'is_emergency': true,
+          'reasons': ['dolor de pecho'],
+          'message': 'Esto puede ser una urgencia.',
+        },
+        'answer': {
+          'text': 'Esto puede ser una urgencia.',
+          'source': 'template',
+        },
+        'specialty': null,
+        'fragments': [],
+        'provider': 'local',
+      });
+
+      expect(r.emergency, isTrue);
+      expect(r.specialtyName, isNull);
+      expect(r.answer, 'Esto puede ser una urgencia.');
+    });
+
+    test('lee también el contrato que suponía el plan del sprint', () {
       final r = AssistantReply.fromJson({
         'answer': 'Te conviene Cardiología.',
         'specialty': {'id': 's1', 'name': 'Cardiología'},
@@ -79,7 +130,10 @@ void main() {
     late http.Request capturada;
     final mock = MockClient((req) async {
       capturada = req;
-      return _json({'answer': 'ok', 'emergency': false}, 200);
+      return _json({
+        'answer': {'text': 'ok', 'source': 'model'},
+        'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
+      }, 200);
     });
 
     await consultarAsistente(
@@ -98,12 +152,16 @@ void main() {
       tester,
       MockClient(
         (_) async => _json({
-          'answer': 'Te conviene Cardiología.',
-          'specialty': {'id': 's1', 'name': 'Cardiología'},
+          'answer': {'text': 'Te conviene Cardiología.', 'source': 'model'},
+          'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
+          'specialty': {'id': 's1', 'name': 'Cardiología', 'rank': 1},
           'fragments': [
-            {'text': 'Cardiología atiende hipertensión.', 'source': 'catálogo'},
+            {
+              'title': 'Cardiología',
+              'content': 'Cardiología atiende hipertensión.',
+            },
           ],
-          'emergency': false,
+          'provider': 'local',
         }, 200),
       ),
     );
@@ -125,10 +183,15 @@ void main() {
       tester,
       MockClient(
         (_) async => _json({
-          'answer': 'Puede ser una urgencia.',
-          'specialty': {'id': 's1', 'name': 'Cardiología'},
+          'answer': {'text': 'Puede ser una urgencia.', 'source': 'template'},
+          'triage': {
+            'is_emergency': true,
+            'reasons': ['dolor de pecho'],
+            'message': 'Puede ser una urgencia.',
+          },
+          'specialty': {'id': 's1', 'name': 'Cardiología', 'rank': 1},
           'fragments': [],
-          'emergency': true,
+          'provider': 'local',
         }, 200),
       ),
     );
@@ -149,7 +212,10 @@ void main() {
       MockClient((_) async {
         llamadas++;
         if (llamadas == 1) return _json({'detail': 'caído'}, 503);
-        return _json({'answer': 'Ahora sí.', 'emergency': false}, 200);
+        return _json({
+          'answer': {'text': 'Ahora sí.', 'source': 'model'},
+          'triage': {'is_emergency': false, 'reasons': [], 'message': ''},
+        }, 200);
       }),
     );
 
