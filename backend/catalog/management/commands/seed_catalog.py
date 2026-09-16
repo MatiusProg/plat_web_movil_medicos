@@ -59,12 +59,71 @@ BRANCHES = [
 HOURS = [("08:00", "12:00"), ("14:00", "18:00")]
 WEEKDAYS = [0, 1, 2, 3, 4]
 
+# El texto de la descripción es el corpus del asistente (US-31): es lo que
+# `assistant.embed_catalog` parte en fragmentos y vectoriza.
+#
+# Por eso está escrito **con las palabras del paciente y no con las del
+# médico**. La recuperación compara el significado de lo que alguien escribe
+# —"me duele el pecho y me falta el aire"— contra el significado del fragmento.
+# Una descripción de seis palabras como "Corazón y sistema circulatorio" no
+# tiene con qué parecerse a esa frase, y la búsqueda por similitud devuelve
+# cualquier cosa. Lo que acerca los dos textos son los **motivos de consulta**.
+#
+# Cada especialidad enumera sus motivos en una oración aparte a propósito: el
+# indexador parte por oración, así que cada grupo de motivos termina siendo su
+# propio fragmento y se recupera solo. Es la misma regla de granularidad que el
+# reparto le pone al corpus administrativo de US-32.
+#
+# Datos ficticios (regla 7). No es contenido clínico: es texto de catálogo para
+# que el buscador encuentre la especialidad, no para orientar a nadie.
 SPECIALTIES = [
-    ("Medicina general", "Atención clínica de primer contacto y controles."),
-    ("Cardiología", "Corazón y sistema circulatorio."),
-    ("Pediatría", "Salud de niñas y niños hasta la adolescencia."),
-    ("Dermatología", "Piel, cabello y uñas."),
-    ("Ginecología", "Salud reproductiva y control ginecológico."),
+    ("Medicina general",
+     "Atención clínica de primer contacto para personas adultas y controles "
+     "de rutina. "
+     "Motivos de consulta frecuentes: fiebre, dolor de cabeza, dolor de "
+     "garganta, gripe y resfrío, dolor de estómago, náuseas, cansancio o "
+     "debilidad, dolor de espalda. "
+     "También chequeo general, exámenes de laboratorio de rutina, renovación "
+     "de recetas y certificados médicos. "
+     "Es la puerta de entrada cuando el paciente todavía no sabe con qué "
+     "especialista tiene que atenderse."),
+
+    ("Cardiología",
+     "Corazón, presión arterial y sistema circulatorio. "
+     "Motivos de consulta frecuentes: dolor u opresión en el pecho, "
+     "palpitaciones o sensación de que el corazón se acelera, falta de aire "
+     "al caminar o al subir escaleras, presión alta o presión baja. "
+     "También hinchazón de pies y tobillos, mareos o desmayos, y control de "
+     "colesterol y triglicéridos. "
+     "Seguimiento de quienes ya tienen hipertensión, arritmia o insuficiencia "
+     "cardíaca."),
+
+    ("Pediatría",
+     "Salud de bebés, niñas y niños hasta la adolescencia. "
+     "Motivos de consulta frecuentes: fiebre en el niño, tos y resfrío, dolor "
+     "de oído, diarrea y vómitos, erupciones o granitos en la piel del bebé, "
+     "falta de apetito, llanto persistente. "
+     "También control de crecimiento y peso, vacunas y control del niño sano. "
+     "Es la consulta a la que traen los padres cuando quien está enfermo es "
+     "el hijo o la hija."),
+
+    ("Dermatología",
+     "Piel, cabello y uñas. "
+     "Motivos de consulta frecuentes: manchas en la piel, lunares que cambian "
+     "de color o de tamaño, acné y granos, picazón, ronchas o alergia en la "
+     "piel, sarpullido. "
+     "También caída del cabello, se me cae el pelo, calvicie, hongos en las "
+     "uñas o entre los dedos, verrugas, dermatitis y psoriasis. "
+     "Heridas o llagas que no terminan de cerrar."),
+
+    ("Ginecología",
+     "Salud reproductiva y control ginecológico de la mujer. "
+     "Motivos de consulta frecuentes: control anual y Papanicolaou, dolor o "
+     "cólicos menstruales, menstruación irregular o ausente, flujo, ardor o "
+     "picazón vaginal, dolor en el bajo vientre. "
+     "También métodos anticonceptivos, control del embarazo y síntomas de la "
+     "menopausia. "
+     "Dolor o bultos en las mamas."),
 ]
 
 PRACTITIONERS = [
