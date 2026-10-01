@@ -25,13 +25,21 @@ La reindexación **borra y reescribe** los fragmentos de cada fuente en vez de
 compararlos. Con un catálogo de este tamaño es más barato que detectar
 cambios, y sobre todo no deja fragmentos huérfanos cuando una descripción se
 acorta.
+
+**La referencia médica** (``medical_reference.py``) se suma a lo que escribió
+la organización, detrás de sus propios fragmentos. Sólo entra para las
+especialidades que la organización **ya tiene**: el asistente no puede sugerir
+una especialidad que el centro no ofrece, y la referencia no cambia eso.
 """
 
 import re
 
+from django.conf import settings
+
 from catalog.models import Specialty
 
 from .embeddings import active_model_name, embed_documents
+from .medical_reference import reference_texts
 from .models import CatalogFragment, SourceType
 
 # Corta después de . ! o ? seguidos de espacio. No intenta ser un analizador
@@ -62,6 +70,32 @@ def split_into_fragments(name: str, description: str) -> list[str]:
     return fragments
 
 
+def medical_reference_enabled() -> bool:
+    """Si la referencia médica entra al índice. Ver ``config/settings.py``."""
+    mode = (settings.ASSISTANT_MEDICAL_REFERENCE or "auto").strip().lower()
+    if mode == "auto":
+        return settings.ASSISTANT_EMBEDDING_PROVIDER == "gemini"
+    return mode in ("on", "true", "1")
+
+
+def fragments_for(specialty) -> list[str]:
+    """Todo lo que se vectoriza de una especialidad: su catálogo y, detrás,
+    la referencia médica que le corresponda.
+
+    La referencia se prefija con el nombre **de la organización**, no con el
+    de la referencia: si el centro la llama "Ortopedia", el paciente tiene
+    que leer "Ortopedia" en el respaldo, no "Traumatología".
+    """
+    fragments = split_into_fragments(specialty.name, specialty.description)
+    if medical_reference_enabled():
+        name = (specialty.name or "").strip()
+        fragments += [
+            f"Especialidad: {name}. {text}"
+            for text in reference_texts(specialty.name)
+        ]
+    return fragments
+
+
 def index_specialties(organization, *, stdout=None) -> dict:
     """Reindexa las especialidades activas de una organización.
 
@@ -79,9 +113,7 @@ def index_specialties(organization, *, stdout=None) -> dict:
 
     texts, rows = [], []
     for specialty in specialties:
-        for position, text in enumerate(
-            split_into_fragments(specialty.name, specialty.description)
-        ):
+        for position, text in enumerate(fragments_for(specialty)):
             texts.append(text)
             rows.append((specialty, position, text))
 
@@ -121,5 +153,9 @@ def index_specialties(organization, *, stdout=None) -> dict:
         # Una especialidad sin descripción entra al índice con un solo
         # fragmento —su nombre— y prácticamente no se recupera. Se avisa, no
         # se falla: el catálogo es de otra persona.
-        "empty": [s.name for s in specialties if not (s.description or "").strip()],
+        # Con referencia médica ya no está vacía aunque no tenga descripción.
+        "empty": [
+            s.name for s in specialties
+            if len([r for r in rows if r[0] is s]) <= 1
+        ],
     }

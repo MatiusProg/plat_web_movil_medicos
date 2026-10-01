@@ -42,6 +42,7 @@ env = environ.Env(
     # rompe nada; sólo decide si la demostración se ve redactada o armada.
     ASSISTANT_CHAT_MODEL=(str, "gemini-3.5-flash-lite"),
     ASSISTANT_MIN_SIMILARITY=(float, -1.0),
+    ASSISTANT_MEDICAL_REFERENCE=(str, "auto"),
 )
 environ.Env.read_env(REPO_ROOT / ".env")
 
@@ -451,3 +452,28 @@ ASSISTANT_MIN_SIMILARITY = (
     _umbral if _umbral >= 0
     else (0.12 if ASSISTANT_EMBEDDING_PROVIDER == "local" else 0.62)
 )
+
+# Suma al índice la referencia médica de `assistant/medical_reference.py` para
+# las especialidades que la organización ya tiene. "on", "off" o "auto".
+#
+# "auto" —el valor por omisión— la enciende con Gemini y la apaga con el
+# proveedor local, y se decide al indexar, no al arrancar. El proveedor local
+# compara palabras, no significados: con cinco oraciones más por especialidad
+# el ruido de los trigramas sube, y "cuánto sale alquilar un departamento"
+# pasó a recuperar Cardiología con 0,1355, por encima del 0,12. La referencia
+# está escrita para un modelo que entiende que "me silba el pecho" y "asma"
+# son lo mismo, y ése es Gemini.
+#
+# Medido el 30/09 con Gemini sobre `morita2`: 15 preguntas del catálogo
+# escritas con palabras que la descripción no usa, y 8 ajenas.
+#
+#                      aciertos   del catálogo     ajenas          hueco
+#     sin referencia    14/15     0,638 – 0,737    0,512 – 0,590   0,049
+#     con referencia    15/15     0,738 – 0,803    0,512 – 0,590   0,148
+#
+# Las ajenas no se mueven —no hay nada médico a qué parecerse— y las del
+# catálogo suben una décima. El 0,62 sirve en los dos casos, también para una
+# especialidad sin referencia, así que no se cambió.
+#
+# Cambiarla exige reindexar, y con Gemini también volver a medir el umbral.
+ASSISTANT_MEDICAL_REFERENCE = env("ASSISTANT_MEDICAL_REFERENCE")

@@ -27,7 +27,7 @@ from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization
 
 from ...embeddings import EmbeddingError, active_model_name
-from ...indexing import index_specialties, split_into_fragments
+from ...indexing import fragments_for, index_specialties
 from ...models import CatalogFragment, SourceType
 
 
@@ -97,9 +97,7 @@ class Command(BaseCommand):
         for especialidad in Specialty.objects.filter(
             organization=organizacion, is_active=True,
         ).order_by("name"):
-            fragmentos = split_into_fragments(
-                especialidad.name, especialidad.description,
-            )
+            fragmentos = fragments_for(especialidad)
             total += len(fragmentos)
             self.stdout.write(f"  {especialidad.name} → {len(fragmentos)} fragmentos")
             for texto in fragmentos:
