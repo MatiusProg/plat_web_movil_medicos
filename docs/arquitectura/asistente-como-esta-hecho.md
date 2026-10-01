@@ -89,6 +89,42 @@ presión alta…"*. Medido sobre las cinco especialidades sembradas, con las
 descripciones nuevas **10 de 10 preguntas de prueba caen en la especialidad
 correcta**.
 
+**La referencia médica (30/09).** Además del catálogo, `medical_reference.py`
+trae motivos de consulta para catorce especialidades comunes: Medicina general,
+Cardiología, Neumología, Endocrinología, Pediatría, Ginecología, Urología,
+Dermatología, Traumatología, Neurología, Oftalmología, Gastroenterología,
+Otorrinolaringología y Psicología. Salen de **MedlinePlus en español**
+(Biblioteca Nacional de Medicina de EE. UU.) y de las notas descriptivas de la
+**OMS**, y cada oración cita las páginas que la respaldan.
+
+- **Redactadas con palabras propias**, en lenguaje de paciente. No se copió
+  texto: el repositorio es público, y la enciclopedia A.D.A.M. que aloja
+  MedlinePlus tiene derechos de autor.
+- **Sólo entran para especialidades que el centro ya tiene**, reconocidas por
+  su nombre o un alias exacto ("Ortopedia" → Traumatología), y **con el nombre
+  que usa el centro**. La referencia no puede hacer aparecer una especialidad
+  que el centro no ofrece, ni cruzar datos entre organizaciones: se copia al
+  índice de cada una, que sigue bajo RLS.
+- **Van detrás del texto del catálogo**, que sigue siendo de la organización.
+- **Respaldo en fuentes no es validación clínica.** Nadie del equipo es
+  médico. Las fuentes permiten comprobar cada oración, pero la revisión de un
+  profesional sigue pendiente.
+- **Con Gemini, no con el proveedor local.** `ASSISTANT_MEDICAL_REFERENCE`
+  vale `auto`: se enciende con Gemini y se apaga con el proveedor local, que
+  compara palabras y con más fragmentos acumula ruido.
+
+Medido con Gemini sobre `morita2`, con 15 preguntas escritas con palabras que
+la descripción del catálogo no usa y 8 preguntas ajenas:
+
+| | aciertos | del catálogo | ajenas | hueco |
+|---|---|---|---|---|
+| sin referencia | 14/15 | 0,638 – 0,737 | 0,512 – 0,590 | 0,049 |
+| con referencia | **15/15** | 0,738 – 0,803 | 0,512 – 0,590 | **0,148** |
+
+El hueco entre lo que el asistente debe contestar y lo que no se triplica, y el
+umbral de 0,62 sigue valiendo. **Después de desplegar hay que reindexar**:
+`python manage.py embed_catalog --all`.
+
 ### 1. Barrera de emergencia (US-34) — reglas, no modelo
 
 `triage.py` compara el texto normalizado contra una lista de señales
@@ -106,6 +142,30 @@ Es a propósito que **no** use similitud vectorial:
 
 Va primero porque, si dependiera de la respuesta del modelo, una caída del
 proveedor dejaría a alguien con un dolor de pecho sin derivación.
+
+**La segunda capa, en el prompt del sistema.** Las reglas sólo reconocen lo
+que la lista nombra. Para lo demás, el prompt de `generation.py` le ordena al
+modelo que ante una posible urgencia responda exactamente `[[URGENCIA]]` y
+nada más. Si la marca aparece, el endpoint deriva igual que con la primera
+capa. Tres detalles:
+
+- **El modelo no redacta la derivación.** Sólo levanta la marca; el mensaje
+  es siempre el de `triage.py`, revisado, y no la frase que el modelo elija
+  ese día.
+- **Una capa sólo puede escalar.** Si las reglas ya derivaron, el modelo ni se
+  consulta: no hay nada que pueda contestar para deshacerlo.
+- **Se lo consulta aunque no haya fragmentos**, sólo por la marca. Lo que no
+  se parece a nada del catálogo ("siento que me voy a morir") es lo que más
+  probablemente sea una urgencia. El texto que redacte sin contexto se
+  descarta.
+
+Con el proveedor local —pruebas, o Gemini caído— la segunda capa no corre y
+queda sólo la primera. Por eso la primera es la obligatoria.
+
+**Cada derivación queda en la bitácora de US-06** como
+`assistant.emergency`, con la capa que la disparó (`regla` o `modelo`). Las
+consultas normales quedan como `assistant.query`. En ningún caso se guarda el
+texto de la consulta ni las señales que dispararon: son información de salud.
 
 ### 2. Recuperación — dónde vive el multi-inquilino
 
@@ -236,6 +296,11 @@ documento:
 | `…reindexar_reemplaza_los_fragmentos…` | reindexar no duplica |
 | `…una_especialidad_dada_de_baja_no_queda_en_el_indice` | el índice sigue al catálogo |
 
+`backend/tests/test_us34.py` fija las dos capas de la derivación y su asiento
+en la bitácora. La segunda capa se prueba simulando al proveedor
+(`generation._call_model`): lo que se verifica es que si el modelo levanta la
+marca el endpoint deriva, no que el modelo la levante.
+
 Requieren **pgvector instalado**: la columna `vector` es parte del esquema, así
 que sin la extensión no se crea ni la base de pruebas. Ver
 `docs/entorno/sin-docker.md`.
@@ -247,9 +312,15 @@ que sin la extensión no se crea ni la base de pruebas. Ver
 - **US-32** — corpus administrativo: sucursales, horarios, costos y
   preparaciones previas. Reutiliza este mismo índice y este mismo endpoint;
   sólo amplía el corpus.
-- **US-34 completa** — lo que hay es la validación en el backend. Faltan las
-  reglas también en el prompt del sistema, el asiento en la bitácora de US-06
-  de cada derivación, el catálogo de señales revisado por alguien de clínica
-  —el actual lo escribió quien programa, no quien atiende— y la pantalla que
-  en el móvil corta el flujo de reserva.
+- **Revisión clínica** de dos cosas: las señales de `triage.py` y la
+  referencia médica. El 30/09 las dos se revisaron contra MedlinePlus y la
+  OMS —cada señal y cada oración citan su fuente, y la revisión eliminó
+  falsos positivos como "me tome", que derivaba "me tomé la presión"—, pero
+  respaldo en fuentes no es validación de un profesional.
+- **El número de emergencias de Bolivia.** El mensaje de derivación dice
+  "llamá al número de emergencias" sin dar ninguno, a propósito: las fuentes
+  consultadas no coinciden (el Ministerio de Salud habla de un número unificado,
+  el 168, y otras fuentes citan el 118, el 160 o el 165 según la ciudad). Hay
+  que confirmarlo antes de ponerlo, y probablemente sea un dato por
+  organización.
 - **US-33** — reservar conversando, en el Sprint 3, cuando US-17 exista.

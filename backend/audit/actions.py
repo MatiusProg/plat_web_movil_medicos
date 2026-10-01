@@ -62,6 +62,9 @@ class Action:
     # copie es una historia clínica paralela sin ninguna de las protecciones
     # de una. Ver `assistant/views.py::_audit`.
     ASSISTANT_QUERY = "assistant.query"
+    # US-34: la derivación va con código propio y no como un detalle de
+    # `ASSISTANT_QUERY`, para que quien audita pueda filtrar sólo ésas.
+    ASSISTANT_EMERGENCY = "assistant.emergency"
 
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
@@ -97,6 +100,7 @@ LABELS = {
     Action.REPORT_SAVE: "Reporte guardado",
     Action.REPORT_DELETE: "Reporte eliminado",
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
+    Action.ASSISTANT_EMERGENCY: "Derivación a emergencia por el asistente",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",

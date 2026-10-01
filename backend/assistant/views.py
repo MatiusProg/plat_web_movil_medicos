@@ -23,6 +23,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from audit import services as bitacora
+from audit.actions import Action
+
 from . import generation, triage
 from .embeddings import EmbeddingError, active_model_name
 from .permissions import CanUseAssistant
@@ -54,18 +57,11 @@ class SuggestView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # 1. Barrera de seguridad. Semilla de US-34: ver triage.py.
+        # 1. Barrera de seguridad, primera capa de US-34: ver triage.py.
         emergency = triage.check(question)
         if emergency.is_emergency:
-            return Response({
-                "emergency": True,
-                "answer": emergency.message,
-                "generated_by": "regla",
-                "specialty": None,
-                "alternatives": [],
-                "fragments": [],
-                "retrieval": {"embedding_model": active_model_name()},
-            })
+            _audit(request, emergency_layer="regla")
+            return _emergency_response("regla")
 
         # 2. Recuperación.
         try:
@@ -95,6 +91,14 @@ class SuggestView(APIView):
             question, fragments, mejor.name if mejor else "",
         )
 
+        # Segunda capa de US-34: el modelo reconoció una urgencia que la lista
+        # de reglas no nombra. Se corta igual que con la primera, con el mismo
+        # mensaje, y se descarta todo lo recuperado.
+        if redactado["emergency"]:
+            _audit(request, emergency_layer="modelo")
+            return _emergency_response("gemini")
+
+        _audit(request, specialty_suggested=mejor is not None)
         return Response({
             "emergency": False,
             "answer": redactado["text"],
@@ -116,3 +120,43 @@ class SuggestView(APIView):
             "fragments": FragmentSerializer(fragments, many=True).data,
             "retrieval": {"embedding_model": active_model_name()},
         })
+
+
+def _emergency_response(generated_by: str) -> Response:
+    """La respuesta de una derivación, igual venga de la capa que venga.
+
+    El mensaje es siempre el de ``triage.py``, también cuando la marca la
+    levantó el modelo: una urgencia no se contesta con la redacción que el
+    proveedor elija ese día.
+    """
+    return Response({
+        "emergency": True,
+        "answer": triage.EMERGENCY_MESSAGE,
+        "generated_by": generated_by,
+        "specialty": None,
+        "alternatives": [],
+        "fragments": [],
+        "retrieval": {"embedding_model": active_model_name()},
+    })
+
+
+def _audit(request, *, emergency_layer: str = "", specialty_suggested=False):
+    """Asiento de US-06 por cada consulta respondida (US-34).
+
+    **Nunca se guarda el texto de la consulta, ni las señales que dispararon.**
+    Quien le cuenta sus síntomas a un chatbot está escribiendo información de
+    salud, y una bitácora que la copie es una historia clínica paralela sin
+    ninguna de sus protecciones. Lo que queda es quién, cuándo, y si derivó
+    —y por cuál de las dos capas—, que es lo que hace falta para auditar la
+    barrera sin leer lo que escribió el paciente.
+    """
+    if emergency_layer:
+        bitacora.record(
+            request, Action.ASSISTANT_EMERGENCY, "assistant",
+            detail={"layer": emergency_layer},
+        )
+    else:
+        bitacora.record(
+            request, Action.ASSISTANT_QUERY, "assistant",
+            detail={"specialty_suggested": specialty_suggested},
+        )
