@@ -130,6 +130,13 @@ const items: ItemMenu[] = [
         icono: 'usuarios',
         requiere: 'catalog.professional.read',
     },
+    // US-32 — precio y preparación, el corpus administrativo del asistente.
+    {
+        etiqueta: 'Servicios',
+        ruta: '/servicios',
+        icono: 'catalogo',
+        requiere: 'catalog.service.read',
+    },
 
     // US-13 a US-16 — agendas y catálogo.
     {

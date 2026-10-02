@@ -275,3 +275,74 @@ class PractitionerBranch(models.Model):
                 name="uq_practitioner_branch",
             ),
         ]
+
+
+class Service(models.Model):
+    """US-32 — Servicio o estudio que ofrece la organización.
+
+    Existe para que el asistente pueda contestar **cuánto cuesta** y **cómo
+    hay que prepararse**, que son dos de las cuatro consultas administrativas
+    de la historia. Hasta acá el catálogo no tenía ni un precio.
+
+    Dos decisiones:
+
+    - **El precio es opcional.** `NULL` significa "a consultar", y el
+      asistente lo dice así. Un cero se leería como gratis.
+    - **La preparación es un campo aparte de la descripción.** Es la parte
+      que la persona necesita literal —"ayuno de 8 horas"— y la que se
+      vectoriza en su propio fragmento: mezclada con la descripción, una
+      pregunta por el ayuno compite contra el párrafo entero.
+
+    No es el precio de cobro de US-18: es el precio de lista que se le informa
+    al paciente. Si el pago termina necesitando un arancel por servicio, es
+    esta fila la que se referencia.
+    """
+
+    class Kind(models.TextChoices):
+        CONSULTATION = "consultation", "Consulta"
+        STUDY = "study", "Estudio"
+        PROCEDURE = "procedure", "Procedimiento"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="services",
+    )
+    name = models.CharField(max_length=120)
+    kind = models.CharField(max_length=20, choices=Kind.choices,
+                            default=Kind.STUDY)
+    # Opcional: un análisis de sangre no es de ninguna especialidad.
+    specialty = models.ForeignKey(
+        Specialty, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="services",
+    )
+    description = models.TextField(blank=True, default="")
+    preparation = models.TextField(blank=True, default="")
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+    )
+    currency = models.CharField(max_length=3, default="BOB")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "services"
+        verbose_name = "servicio"
+        verbose_name_plural = "servicios"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "name"], name="uq_service_name",
+            ),
+            models.UniqueConstraint(
+                fields=["id", "organization"], name="uq_service_id_org",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__isnull=True) | models.Q(price__gte=0),
+                name="ck_service_price",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name

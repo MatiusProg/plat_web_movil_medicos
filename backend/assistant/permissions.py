@@ -18,3 +18,10 @@ class CanUseAssistant(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(user and user.is_authenticated and user.has_permission(self.code))
+
+
+class CanReindexCatalog(CanUseAssistant):
+    """US-32 — volver a calcular el índice desde la pantalla de servicios."""
+
+    code = "assistant.catalog.reindex"
+    message = "No tenés permiso para reindexar el catálogo del asistente."

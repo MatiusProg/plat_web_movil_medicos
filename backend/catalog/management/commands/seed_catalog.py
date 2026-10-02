@@ -43,6 +43,7 @@ from ...models import (
     Practitioner,
     PractitionerBranch,
     PractitionerSpecialty,
+    Service,
     Specialty,
 )
 
@@ -137,6 +138,51 @@ PRACTITIONERS = [
      ["Sede Centro", "Sede Norte", "Sede Sur"]),
 ]
 
+# US-32 — Servicios con precio y preparación: el corpus de "¿cuánto cuesta?"
+# y "¿tengo que ir en ayunas?". Precios ficticios (regla 7), en bolivianos.
+# `None` es "a consultar", y el asistente lo dice así.
+# (nombre, tipo, especialidad o None, precio, preparación, descripción)
+SERVICES = [
+    ("Consulta de Medicina general", Service.Kind.CONSULTATION,
+     "Medicina general", "100",
+     "",
+     "Consulta de primer contacto con un médico general."),
+    ("Consulta de especialidad", Service.Kind.CONSULTATION,
+     None, "150",
+     "Traé tus estudios anteriores si los tenés.",
+     "Consulta con cualquiera de las especialidades del centro: Cardiología, "
+     "Pediatría, Dermatología o Ginecología."),
+    ("Análisis de sangre (hemograma y glucosa)", Service.Kind.STUDY,
+     None, "80",
+     "Ayuno de 8 horas: no comer ni tomar nada más que agua desde la noche "
+     "anterior. La muestra se toma por la mañana, de 08:00 a 10:00.",
+     "Extracción de sangre para hemograma completo y glucosa en ayunas. "
+     "Los resultados se entregan en 24 horas."),
+    ("Perfil lipídico (colesterol y triglicéridos)", Service.Kind.STUDY,
+     "Cardiología", "120",
+     "Ayuno de 12 horas. No tomar alcohol las 24 horas anteriores.",
+     "Análisis de colesterol total, HDL, LDL y triglicéridos."),
+    ("Electrocardiograma", Service.Kind.STUDY,
+     "Cardiología", "90",
+     "No requiere ayuno. Venir con ropa cómoda y sin cremas en el pecho.",
+     "Registro de la actividad eléctrica del corazón. Dura unos diez minutos."),
+    ("Ecografía abdominal", Service.Kind.STUDY,
+     None, "180",
+     "Ayuno de 6 horas y la vejiga llena: tomar cuatro vasos de agua una hora "
+     "antes y no orinar.",
+     "Estudio por imágenes del hígado, la vesícula, los riñones y el páncreas."),
+    ("Papanicolaou", Service.Kind.STUDY,
+     "Ginecología", "70",
+     "No estar menstruando. No tener relaciones sexuales ni usar óvulos o "
+     "duchas vaginales las 48 horas anteriores.",
+     "Toma de muestra del cuello del útero para el control ginecológico."),
+    ("Crioterapia de verrugas", Service.Kind.PROCEDURE,
+     "Dermatología", None,
+     "",
+     "Tratamiento de verrugas con frío. El precio depende de la cantidad y "
+     "se informa en la consulta."),
+]
+
 # Agenda de demostración: media jornada de mañana, consultas de media hora.
 # Cae dentro de la franja 08:00–12:00 de `HOURS`, que es lo que US-13 (d)
 # exige.
@@ -208,6 +254,10 @@ class Command(BaseCommand):
             )
             resumen.append(("profesionales", *r))
 
+            resumen.append(("servicios", *self._servicios(
+                organizacion, especialidades,
+            )))
+
             if con_agendas:
                 resumen.append(("agendas", *self._agendas(
                     organizacion, profesionales, sucursales,
@@ -276,6 +326,23 @@ class Command(BaseCommand):
                 )
             profesionales.append((profesional, sus_sucursales))
         return profesionales, (creados, existentes)
+
+    def _servicios(self, organizacion, especialidades):
+        """US-32 — Precio y preparación de cada servicio."""
+        creados = existentes = 0
+        for nombre, tipo, especialidad, precio, preparacion, descripcion in SERVICES:
+            _, creado = Service.objects.update_or_create(
+                organization=organizacion, name=nombre,
+                defaults={
+                    "kind": tipo,
+                    "specialty": especialidades.get(especialidad),
+                    "price": precio,
+                    "preparation": preparacion,
+                    "description": descripcion,
+                },
+            )
+            creados, existentes = creados + creado, existentes + (not creado)
+        return creados, existentes
 
     def _agendas(self, organizacion, profesionales, sucursales):
         """Una agenda por profesional, repartida entre sus sucursales.

@@ -159,3 +159,54 @@ def index_specialties(organization, *, stdout=None) -> dict:
             if len([r for r in rows if r[0] is s]) <= 1
         ],
     }
+
+
+# Las fuentes que reescribe ``index_administrative``. Las especialidades no:
+# esas son de ``index_specialties``, y cada función borra sólo lo suyo.
+ADMINISTRATIVE_SOURCES = (SourceType.BRANCH, SourceType.SERVICE, SourceType.POLICY)
+
+
+def index_administrative(organization, *, stdout=None) -> dict:
+    """US-32 — Reindexa sedes, servicios y políticas de una organización.
+
+    Mismo contrato que ``index_specialties``: dentro de un
+    ``tenant_context()``, borra y reescribe, y devuelve el resumen. El texto
+    de cada fragmento se arma en ``corpus.py``.
+    """
+    from .corpus import administrative_sources
+
+    texts, rows = [], []
+    counts = {source_type: 0 for source_type in ADMINISTRATIVE_SOURCES}
+    for source_type, source_id, fragments in administrative_sources(organization):
+        counts[source_type] += 1
+        for position, text in enumerate(fragments):
+            texts.append(text)
+            rows.append((source_type, source_id, position, text))
+
+    model = active_model_name()
+    if stdout is not None:
+        stdout.write(f"  vectorizando {len(texts)} fragmentos administrativos…")
+    vectors = embed_documents(texts) if texts else []
+
+    CatalogFragment.objects.filter(
+        organization=organization, source_type__in=ADMINISTRATIVE_SOURCES,
+    ).delete()
+    CatalogFragment.objects.bulk_create([
+        CatalogFragment(
+            organization=organization,
+            source_type=source_type,
+            source_id=source_id,
+            position=position,
+            text=text,
+            embedding=vector,
+            embedding_model=model,
+        )
+        for (source_type, source_id, position, text), vector in zip(rows, vectors)
+    ])
+
+    return {
+        "branches": counts[SourceType.BRANCH],
+        "services": counts[SourceType.SERVICE],
+        "fragments": len(rows),
+        "model": model,
+    }

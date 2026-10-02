@@ -27,8 +27,8 @@ from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization
 
 from ...embeddings import EmbeddingError, active_model_name
-from ...indexing import fragments_for, index_specialties
-from ...models import CatalogFragment, SourceType
+from ...corpus import administrative_sources
+from ...indexing import fragments_for, index_administrative, index_specialties
 
 
 class Command(BaseCommand):
@@ -102,15 +102,34 @@ class Command(BaseCommand):
             self.stdout.write(f"  {especialidad.name} → {len(fragmentos)} fragmentos")
             for texto in fragmentos:
                 self.stdout.write(f"      · {texto}")
+        # US-32: sedes, servicios y la política de cancelación.
+        for _, _, fragmentos in administrative_sources(organizacion):
+            total += len(fragmentos)
+            self.stdout.write(
+                f"  {fragmentos[0].split('.')[0]} → {len(fragmentos)} fragmentos"
+            )
+            for texto in fragmentos:
+                self.stdout.write(f"      · {texto}")
         self.stdout.write(f"  (sin escribir) {total} fragmentos en total")
 
     def _indexar(self, organizacion, modelo):
-        self._avisar_si_hay_otro_modelo(organizacion, modelo)
-
+        # Ya no hace falta avisar de fragmentos calculados con otro modelo:
+        # desde US-32 cada corrida reescribe todas las fuentes, no sólo las
+        # especialidades, así que no queda ninguno viejo.
         try:
             resumen = index_specialties(organizacion, stdout=self.stdout)
+            administrativo = index_administrative(organizacion, stdout=self.stdout)
         except EmbeddingError as error:
             raise CommandError(str(error)) from error
+
+        # Antes que el resumen de especialidades, porque ése corta cuando no
+        # hay ninguna y las sedes se indexan igual.
+        self.stdout.write(self.style.SUCCESS(
+            f"  {administrativo['fragments']} fragmentos administrativos: "
+            f"{administrativo['branches']} sedes, "
+            f"{administrativo['services']} servicios y la política de "
+            f"cancelación"
+        ))
 
         if resumen["fragments"] == 0:
             self.stdout.write(self.style.WARNING(
@@ -127,20 +146,4 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 "  Sin descripción, y por lo tanto casi imposibles de "
                 "recuperar: " + ", ".join(resumen["empty"])
-            ))
-
-    def _avisar_si_hay_otro_modelo(self, organizacion, modelo):
-        otros = set(
-            CatalogFragment.objects
-            .filter(organization=organizacion)
-            .exclude(embedding_model=modelo)
-            .exclude(source_type=SourceType.SPECIALTY)
-            .values_list("embedding_model", flat=True)
-        )
-        if otros:
-            self.stdout.write(self.style.WARNING(
-                f"  Ojo: quedan fragmentos de otras fuentes calculados con "
-                f"{', '.join(sorted(otros))}. Mezclar modelos en el mismo "
-                f"índice da distancias que no significan nada: reindexá todo "
-                f"con --all."
             ))
