@@ -30,12 +30,12 @@ export function IconoCatalogo({ nombre, className='size-5' }: { nombre:string; c
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[nombre]}</svg>
 }
 
-export function CabeceraCatalogo({titulo,descripcion,children}:{
-  titulo:string;descripcion:string;children?:ReactNode
+export function CabeceraCatalogo({titulo,descripcion,children,historia='US-12'}:{
+  titulo:string;descripcion:string;children?:ReactNode;historia?:string
 }) {
   return <div className="surgir flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico · US-12</p>
+      <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico · {historia}</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{titulo}</h1>
       <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">{descripcion}</p>
     </div>{children}

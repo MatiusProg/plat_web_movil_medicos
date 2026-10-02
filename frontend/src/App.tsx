@@ -24,6 +24,7 @@ import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
 import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
 import { Especialidades } from '@/paginas/Especialidades'
+import { Servicios } from '@/paginas/Servicios'
 import { Profesionales } from '@/paginas/Profesionales'
 import { Usuarios } from '@/paginas/Usuarios'
 import { Sucursales } from '@/paginas/Sucursales'
@@ -190,6 +191,9 @@ export default function App() {
                         {/* US-12: administracion del catalogo medico */}
                         <Route path="/especialidades" element={<Especialidades />} />
                         <Route path="/profesionales" element={<Profesionales />} />
+
+                        {/* US-32: servicios con precio y preparación, para el asistente */}
+                        <Route path="/servicios" element={<Servicios />} />
 
                         <Route
                             path="/agendas"

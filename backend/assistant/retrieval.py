@@ -47,11 +47,49 @@ from dataclasses import dataclass
 
 from pgvector.django import CosineDistance
 
-from catalog.models import Specialty
+from catalog.models import Branch, Service, Specialty
 from django.conf import settings
 
 from .embeddings import embed_query
 from .models import CatalogFragment, SourceType
+
+# Dónde está el nombre de cada tipo de fuente. US-32 suma sedes y servicios;
+# la política no tiene tabla propia y se nombra sola (ver `_source_names`).
+_NAMED_SOURCES = {
+    SourceType.SPECIALTY: Specialty,
+    SourceType.BRANCH: Branch,
+    SourceType.SERVICE: Service,
+}
+
+POLICY_SOURCE_NAME = "Política de cancelación"
+
+
+def _source_names(organization, fragments) -> dict:
+    """``{source_id: nombre}`` de los fragmentos recuperados.
+
+    Una consulta por tipo de fuente, y cada una acotada a la organización.
+    `source_id` no es una FK (ver models.py), así que esto no se puede
+    resolver con un select_related.
+    """
+    names = {}
+    for source_type, model in _NAMED_SOURCES.items():
+        ids = [f.source_id for f in fragments if f.source_type == source_type]
+        if ids:
+            names.update(
+                model.objects
+                .filter(organization=organization, id__in=ids)
+                .values_list("id", "name")
+            )
+    for fragment in fragments:
+        if fragment.source_type == SourceType.POLICY:
+            names[fragment.source_id] = POLICY_SOURCE_NAME
+    return names
+
+
+def is_administrative(fragment) -> bool:
+    """US-32: el fragmento contesta dónde, cuándo, cuánto o cómo; no qué
+    especialidad corresponde."""
+    return fragment.source_type != SourceType.SPECIALTY
 
 
 @dataclass(frozen=True)
@@ -103,17 +141,7 @@ def retrieve(organization, question: str, *, limit: int = 5) -> list:
         .order_by("distance")[:limit]
     )
 
-    # Los nombres de las fuentes, en una sola consulta y también acotada a la
-    # organización. `source_id` no es una FK (ver models.py), así que esto no
-    # se puede resolver con un select_related.
-    specialty_ids = [
-        f.source_id for f in fragments if f.source_type == SourceType.SPECIALTY
-    ]
-    names = dict(
-        Specialty.objects
-        .filter(organization=organization, id__in=specialty_ids)
-        .values_list("id", "name")
-    )
+    names = _source_names(organization, fragments)
 
     threshold = settings.ASSISTANT_MIN_SIMILARITY
     retrieved = []

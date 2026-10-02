@@ -65,6 +65,11 @@ class Action:
     # US-34: la derivación va con código propio y no como un detalle de
     # `ASSISTANT_QUERY`, para que quien audita pueda filtrar sólo ésas.
     ASSISTANT_EMERGENCY = "assistant.emergency"
+    # US-32: el índice se recalculó desde la pantalla de servicios.
+    ASSISTANT_REINDEX = "assistant.catalog.reindex"
+    SERVICE_CREATE = "catalog.service.create"
+    SERVICE_UPDATE = "catalog.service.update"
+    SERVICE_DEACTIVATE = "catalog.service.deactivate"
 
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
@@ -101,6 +106,10 @@ LABELS = {
     Action.REPORT_DELETE: "Reporte eliminado",
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
     Action.ASSISTANT_EMERGENCY: "Derivación a emergencia por el asistente",
+    Action.ASSISTANT_REINDEX: "Catálogo del asistente reindexado",
+    Action.SERVICE_CREATE: "Servicio registrado",
+    Action.SERVICE_UPDATE: "Servicio editado",
+    Action.SERVICE_DEACTIVATE: "Servicio desactivado",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",

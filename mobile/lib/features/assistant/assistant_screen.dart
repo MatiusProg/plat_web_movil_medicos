@@ -133,7 +133,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Asistente de orientación')),
+      appBar: AppBar(title: const Text('Asistente')),
       body: Column(
         children: [
           _Aviso(demo: widget.demo),
@@ -177,7 +177,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _enviar(),
                       decoration: const InputDecoration(
-                        hintText: 'Contá qué síntomas tenés…',
+                        hintText: 'Tus síntomas, o un horario o precio…',
                       ),
                     ),
                   ),
@@ -238,7 +238,9 @@ class _Bienvenida extends StatelessWidget {
             SizedBox(height: 12),
             Text(
               'Describí tus síntomas y te sugiero con qué especialidad '
-              'consultar.',
+              'consultar.\n\nTambién podés preguntarme horarios y '
+              'direcciones de las sucursales, precios de consultas y '
+              'estudios, cómo prepararte o cómo cancelar una ficha.',
               textAlign: TextAlign.center,
             ),
           ],

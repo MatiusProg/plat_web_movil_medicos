@@ -9,6 +9,7 @@ from rest_framework.routers import DefaultRouter
 from .branches import BranchListView
 from .branch_views import BranchDetailView, BranchDeactivateView
 from .search import ProfessionalSearchView
+from .service_views import ServiceDeactivateView, ServiceDetailView, ServiceListView
 from .us12_views import (
     SpecialtyManageListView,
     SpecialtyDetailView,
@@ -60,6 +61,15 @@ urlpatterns = router.urls + [
         "professionals/<uuid:pk>/deactivate/",
         PractitionerDeactivateView.as_view(),
         name="professional-deactivate",
+    ),
+
+    # US-32: servicios y estudios, con precio y preparación.
+    path("services/", ServiceListView.as_view(), name="service-list"),
+    path("services/<uuid:pk>/", ServiceDetailView.as_view(), name="service-detail"),
+    path(
+        "services/<uuid:pk>/deactivate/",
+        ServiceDeactivateView.as_view(),
+        name="service-deactivate",
     ),
 
     # US-16: búsqueda de profesionales (se conserva).
