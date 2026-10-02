@@ -46,3 +46,31 @@ class CanReadHistory(RequiresPermission):
 
 class CanWriteHistory(RequiresPermission):
     code = "patients.history.write"
+
+
+# ---------- US-09: búsqueda de pacientes -------------------------------
+
+class CanReadPatients(RequiresPermission):
+    code = "patients.patient.read"
+
+
+# ---------- US-10: ABM de pacientes -----------------------------------
+
+class CanCreatePatients(RequiresPermission):
+    code = "patients.patient.create"
+
+
+
+class CanUpdatePatients(RequiresPermission):
+    code = "patients.patient.update"
+
+
+
+class CanDeactivatePatients(RequiresPermission):
+    code = "patients.patient.deactivate"
+
+
+
+class CanMergePatients(RequiresPermission):
+    code = "patients.patient.merge"
+
