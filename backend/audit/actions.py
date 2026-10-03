@@ -105,6 +105,8 @@ LABELS = {
     Action.ROLE_PERMISSIONS_UPDATE: "Permisos de un rol modificados",
     Action.ROLE_ASSIGN: "Rol asignado a un usuario",
     Action.ROLE_REVOKE: "Rol revocado a un usuario",
+    Action.PROFILE_UPDATE: "Perfil propio editado",
+    Action.PASSWORD_CHANGE: "Contraseña cambiada desde el perfil",
     Action.USER_CREATE: "Usuario dado de alta",
     Action.USER_DEACTIVATE: "Usuario dado de baja",
     Action.ORGANIZATION_CREATE: "Organización dada de alta",

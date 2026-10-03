@@ -414,3 +414,12 @@ def test_el_cambio_de_contrasena_deja_asiento_sin_la_contrasena(
     assert asientos[1]["succeeded"] is True
     assert CLAVE_NUEVA not in str(asientos)
     assert CLAVE_ACTUAL not in str(asientos)
+
+
+def test_las_acciones_nuevas_aparecen_en_el_filtro_de_la_bitacora():
+    """Sin etiqueta, una acción se registra igual pero no sale en el
+    desplegable de la pantalla de US-06 (ver ``audit/actions.py``)."""
+    from audit.actions import LABELS
+
+    assert Action.PROFILE_UPDATE in LABELS
+    assert Action.PASSWORD_CHANGE in LABELS
