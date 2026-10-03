@@ -13,7 +13,7 @@ class SuggestRequestSerializer(serializers.Serializer):
 
     question = serializers.CharField(
         max_length=1000, trim_whitespace=True,
-        error_messages={"blank": "Contanos qué te pasa para poder orientarte."},
+        error_messages={"blank": "Cuéntanos qué te pasa para poder orientarte."},
     )
 
 

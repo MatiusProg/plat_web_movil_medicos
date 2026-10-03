@@ -81,7 +81,7 @@ class SuggestView(APIView):
             return Response(
                 {
                     "emergency": False,
-                    "answer": "No puedo responderte ahora. Probá en un rato.",
+                    "answer": "No puedo responderte ahora. Intenta de nuevo en un rato.",
                     "generated_by": "regla",
                     "detail": str(error),
                     "specialty": None,

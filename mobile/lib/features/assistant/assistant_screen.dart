@@ -237,8 +237,8 @@ class _Bienvenida extends StatelessWidget {
             Icon(Icons.forum_outlined, size: 48, color: Marca.primary),
             SizedBox(height: 12),
             Text(
-              'Describí tus síntomas y te sugiero con qué especialidad '
-              'consultar.\n\nTambién podés preguntarme horarios y '
+              'Describe tus síntomas y te sugiero con qué especialidad '
+              'consultar.\n\nTambién puedes preguntarme horarios y '
               'direcciones de las sucursales, precios de consultas y '
               'estudios, cómo prepararte o cómo cancelar una ficha.',
               textAlign: TextAlign.center,
@@ -393,8 +393,8 @@ class _AlertaEmergencia extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Esto puede ser una urgencia. No esperes una ficha: acudí ya '
-              'a un servicio de emergencias o llamá a una ambulancia.',
+              'Esto puede ser una urgencia. No esperes una ficha: acude ya '
+              'a un servicio de emergencias o llama a una ambulancia.',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
