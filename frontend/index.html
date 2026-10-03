@@ -19,6 +19,16 @@
       rel="stylesheet"
     />
 
+    <!-- El tema antes de que cargue React, para no parpadear en claro al
+         abrir en oscuro. Mismo criterio que src/tema/tema.ts. -->
+    <script>
+      try {
+        var t = localStorage.getItem('tema') || 'sistema';
+        if (t === 'oscuro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches))
+          document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+
     <title>Iniciar sesión · Centro Médico</title>
   </head>
   <body>

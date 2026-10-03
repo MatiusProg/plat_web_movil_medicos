@@ -42,6 +42,10 @@ Sólo los tokens de `frontend/src/index.css`. **Ningún color fuera de ellos**
 - Fondo de página `tinta-50` (oscuro: `tinta-950`); paneles `white`
   (oscuro: `tinta-900/50`).
 - **Todo lo que tiene color en claro tiene su `dark:`**. Se prueba en los dos.
+- `dark:` depende de la clase `dark` en `<html>`, no del sistema: la pone
+  `src/tema/tema.ts` según lo que la persona eligió en el pie de la barra
+  (Claro, Oscuro o Como el sistema). No se usa `@media (prefers-color-scheme)`
+  en ningún estilo nuevo.
 - El color nunca es la única señal: un estado lleva también texto o ícono.
 
 ## 3. Tipografía
@@ -97,8 +101,9 @@ Toda entrada nueva del menú declara:
 | `requiere` | el permiso que la habilita (o `'plataforma'`) |
 | `requierePlan` | la función del plan que necesita, si necesita una (p. ej. `ai_chatbot`) |
 
-No se agregan secciones nuevas sin cambiar esta guía. Plegar: el tirador del
-borde o `Ctrl+B`; plegada, cada opción muestra su nombre al pasar el mouse.
+No se agregan secciones nuevas sin cambiar esta guía. Plegar: el botón de
+la barra junto a la marca o `Ctrl+B`; plegada, el logo se vuelve ese botón al
+pasar el mouse y cada opción muestra su nombre en un globo.
 
 ## 5. Componentes
 

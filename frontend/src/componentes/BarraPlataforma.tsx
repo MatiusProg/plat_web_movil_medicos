@@ -21,7 +21,7 @@
  *   que se distinga sin depender sólo del color.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
 import {
@@ -33,6 +33,7 @@ import {
 
 import { pedir } from '@/api/cliente'
 import { useSesion } from '@/sesion/useSesion'
+import { guardarTema, leerTema, type Tema } from '@/tema/tema'
 
 
 type ItemMenu = {
@@ -324,17 +325,42 @@ export function BarraPlataforma({
                 'md:translate-x-0',
             ].join(' ')}
         >
-            {/* Marca y centro médico */}
-            <div className={['flex h-16 shrink-0 items-center gap-3 px-4', plegada ? 'md:justify-center md:px-0' : ''].join(' ')}>
-                <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-marca-500 text-tinta-950">
+            {/* Marca, centro médico y el botón de la barra, como en los
+                asistentes de chat: a la derecha de la marca cuando está
+                abierta; plegada, el logo se convierte en ese botón al pasar el
+                mouse. Ctrl+B hace lo mismo. */}
+            <div className={['group/cabecera flex h-16 shrink-0 items-center gap-3 px-4', plegada ? 'md:justify-center md:px-0' : ''].join(' ')}>
+                <div className={['grid size-9 shrink-0 place-items-center rounded-xl bg-marca-500 text-tinta-950', plegada ? 'md:group-hover/cabecera:hidden' : ''].join(' ')}>
                     <IconoEscudo className="size-5" />
                 </div>
-                <div className={`min-w-0 leading-tight ${soloAncha}`}>
+                {plegada && (
+                    <button
+                        type="button"
+                        onClick={alternarPlegada}
+                        aria-label="Abrir la barra lateral (Ctrl+B)"
+                        title="Abrir la barra lateral (Ctrl+B)"
+                        className="hidden size-9 place-items-center rounded-lg text-tinta-300 hover:bg-tinta-800 hover:text-white focus-visible:grid md:group-hover/cabecera:grid"
+                    >
+                        <IconoBarra />
+                    </button>
+                )}
+                <div className={`min-w-0 flex-1 leading-tight ${soloAncha}`}>
                     <p className="text-[0.9375rem] font-semibold text-white">MediAdmin</p>
                     <p className="truncate text-xs text-tinta-400">
                         {usuario?.is_platform_admin ? 'Plataforma' : usuario?.organization}
                     </p>
                 </div>
+                {!plegada && (
+                    <button
+                        type="button"
+                        onClick={alternarPlegada}
+                        aria-label="Cerrar la barra lateral (Ctrl+B)"
+                        title="Cerrar la barra lateral (Ctrl+B)"
+                        className="hidden size-8 shrink-0 place-items-center rounded-lg text-tinta-400 transition hover:bg-tinta-800 hover:text-white md:grid"
+                    >
+                        <IconoBarra />
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={cerrarEnMovil}
@@ -344,18 +370,6 @@ export function BarraPlataforma({
                     <IconoCerrar />
                 </button>
             </div>
-
-            {/* Tirador para plegar: en el borde, a mano del cursor, y Ctrl+B.
-                Se ve al pasar por la barra o al llegar con el teclado. */}
-            <button
-                type="button"
-                onClick={alternarPlegada}
-                aria-label={plegada ? 'Expandir el menú (Ctrl+B)' : 'Contraer el menú (Ctrl+B)'}
-                aria-expanded={!plegada}
-                className="absolute top-[3.25rem] -right-3 z-10 hidden size-6 place-items-center rounded-full border border-tinta-700 bg-tinta-900 text-tinta-300 opacity-0 shadow-sm transition hover:border-marca-500 hover:text-white focus-visible:opacity-100 group-hover/barra:opacity-100 md:grid"
-            >
-                <IconoPlegar plegada={plegada} />
-            </button>
 
             {/* Opciones, agrupadas. Scroll vertical propio y nunca horizontal. */}
             <nav className="barra-scroll flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto px-3 pt-2 pb-4" aria-label="Menú principal">
@@ -414,8 +428,8 @@ export function BarraPlataforma({
                 </span>
             )}
 
-            {/* Quién está adentro, y cómo salir. */}
-            <div className={['flex shrink-0 items-center gap-3 border-t border-tinta-800 p-3', plegada ? 'md:flex-col md:gap-2' : ''].join(' ')}>
+            {/* Quién está adentro, el tema y cómo salir. */}
+            <div className={['relative flex shrink-0 items-center gap-2 border-t border-tinta-800 p-3', plegada ? 'md:flex-col' : ''].join(' ')}>
                 <div className="grid size-9 shrink-0 place-items-center rounded-full bg-tinta-800 text-xs font-semibold text-marca-300" title={plegada ? `${nombre} · ${rol}` : undefined}>
                     {iniciales(nombre)}
                 </div>
@@ -423,6 +437,7 @@ export function BarraPlataforma({
                     <p className="truncate text-sm font-medium text-white">{nombre}</p>
                     <p className="truncate text-xs text-tinta-400">{rol}</p>
                 </div>
+                <SelectorTema />
                 <button
                     type="button"
                     onClick={cerrarSesion}
@@ -434,6 +449,94 @@ export function BarraPlataforma({
                 </button>
             </div>
         </aside>
+    )
+}
+
+
+/**
+ * Claro, oscuro o como el sistema: un botón con el ícono del tema elegido que
+ * abre un menú chico hacia arriba. La elección la guarda src/tema/tema.ts.
+ */
+function SelectorTema() {
+    const [tema, setTema] = useState<Tema>(leerTema)
+    const [abierto, setAbierto] = useState(false)
+    const caja = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!abierto) return
+        const fuera = (e: MouseEvent) => { if (!caja.current?.contains(e.target as Node)) setAbierto(false) }
+        const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false) }
+        window.addEventListener('mousedown', fuera)
+        window.addEventListener('keydown', escape)
+        return () => { window.removeEventListener('mousedown', fuera); window.removeEventListener('keydown', escape) }
+    }, [abierto])
+
+    const elegir = (nuevo: Tema) => { guardarTema(nuevo); setTema(nuevo); setAbierto(false) }
+    const opciones: { valor: Tema; etiqueta: string }[] = [
+        { valor: 'claro', etiqueta: 'Claro' },
+        { valor: 'oscuro', etiqueta: 'Oscuro' },
+        { valor: 'sistema', etiqueta: 'Como el sistema' },
+    ]
+
+    return (
+        <div ref={caja} className="relative">
+            <button
+                type="button"
+                onClick={() => setAbierto((a) => !a)}
+                aria-label="Cambiar el tema"
+                aria-haspopup="menu"
+                aria-expanded={abierto}
+                title="Tema"
+                className="grid size-9 shrink-0 place-items-center rounded-lg text-tinta-400 transition hover:bg-tinta-800 hover:text-white"
+            >
+                <IconoTema tema={tema} />
+            </button>
+            {abierto && (
+                <div role="menu" className="absolute bottom-full left-0 z-50 mb-2 w-48 rounded-xl bg-tinta-950 p-1 shadow-xl ring-1 ring-tinta-800">
+                    {opciones.map((o) => (
+                        <button
+                            key={o.valor}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={tema === o.valor}
+                            onClick={() => elegir(o.valor)}
+                            className={['flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm',
+                                tema === o.valor ? 'bg-tinta-800 text-white' : 'text-tinta-300 hover:bg-tinta-800 hover:text-white'].join(' ')}
+                        >
+                            <IconoTema tema={o.valor} />
+                            <span className="flex-1">{o.etiqueta}</span>
+                            {tema === o.valor && <span className="text-marca-300" aria-hidden="true">✓</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+
+function IconoTema({ tema }: { tema: Tema }) {
+    const comun = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8,
+        strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, className: 'size-[18px]', 'aria-hidden': true }
+    if (tema === 'claro') return (
+        <svg {...comun}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+    )
+    if (tema === 'oscuro') return (
+        <svg {...comun}><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>
+    )
+    return (
+        <svg {...comun}><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>
+    )
+}
+
+
+/** El ícono de la barra lateral: un panel con su columna izquierda. */
+function IconoBarra() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" className="size-[18px]" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2.5" />
+            <path d="M9.5 4v16" />
+        </svg>
     )
 }
 
@@ -451,30 +554,6 @@ function IconoCerrar() {
         >
             <path d="M6 6l12 12" />
             <path d="M18 6L6 18" />
-        </svg>
-    )
-}
-
-
-function IconoPlegar({
-                         plegada,
-                     }: {
-    plegada: boolean
-}) {
-    return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-3.5"
-            aria-hidden="true"
-        >
-            {plegada
-                ? <path d="M9 6l6 6-6 6" />
-                : <path d="M15 6l-6 6 6 6" />}
         </svg>
     )
 }
