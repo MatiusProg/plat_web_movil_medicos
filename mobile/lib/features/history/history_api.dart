@@ -6,6 +6,7 @@
 library;
 
 import 'package:mobile/core/api/client.dart';
+import 'package:mobile/core/api/paginacion.dart';
 
 /// Los tres tipos, con su etiqueta y su orden de presentación.
 ///
@@ -63,16 +64,15 @@ class Antecedente {
 Future<List<Antecedente>> listarAntecedentes(
   ApiClient client, {
   required String patientId,
-}) async {
-  final data = await client.get(
-    '/patients/history/?patient=${Uri.encodeQueryComponent(patientId)}',
-  );
-  final mapa = data is Map<String, dynamic> ? data : const <String, dynamic>{};
-  return (mapa['results'] as List? ?? const [])
-      .whereType<Map<String, dynamic>>()
-      .map(Antecedente.fromJson)
-      .toList();
-}
+}) =>
+    // Todas las páginas: la pantalla agrupa por tipo, y una alergia que
+    // quedara en la página 2 no aparecería en su grupo. En un antecedente
+    // médico, lo que falta es peor que lo que sobra.
+    todasLasPaginas(
+      client,
+      '/patients/history/?patient=${Uri.encodeQueryComponent(patientId)}',
+      Antecedente.fromJson,
+    );
 
 Future<Antecedente> registrarAntecedente(
   ApiClient client, {

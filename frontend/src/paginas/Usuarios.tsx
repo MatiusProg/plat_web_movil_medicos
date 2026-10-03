@@ -12,12 +12,12 @@
  * casi nadie va a usar.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import {
   asignarRol,
   listarAsignacionesDe,
-  listarRoles,
+  listarRolesTodos,
   listarUsuarios,
   revocarAsignacion,
   type Asignacion,
@@ -26,6 +26,7 @@ import {
 } from '@/api/roles'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
+import { Paginador } from '@/componentes/Paginador'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 
@@ -34,6 +35,13 @@ export function Usuarios() {
   useTitulo('Usuarios y roles')
 
   const [usuarios, setUsuarios] = useState<UsuarioDeLaOrganizacion[] | null>(null)
+  const [total, setTotal] = useState(0)
+  const [pagina, setPagina] = useState(1)
+  // Lo que se escribe y lo que se busca van separados: la búsqueda espera a
+  // que se deje de tipear, para no pedir una página por cada letra.
+  const [texto, setTexto] = useState('')
+  const [buscado, setBuscado] = useState('')
+  const [cargando, setCargando] = useState(false)
   const [roles, setRoles] = useState<Rol[]>([])
   const [error, setError] = useState<ErrorApi | null>(null)
   const [abierto, setAbierto] = useState<string | null>(null)
@@ -41,31 +49,44 @@ export function Usuarios() {
   const puedeAsignar = puede('users.role.assign')
 
   useEffect(() => {
+    const espera = setTimeout(() => { setBuscado(texto); setPagina(1) }, 350)
+    return () => clearTimeout(espera)
+  }, [texto])
+
+  // Los roles alimentan el desplegable de asignación: todos, no la primera
+  // página. Si no se pueden leer, la pantalla sigue sirviendo para ver quién
+  // tiene qué.
+  useEffect(() => {
     const control = new AbortController()
-
-    Promise.all([
-      listarUsuarios({ token }, control.signal),
-      // Los roles alimentan el desplegable de asignación. Si no se pueden
-      // leer, la pantalla sigue sirviendo para ver quién tiene qué.
-      listarRoles({ token }, control.signal).catch(() => null),
-    ])
-      .then(([pagina, rolesPagina]) => {
-        setUsuarios(pagina.results)
-        setRoles((rolesPagina?.results ?? []).filter((rol) => rol.is_active))
-      })
-      .catch((e: unknown) => {
-        if (e instanceof DOMException && e.name === 'AbortError') return
-        setError(e instanceof ErrorApi ? e : null)
-        setUsuarios([])
-      })
-
+    listarRolesTodos({ token }, control.signal)
+      .then((todos) => setRoles(todos.filter((rol) => rol.is_active)))
+      .catch(() => {})
     return () => control.abort()
   }, [token])
 
-  const refrescarUsuarios = async () => {
-    const pagina = await listarUsuarios({ token })
-    setUsuarios(pagina.results)
-  }
+  const cargar = useCallback(async (signal?: AbortSignal) => {
+    setCargando(true)
+    try {
+      const datos = await listarUsuarios({ token }, signal, { pagina, search: buscado })
+      setUsuarios(datos.results)
+      setTotal(datos.count)
+      setError(null)
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      setError(e instanceof ErrorApi ? e : null)
+      setUsuarios([])
+    } finally {
+      if (!signal?.aborted) setCargando(false)
+    }
+  }, [token, pagina, buscado])
+
+  useEffect(() => {
+    const control = new AbortController()
+    void cargar(control.signal)
+    return () => control.abort()
+  }, [cargar])
+
+  const refrescarUsuarios = async () => { await cargar() }
 
   if (!puede('users.user.read')) {
     return (
@@ -94,24 +115,44 @@ export function Usuarios() {
 
       {error && <Aviso codigo={error.codigo} mensaje={error.message} />}
 
+      <label className="block">
+        <span className="sr-only">Buscar usuarios</span>
+        <input
+          type="search"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Buscar por nombre, apellido, documento o correo…"
+          className="w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[0.9375rem] text-tinta-800 outline-none focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100"
+        />
+      </label>
+
       {usuarios === null ? (
         <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
       ) : (
-        <ul className="space-y-3">
-          {usuarios.map((usuario) => (
-            <FilaUsuario
-              key={usuario.id}
-              usuario={usuario}
-              roles={roles}
-              abierto={abierto === usuario.id}
-              puedeAsignar={puedeAsignar}
-              alAbrir={() =>
-                setAbierto(abierto === usuario.id ? null : usuario.id)
-              }
-              alCambiar={refrescarUsuarios}
-            />
-          ))}
-        </ul>
+        <div>
+          {usuarios.length === 0 && (
+            <p className="text-tinta-500 text-[0.9375rem]">
+              {buscado ? 'Nadie coincide con esa búsqueda.' : 'No hay usuarios.'}
+            </p>
+          )}
+          <ul className="space-y-3">
+            {usuarios.map((usuario) => (
+              <FilaUsuario
+                key={usuario.id}
+                usuario={usuario}
+                roles={roles}
+                abierto={abierto === usuario.id}
+                puedeAsignar={puedeAsignar}
+                alAbrir={() =>
+                  setAbierto(abierto === usuario.id ? null : usuario.id)
+                }
+                alCambiar={refrescarUsuarios}
+              />
+            ))}
+          </ul>
+          <Paginador pagina={pagina} total={total} cargando={cargando}
+            onCambiar={(p) => { setPagina(p); setAbierto(null) }} />
+        </div>
       )}
     </main>
   )

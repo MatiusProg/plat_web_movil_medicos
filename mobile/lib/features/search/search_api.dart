@@ -6,6 +6,7 @@
 library;
 
 import 'package:mobile/core/api/client.dart';
+import 'package:mobile/core/api/paginacion.dart';
 
 class Especialidad {
   const Especialidad({required this.id, required this.name});
@@ -67,6 +68,18 @@ Future<List<Especialidad>> listarEspecialidades(ApiClient client) async {
       .map(Especialidad.fromJson)
       .toList();
 }
+
+/// El catálogo entero de profesionales, recorriendo todas las páginas.
+///
+/// Para los selectores de agenda y de disponibilidad, no para la búsqueda:
+/// ahí se pagina con scroll. Un desplegable que sólo trae la primera página
+/// esconde a partir del profesional número 26 sin decir nada.
+Future<List<ProfesionalTarjeta>> todosLosProfesionales(ApiClient client) =>
+    todasLasPaginas(
+      client,
+      '/catalog/professionals/',
+      ProfesionalTarjeta.fromJson,
+    );
 
 Future<PaginaProfesionales> buscarProfesionales(
   ApiClient client, {

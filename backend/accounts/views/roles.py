@@ -24,7 +24,7 @@ que US-43 pueda clonarlas. Acá se las excluye del listado; lo que el
 administrador ve y edita es la copia de su organización.
 """
 
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -251,9 +251,16 @@ class AssignableUserViewSet(OrganizationScopedMixin, ReadOnlyModelViewSet):
             Prefetch("user_roles", queryset=UserRole.objects.select_related("role")),
         )
 
+        # Por correo, nombre, apellido o documento: quien no sabe el correo
+        # exacto de alguien igual tiene que poder encontrarlo.
         buscado = self.request.query_params.get("search", "").strip()
         if buscado:
-            queryset = queryset.filter(email__icontains=buscado)
+            queryset = queryset.filter(
+                Q(email__icontains=buscado)
+                | Q(first_name__icontains=buscado)
+                | Q(last_name__icontains=buscado)
+                | Q(document_number__icontains=buscado)
+            )
 
         role_id = self.request.query_params.get("role")
         if role_id:

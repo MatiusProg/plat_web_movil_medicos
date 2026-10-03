@@ -1,4 +1,5 @@
 import { pedir } from './cliente'
+import { todasLasPaginas } from './paginacion'
 import { leerSesion } from '@/sesion/almacenamiento'
 
 export interface PlanSuscripcion {
@@ -77,10 +78,12 @@ function obtenerToken(): string {
     return sesion.access
 }
 
-export function listarPlanes(): Promise<RespuestaPaginada<PlanSuscripcion>> {
-    return pedir<RespuestaPaginada<PlanSuscripcion>>('/platform/plans/', {
+/** Todos los planes: son pocos y alimentan selectores. */
+export async function listarPlanes(): Promise<RespuestaPaginada<PlanSuscripcion>> {
+    const results = await todasLasPaginas<PlanSuscripcion>('/platform/plans/', {
         token: obtenerToken(),
     })
+    return { count: results.length, next: null, previous: null, results }
 }
 
 export function crearPlan(datos: DatosPlan): Promise<PlanSuscripcion> {
@@ -102,17 +105,18 @@ export function actualizarPlan(
     })
 }
 
-export function listarSuscripciones(
+/**
+ * Todas las suscripciones. La pantalla calcula totales y filtra en el
+ * navegador, así que necesita la lista entera; la tabla se pagina ahí.
+ */
+export async function listarSuscripciones(
     soloVigentes = false,
 ): Promise<RespuestaPaginada<Suscripcion>> {
-    const sufijo = soloVigentes ? '?current=true' : ''
-
-    return pedir<RespuestaPaginada<Suscripcion>>(
-        `/platform/subscriptions/${sufijo}`,
-        {
-            token: obtenerToken(),
-        },
+    const results = await todasLasPaginas<Suscripcion>(
+        `/platform/subscriptions/${soloVigentes ? '?current=true' : ''}`,
+        { token: obtenerToken() },
     )
+    return { count: results.length, next: null, previous: null, results }
 }
 
 export function asignarPlan(
@@ -125,13 +129,13 @@ export function asignarPlan(
     })
 }
 
-export function listarHistorialOrganizacion(
+/** Todo el historial de planes de una organización. */
+export async function listarHistorialOrganizacion(
     organizationId: string,
 ): Promise<RespuestaPaginada<Suscripcion>> {
-    return pedir<RespuestaPaginada<Suscripcion>>(
+    const results = await todasLasPaginas<Suscripcion>(
         `/platform/organizations/${organizationId}/subscriptions/`,
-        {
-            token: obtenerToken(),
-        },
+        { token: obtenerToken() },
     )
+    return { count: results.length, next: null, previous: null, results }
 }

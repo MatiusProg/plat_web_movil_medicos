@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom'
 import { listarOrganizaciones, type Organizacion } from '@/api/organizaciones'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
+import { Paginador } from '@/componentes/Paginador'
 import { IconoEdificio } from '@/componentes/iconos'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -28,6 +29,8 @@ export function Organizaciones() {
   const { usuario, token } = useSesion()
   const [organizaciones, setOrganizaciones] = useState<Organizacion[] | null>(null)
   const [error, setError] = useState<ErrorApi | null>(null)
+  const [pagina, setPagina] = useState(1)
+  const [total, setTotal] = useState(0)
   useTitulo('Organizaciones')
 
   useEffect(() => {
@@ -36,8 +39,8 @@ export function Organizaciones() {
     // El estado sólo se toca dentro de las respuestas, nunca de forma síncrona
     // acá: hacerlo dispara un render en cascada, y además no hace falta —
     // `error` ya arranca en null.
-    listarOrganizaciones({ token }, control.signal)
-      .then((pagina) => setOrganizaciones(pagina.results))
+    listarOrganizaciones({ token }, control.signal, pagina)
+      .then((datos) => { setOrganizaciones(datos.results); setTotal(datos.count) })
       .catch((e: unknown) => {
         // Cancelar al desmontar no es un fallo que haya que mostrar.
         if (e instanceof DOMException && e.name === 'AbortError') return
@@ -46,7 +49,7 @@ export function Organizaciones() {
       })
 
     return () => control.abort()
-  }, [token])
+  }, [token, pagina])
 
   if (!usuario) return null
 
@@ -105,11 +108,14 @@ export function Organizaciones() {
             </p>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {organizaciones.map((organizacion) => (
-              <Fila key={organizacion.id} organizacion={organizacion} />
-            ))}
-          </ul>
+          <div>
+            <ul className="space-y-3">
+              {organizaciones.map((organizacion) => (
+                <Fila key={organizacion.id} organizacion={organizacion} />
+              ))}
+            </ul>
+            <Paginador pagina={pagina} total={total} onCambiar={setPagina} />
+          </div>
         )}
       </main>
     </div>

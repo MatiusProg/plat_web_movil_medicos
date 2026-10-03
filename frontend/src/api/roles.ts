@@ -11,6 +11,7 @@
  */
 
 import { pedir, type Contexto } from './cliente'
+import { pedirPagina, todasLasPaginas } from './paginacion'
 
 export interface Permiso {
   id: string
@@ -168,15 +169,23 @@ export function eliminarRol(
   })
 }
 
+/** Una página de usuarios. `search` busca por correo, nombre o documento. */
 export function listarUsuarios(
   contexto: Contexto,
   senal?: AbortSignal,
+  filtros: { pagina?: number; search?: string } = {},
 ): Promise<Pagina<UsuarioDeLaOrganizacion>> {
-  return pedir<Pagina<UsuarioDeLaOrganizacion>>('/accounts/users/', {
-    ...contexto,
-    senal,
-  })
+  return pedirPagina<UsuarioDeLaOrganizacion>('/accounts/users/', filtros.pagina ?? 1,
+    contexto, senal, { search: filtros.search?.trim() })
 }
+
+/** Todos los usuarios, para desplegables (p. ej. el actor de la bitácora). */
+export const listarUsuariosTodos = (contexto: Contexto, senal?: AbortSignal) =>
+  todasLasPaginas<UsuarioDeLaOrganizacion>('/accounts/users/', contexto, senal)
+
+/** Todos los roles: alimentan el desplegable de asignación y su pantalla. */
+export const listarRolesTodos = (contexto: Contexto, senal?: AbortSignal) =>
+  todasLasPaginas<Rol>('/accounts/roles/', contexto, senal)
 
 export function asignarRol(
   usuario: string,
@@ -197,10 +206,9 @@ export function listarAsignacionesDe(
   contexto: Contexto,
   senal?: AbortSignal,
 ): Promise<Pagina<Asignacion>> {
-  return pedir<Pagina<Asignacion>>(`/accounts/user-roles/?user=${usuario}`, {
-    ...contexto,
-    senal,
-  })
+  // Todas las del usuario, no sólo la primera página.
+  return todasLasPaginas<Asignacion>(`/accounts/user-roles/?user=${usuario}`, contexto, senal)
+    .then((results) => ({ count: results.length, next: null, previous: null, results }))
 }
 
 export function revocarAsignacion(

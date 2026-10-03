@@ -20,7 +20,7 @@ import {
   eliminarRol,
   guardarPermisosDelRol,
   listarPermisos,
-  listarRoles,
+  listarRolesTodos,
   type Permiso,
   type Rol,
 } from '@/api/roles'
@@ -58,11 +58,12 @@ export function Roles() {
     const control = new AbortController()
 
     Promise.all([
-      listarRoles({ token }, control.signal),
+      // Todos: pocos por organización, pero no se cortan en 25.
+      listarRolesTodos({ token }, control.signal),
       listarPermisos({ token }, control.signal),
     ])
-      .then(([pagina, catalogo]) => {
-        setRoles(pagina.results)
+      .then(([todos, catalogo]) => {
+        setRoles(todos)
         setPermisos(catalogo)
       })
       .catch((e: unknown) => {

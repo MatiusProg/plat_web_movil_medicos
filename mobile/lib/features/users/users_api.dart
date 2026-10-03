@@ -13,6 +13,7 @@
 library;
 
 import '../../core/api/client.dart';
+import '../../core/api/paginacion.dart';
 
 class RolAsignado {
   const RolAsignado({required this.id, required this.code, required this.name});
@@ -117,23 +118,31 @@ class Permiso {
       );
 }
 
-Future<List<UsuarioDeOrganizacion>> listarUsuarios(ApiClient client) async {
-  final data = await client.get('/accounts/users/');
-  final mapa = data is Map<String, dynamic> ? data : const <String, dynamic>{};
-  return (mapa['results'] as List? ?? const [])
-      .whereType<Map<String, dynamic>>()
-      .map(UsuarioDeOrganizacion.fromJson)
-      .toList();
+/// Una página de usuarios, opcionalmente filtrada por correo.
+///
+/// Paginada y no completa: una organización real tiene decenas de cuentas
+/// (unas 80 en las de prueba con datos reales) y la pantalla las muestra con
+/// "Cargar más". El filtro [search] lo resuelve el backend
+/// (`AssignableUserViewSet.get_queryset`) y busca **sólo en el correo**
+/// (`email__icontains`), no en el nombre.
+Future<Pagina<UsuarioDeOrganizacion>> listarUsuarios(
+  ApiClient client, {
+  String? search,
+  int page = 1,
+}) {
+  final buscado = search?.trim() ?? '';
+  final ruta = buscado.isEmpty
+      ? '/accounts/users/'
+      : '/accounts/users/?search=${Uri.encodeQueryComponent(buscado)}';
+  return unaPagina(client, ruta, UsuarioDeOrganizacion.fromJson, page: page);
 }
 
-Future<List<Rol>> listarRoles(ApiClient client) async {
-  final data = await client.get('/accounts/roles/');
-  final mapa = data is Map<String, dynamic> ? data : const <String, dynamic>{};
-  return (mapa['results'] as List? ?? const [])
-      .whereType<Map<String, dynamic>>()
-      .map(Rol.fromJson)
-      .toList();
-}
+/// Todos los roles de la organización.
+///
+/// Completos: alimentan los interruptores de "Gestionar roles", y un rol que
+/// quedara en la página 2 no se podría asignar desde el teléfono.
+Future<List<Rol>> listarRoles(ApiClient client) =>
+    todasLasPaginas(client, '/accounts/roles/', Rol.fromJson);
 
 Future<List<Permiso>> listarPermisos(ApiClient client) async {
   final data = await client.get('/accounts/permissions/');
@@ -193,16 +202,30 @@ Future<void> asignarRol(
 Future<void> quitarAsignacion(ApiClient client, int asignacionId) =>
     client.delete('/accounts/user-roles/$asignacionId/');
 
-/// Las asignaciones vigentes, para poder quitar una.
+/// Las asignaciones vigentes **de un usuario**, para poder quitar una.
 ///
 /// El listado de usuarios trae los roles de cada uno, pero no el id de la
 /// asignación, que es lo que `DELETE` necesita.
-Future<Map<String, int>> mapaDeAsignaciones(ApiClient client) async {
-  final data = await client.get('/accounts/user-roles/');
-  final mapa = data is Map<String, dynamic> ? data : const <String, dynamic>{};
+///
+/// Antes se pedía `/accounts/user-roles/` entero y se tomaba sólo la primera
+/// página: con 80 personas y sus roles eran más de 25 asignaciones, y al
+/// quitarle un rol a alguien que había caído en otra página la app contestaba
+/// "No se encontró la asignación". Ahora se filtra por `?user=<id>`
+/// (`UserRoleViewSet.get_queryset` lo admite) y se recorren igual todas sus
+/// páginas, por si alguien acumula más de 25 roles.
+///
+/// La clave sigue siendo `usuario|rol` para no cambiar a quien la consulta.
+Future<Map<String, int>> mapaDeAsignaciones(
+  ApiClient client, {
+  required String userId,
+}) async {
+  final filas = await todasLasPaginas(
+    client,
+    '/accounts/user-roles/?user=${Uri.encodeQueryComponent(userId)}',
+    (fila) => fila,
+  );
   final resultado = <String, int>{};
-  for (final fila in (mapa['results'] as List? ?? const [])) {
-    if (fila is! Map<String, dynamic>) continue;
+  for (final fila in filas) {
     final usuario = fila['user'] as String? ?? '';
     final rol = fila['role'] as String? ?? '';
     final id = fila['id'] as int?;

@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/client.dart';
 import '../../core/api/errors.dart';
+import '../../core/api/paginacion.dart';
 import '../../core/session/session_scope.dart';
 import '../../core/theme/theme.dart';
 import '../../core/widgets/platform_drawer.dart';
@@ -26,8 +27,16 @@ class OrganizationsScreen extends StatefulWidget {
 }
 
 class _OrganizationsScreenState extends State<OrganizationsScreen> {
-  Future<List<Organization>>? _futuro;
+  /// La primera página. Sigue en un `FutureBuilder` porque de eso dependen
+  /// la carga inicial, el error y el pull-to-refresh.
+  Future<Pagina<Organization>>? _futuro;
   ApiClient? _client;
+
+  /// Lo que se fue sumando con "Cargar más", después de la primera página.
+  List<Organization> _siguientes = const [];
+  int _pagina = 1;
+  bool? _hayMasSiguientes;
+  bool _cargandoMas = false;
 
   ApiClient get client =>
       _client ??= widget.client ?? ApiClient(auth: SessionScope.of(context));
@@ -42,8 +51,30 @@ class _OrganizationsScreenState extends State<OrganizationsScreen> {
     final futuro = listOrganizations(client);
     setState(() {
       _futuro = futuro;
+      _siguientes = const [];
+      _pagina = 1;
+      _hayMasSiguientes = null;
     });
     await futuro;
+  }
+
+  Future<void> _cargarMas() async {
+    setState(() => _cargandoMas = true);
+    try {
+      final pagina = await listOrganizations(client, page: _pagina + 1);
+      if (!mounted) return;
+      setState(() {
+        _pagina += 1;
+        _siguientes = [..._siguientes, ...pagina.results];
+        _hayMasSiguientes = pagina.hayMas;
+      });
+    } on ApiError catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _cargandoMas = false);
+    }
   }
 
   Future<void> _registrar() async {
@@ -65,7 +96,7 @@ class _OrganizationsScreenState extends State<OrganizationsScreen> {
         ],
       ),
       drawer: const PlatformDrawer(),
-      body: FutureBuilder<List<Organization>>(
+      body: FutureBuilder<Pagina<Organization>>(
         future: _futuro,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -85,7 +116,12 @@ class _OrganizationsScreenState extends State<OrganizationsScreen> {
               ),
             );
           }
-          final organizaciones = snapshot.data ?? const [];
+          final primera = snapshot.data;
+          final organizaciones = [...?primera?.results, ..._siguientes];
+          final total = primera?.total ?? organizaciones.length;
+          // Hasta pedir la segunda página, lo dice la primera; después, la
+          // última que llegó.
+          final hayMas = _hayMasSiguientes ?? primera?.hayMas ?? false;
           if (organizaciones.isEmpty) {
             return Center(
               child: Padding(
@@ -112,9 +148,32 @@ class _OrganizationsScreenState extends State<OrganizationsScreen> {
             onRefresh: _recargar,
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: organizaciones.length,
-              itemBuilder: (context, indice) =>
-                  _OrganizationCard(organizacion: organizaciones[indice]),
+              // Una fila de más arriba con el conteo y, si hay más páginas,
+              // una al final con el botón.
+              itemCount: organizaciones.length + 1 + (hayMas ? 1 : 0),
+              itemBuilder: (context, indice) {
+                if (indice == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Mostrando ${organizaciones.length} de $total',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  );
+                }
+                if (indice > organizaciones.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: OutlinedButton(
+                      onPressed: _cargandoMas ? null : _cargarMas,
+                      child: Text(_cargandoMas ? 'Cargando…' : 'Cargar más'),
+                    ),
+                  );
+                }
+                return _OrganizationCard(
+                  organizacion: organizaciones[indice - 1],
+                );
+              },
             ),
           );
         },

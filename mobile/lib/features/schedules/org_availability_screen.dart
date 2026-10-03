@@ -46,9 +46,11 @@ class _OrgAvailabilityScreenState extends State<OrgAvailabilityScreen> {
   Future<void> _cargar() async {
     setState(() => _error = null);
     try {
-      final pagina = await buscarProfesionales(client);
+      // Todas las páginas: la lista es la puerta a la disponibilidad de cada
+      // profesional, y uno que no aparece no tiene otra forma de abrirse.
+      final profesionales = await todosLosProfesionales(client);
       if (!mounted) return;
-      setState(() => _profesionales = pagina.results);
+      setState(() => _profesionales = profesionales);
     } on ApiError catch (error) {
       if (!mounted) return;
       setState(() => _error = error.message);
