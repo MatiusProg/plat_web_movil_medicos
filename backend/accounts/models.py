@@ -295,6 +295,9 @@ class UserRole(models.Model):
 
     class Meta:
         db_table = "user_roles"
+        # Sin orden, las páginas de /api/accounts/user-roles/ no son estables:
+        # la misma asignación podía caer en dos páginas o en ninguna.
+        ordering = ["assigned_at", "id"]
         verbose_name = "rol de usuario"
         verbose_name_plural = "roles de usuario"
         constraints = [

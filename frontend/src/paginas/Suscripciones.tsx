@@ -20,6 +20,8 @@ import {
 } from '@/componentes/ModalCambiarPlan'
 
 import { useTitulo } from '@/rutas/useTitulo'
+import { Paginador } from '@/componentes/Paginador'
+import { TAMANO_PAGINA } from '@/api/paginacion'
 
 
 function textoError(
@@ -267,6 +269,8 @@ export function Suscripciones() {
         void cargarDatos()
     }, [])
 
+
+    const [pagina, setPagina] = useState(1)
 
     const filtradas =
         useMemo(() => {
@@ -538,11 +542,12 @@ export function Suscripciones() {
 
                             <input
                                 value={consulta}
-                                onChange={(evento) =>
+                                onChange={(evento) => {
                                     setConsulta(
                                         evento.target.value,
                                     )
-                                }
+                                    setPagina(1)
+                                }}
                                 placeholder="Buscar organización..."
                                 className="h-11 w-full rounded-xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-950 pl-10 pr-4 text-sm text-tinta-800 dark:text-tinta-100 placeholder:text-tinta-500 outline-none transition focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                             />
@@ -597,7 +602,7 @@ export function Suscripciones() {
 
                                 <tbody>
 
-                                {filtradas.map(
+                                {filtradas.slice((pagina - 1) * TAMANO_PAGINA, pagina * TAMANO_PAGINA).map(
                                     (suscripcion) => {
                                         const estilos =
                                             estiloPlan(
@@ -780,6 +785,8 @@ export function Suscripciones() {
                                 </tbody>
 
                             </table>
+
+                            <Paginador pagina={pagina} total={filtradas.length} onCambiar={setPagina} />
 
                         </div>
                     )}

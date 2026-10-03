@@ -12,6 +12,7 @@
  */
 
 import { pedir, type Contexto } from './cliente'
+import { pedirPagina, todasLasPaginas } from './paginacion'
 
 export interface PlanVigente {
   code: string
@@ -88,14 +89,13 @@ interface Pagina<T> {
   results: T[]
 }
 
+/** Una página de organizaciones: la lista crece con cada cliente. */
 export function listarOrganizaciones(
   contexto: Contexto,
   senal?: AbortSignal,
+  pagina = 1,
 ): Promise<Pagina<Organizacion>> {
-  return pedir<Pagina<Organizacion>>('/platform/organizations/', {
-    ...contexto,
-    senal,
-  })
+  return pedirPagina<Organizacion>('/platform/organizations/', pagina, contexto, senal)
 }
 
 export function crearOrganizacion(
@@ -121,12 +121,11 @@ export interface Plan {
   is_active: boolean
 }
 
-export function listarPlanes(
+/** Todos los planes activos: alimentan el desplegable del alta. */
+export async function listarPlanes(
   contexto: Contexto,
   senal?: AbortSignal,
 ): Promise<Pagina<Plan>> {
-  return pedir<Pagina<Plan>>('/platform/plans/?is_active=true', {
-    ...contexto,
-    senal,
-  })
+  const results = await todasLasPaginas<Plan>('/platform/plans/?is_active=true', contexto, senal)
+  return { count: results.length, next: null, previous: null, results }
 }

@@ -283,7 +283,9 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
     ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    # 25 por página; el cliente puede pedir hasta 100 con ?page_size=.
+    # Ver config/pagination.py.
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.Paginacion",
     "PAGE_SIZE": 25,
 }
 
