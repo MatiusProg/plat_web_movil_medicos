@@ -18,6 +18,7 @@ import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
 import '../../features/dependents/dependent_form_screen.dart';
 import '../../features/dependents/dependents_screen.dart';
+import '../../features/clinical_record/clinical_record_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/metrics/metrics_screen.dart';
 import '../../features/organizations/organizations_screen.dart';
@@ -68,6 +69,7 @@ class Routes {
   static const String dependents = 'dependents';
   static const String dependentForm = 'dependent-form';
   static const String history = 'history';
+  static const String clinicalRecord = 'clinical-record';
   static const String assistant = 'assistant';
   static const String profile = 'profile';
   static const String platformDashboard = 'platform-dashboard';
@@ -321,6 +323,16 @@ GoRouter buildRouter(Session session) {
         ),
       ),
 
+      // ---------- US-25 (SM): la historia clínica, vista por el paciente --
+      GoRoute(
+        path: '/clinical-record',
+        name: Routes.clinicalRecord,
+        builder: (context, state) => const SoloPacientes(
+          titulo: 'Mi historia clínica',
+          child: ClinicalRecordScreen(),
+        ),
+      ),
+
       // ---------- US-31 (Karen): asistente de orientación ---------------
       // Armazón de la pantalla para el corte del 16/09 (Alexander).
       GoRoute(
@@ -501,6 +513,14 @@ class _HomeScreen extends StatelessWidget {
             onPressed: () => context.push('/profile'),
             icon: const Icon(Icons.account_circle_outlined),
           ),
+          // Salir a mano, sin pasar por el perfil: el paciente no tiene menú
+          // lateral, y bajar hasta el fondo del perfil para cerrar sesión era
+          // un rodeo. Sigue también en el perfil y en los menús del personal.
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            onPressed: session.signOut,
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
       body: ListView(
@@ -555,7 +575,10 @@ class _HomeScreen extends StatelessWidget {
                     : esPaciente
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: _accesosDePaciente(context),
+                            children: _accesosDePaciente(
+                              context,
+                              conAsistente: session.incluyeAsistente,
+                            ),
                           )
                         : esSuperadmin
                             // ------ US-45 (Luis Miguel): panel del superadmin
@@ -590,7 +613,11 @@ class _HomeScreen extends StatelessWidget {
   /// Los accesos de auto-servicio del paciente, como tarjetas con
   /// ícono en vez de botones en columna -más jerarquía visual, menos "es un
   /// formulario más".
-  List<Widget> _accesosDePaciente(BuildContext context) => [
+  List<Widget> _accesosDePaciente(
+    BuildContext context, {
+    required bool conAsistente,
+  }) =>
+      [
         _accesoTarjeta(
           context,
           icono: Icons.search,
@@ -599,6 +626,15 @@ class _HomeScreen extends StatelessWidget {
           // `push`, no `go`: así el botón atrás del teléfono vuelve acá en
           // lugar de cerrar la aplicación.
           onTap: () => context.push('/specialties'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-25 (SM): lo que escribieron los médicos -----------
+        _accesoTarjeta(
+          context,
+          icono: Icons.history_edu_outlined,
+          titulo: 'Mi historia clínica',
+          subtitulo: 'Tus consultas firmadas, de todas las sucursales',
+          onTap: () => context.push('/clinical-record'),
         ),
         const SizedBox(height: 12),
         // ---------- US-07 (SM): personas a cargo -----------------------
@@ -618,15 +654,18 @@ class _HomeScreen extends StatelessWidget {
           subtitulo: 'Alergias, condiciones y medicación declaradas',
           onTap: () => context.push('/history'),
         ),
-        const SizedBox(height: 12),
         // ---------- US-31 (Karen): asistente de orientación --------------
-        _accesoTarjeta(
-          context,
-          icono: Icons.forum_outlined,
-          titulo: 'Asistente de orientación',
-          subtitulo: 'Contá tus síntomas y te sugiere una especialidad',
-          onTap: () => context.push('/assistant'),
-        ),
+        // Sólo si el plan del centro lo incluye (el Básico no).
+        if (conAsistente) ...[
+          const SizedBox(height: 12),
+          _accesoTarjeta(
+            context,
+            icono: Icons.forum_outlined,
+            titulo: 'Asistente de orientación',
+            subtitulo: 'Cuenta tus síntomas y te sugiere una especialidad',
+            onTap: () => context.push('/assistant'),
+          ),
+        ],
       ];
 
   Widget _accesoTarjeta(

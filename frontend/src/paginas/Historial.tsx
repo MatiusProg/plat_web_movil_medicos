@@ -8,14 +8,21 @@ import { ErrorCatalogo, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
 const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
 
-/** US-25 — Todos los encuentros firmados del paciente, de todas las sucursales. */
+/** "26 atenciones firmadas en 2 sucursales", o que todavía no hay ninguna. */
+export function resumenHistorial(datos: DatosHistorial, vacio: string) {
+  const n = datos.encounters.length
+  const s = datos.branches.length
+  return n === 0 ? vacio
+    : `${n} ${n === 1 ? 'atención firmada' : 'atenciones firmadas'} en ${s} ${s === 1 ? 'sucursal' : 'sucursales'}, en una sola línea de tiempo.`
+}
+
+/** US-25 — Todos los encuentros firmados del paciente, vistos por su médico. */
 export function Historial() {
   const { pacienteId = '' } = useParams()
   const { token, puede } = useSesion()
   useTitulo('Historial clínico')
   const leer = puede('encounters.history.read')
   const [datos, setDatos] = useState<DatosHistorial | null>(null)
-  const [sucursal, setSucursal] = useState<string>('todas')
   const [error, setError] = useState<string | null>(null)
 
   const cargar = useCallback(async (signal?: AbortSignal) => {
@@ -28,26 +35,38 @@ export function Historial() {
     const c = new AbortController(); void cargar(c.signal); return () => c.abort()
   }, [leer, cargar])
 
-  if (!leer) return <main className="mx-auto max-w-4xl px-5 py-10 text-tinta-500">No tenés permiso para consultar historiales clínicos.</main>
+  if (!leer) return <main className="mx-auto max-w-4xl px-5 py-10 text-tinta-500">No tienes permiso para consultar historiales clínicos.</main>
   if (!datos) return <main className="mx-auto max-w-4xl space-y-4 px-5 py-10">
     {error ? <ErrorCatalogo mensaje={error} /> : <p role="status" className="text-sm text-tinta-500">Cargando historial…</p>}
-    <Link to="/atencion" className={SECONDARY}>← Volver a la agenda</Link>
+    <Link to="/atencion" className={SECONDARY}>Volver a la agenda</Link>
   </main>
 
-  const encuentros = datos.encounters.filter(e => sucursal === 'todas' || e.branch_name === sucursal)
   return <main className="mx-auto max-w-4xl space-y-6 px-5 py-8 sm:py-10">
     <div className="surgir">
-      <Link to="/atencion" className="text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">← Atención del día</Link>
+      <Link to="/atencion" className="text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">Atención del día</Link>
       <p className="mt-3 text-sm font-medium text-marca-700 dark:text-marca-400">Historia clínica</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{datos.patient.full_name}</h1>
-      <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">
-        {datos.encounters.length === 0 ? 'Todavía no tiene atenciones firmadas.'
-          : `${datos.encounters.length} ${datos.encounters.length === 1 ? 'atención firmada' : 'atenciones firmadas'} en ${datos.branches.length} ${datos.branches.length === 1 ? 'sucursal' : 'sucursales'}, en una sola línea de tiempo.`}
-      </p>
+      <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">{resumenHistorial(datos, 'Todavía no tiene atenciones firmadas.')}</p>
     </div>
+    <LineaDeTiempo datos={datos} />
+  </main>
+}
 
+/**
+ * La línea de tiempo de atenciones firmadas, con el filtro por sucursal.
+ *
+ * La comparten el médico (`Historial`) y el paciente (`MiHistoria`): es la
+ * misma historia, sólo cambia quién la lee. Las enmiendas van debajo de lo
+ * firmado, que nunca se reemplaza.
+ */
+export function LineaDeTiempo({ datos }: { datos: DatosHistorial }) {
+  const [sucursal, setSucursal] = useState<string>('todas')
+  const encuentros = datos.encounters.filter(e => sucursal === 'todas' || e.branch_name === sucursal)
+
+  return <>
     {datos.branches.length > 1 && <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por sucursal">
       {[{ name: 'todas', encounters: datos.encounters.length }, ...datos.branches].map(s => <button key={s.name} type="button"
+        aria-pressed={sucursal === s.name}
         className={sucursal === s.name ? 'rounded-xl bg-marca-600 px-4 py-2 text-sm font-semibold text-white' : SECONDARY}
         onClick={() => setSucursal(s.name)}>{s.name === 'todas' ? 'Todas' : s.name} · {s.encounters}</button>)}
     </div>}
@@ -74,5 +93,5 @@ export function Historial() {
         </article>
       </li>)}
     </ol>}
-  </main>
+  </>
 }

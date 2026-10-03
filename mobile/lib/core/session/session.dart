@@ -12,6 +12,8 @@
 /// invoca la pantalla de perfil de US-05, no la de auth—.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../api/client.dart';
@@ -130,6 +132,17 @@ class Session extends ChangeNotifier implements AuthContext {
 
   SessionStatus get status => _status;
   CurrentUser? get user => _user;
+
+  /// Qué incluye el plan del centro, de `/platform/my-panel/`.
+  ///
+  /// Sirve para no ofrecer lo que el plan no trae —el asistente en el plan
+  /// Básico, por ejemplo—, igual que hace la web. Sólo se esconde cuando el
+  /// backend dijo que **no**: mientras no se sepa se muestra, porque la
+  /// puerta real la pone el servidor (`require_feature`) y esconder de más
+  /// sin red sería peor.
+  Map<String, bool> _incluye = const {};
+  bool get incluyeAsistente => _incluye['asistente'] ?? true;
+  bool get incluyeExportarReportes => _incluye['exportar_reportes'] ?? true;
   bool get isSignedIn => _status == SessionStatus.signedIn;
   bool get cargandoUsuario => _cargandoUsuario;
 
@@ -207,6 +220,20 @@ class Session extends ChangeNotifier implements AuthContext {
       // `ApiClient.send()` (`onSessionExpired`); no hay que repetirlo acá.
       if (error.isOffline) return;
     }
+    await _cargarPlan();
+  }
+
+  Future<void> _cargarPlan() async {
+    try {
+      final data = await _me.get('/platform/my-panel/');
+      final incluye = data is Map<String, dynamic> ? data['incluye'] : null;
+      _incluye = incluye is Map<String, dynamic>
+          ? {for (final e in incluye.entries) if (e.value is bool) e.key: e.value as bool}
+          : const {};
+    } catch (_) {
+      // No saber qué incluye el plan no impide usar la aplicación.
+      _incluye = const {};
+    }
   }
 
   /// Guarda lo que devolvió el login. Lo llama la pantalla de US-02.
@@ -227,6 +254,10 @@ class Session extends ChangeNotifier implements AuthContext {
     }
 
     _setStatus(SessionStatus.signedIn);
+
+    // El perfil vino con el login, pero lo que incluye el plan no: se pide
+    // aparte y, cuando llega, la pantalla de inicio se redibuja.
+    unawaited(_cargarPlan().then((_) => notifyListeners()));
   }
 
   /// US-05 — Reemplaza el par de tokens sin cerrar la sesión.
@@ -319,6 +350,7 @@ class Session extends ChangeNotifier implements AuthContext {
     _access = null;
     _refresh = null;
     _user = null;
+    _incluye = const {};
     await _storage.clearTokens();
     _setStatus(SessionStatus.signedOut);
 
