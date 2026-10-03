@@ -8,6 +8,7 @@ import {
 import { ArmazonPlataforma } from '@/componentes/ArmazonPlataforma'
 
 import { Agendas } from '@/paginas/Agendas'
+import { Asistente } from '@/paginas/Asistente'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
 import { Bitacora } from '@/paginas/Bitacora'
 import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
@@ -237,6 +238,16 @@ export default function App() {
                             path="/buscar-profesionales"
                             element={
                                 <BuscarProfesionales />
+                            }
+                        />
+
+
+                        {/* US-31 / US-34: asistente de orientación */}
+
+                        <Route
+                            path="/asistente"
+                            element={
+                                <Asistente />
                             }
                         />
 

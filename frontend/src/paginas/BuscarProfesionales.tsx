@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import {
   buscarProfesionales,
@@ -37,7 +37,12 @@ export function BuscarProfesionales() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
 
   const [texto, setTexto] = useState('')
-  const [especialidad, setEspecialidad] = useState('')
+  // US-31: el asistente manda acá con `?especialidad=<id>` desde "Ver
+  // profesionales", para que la búsqueda llegue ya filtrada.
+  const [parametros] = useSearchParams()
+  const [especialidad, setEspecialidad] = useState(
+    () => parametros.get('especialidad') ?? '',
+  )
   const [sucursal, setSucursal] = useState('')
   const [pagina, setPagina] = useState(1)
 

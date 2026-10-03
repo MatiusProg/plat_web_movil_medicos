@@ -46,6 +46,7 @@ type ItemMenu = {
         | 'bitacora'
         | 'agendas'
         | 'catalogo'
+        | 'asistente'
         | 'perfil'
     /**
      * Quién ve la entrada.
@@ -165,6 +166,14 @@ const items: ItemMenu[] = [
         ruta: '/mis-fichas',
         icono: 'agendas',
         requiere: 'appointments.appointment.read',
+    },
+
+    // US-31 / US-34 — asistente de orientación.
+    {
+        etiqueta: 'Asistente',
+        ruta: '/asistente',
+        icono: 'asistente',
+        requiere: 'assistant.suggest.use',
     },
 
     // US-05 — edición de perfil. Sin `requiere`: todo el que entra tiene uno.
@@ -567,6 +576,27 @@ function IconoMenu({
                 <path d="M9 9h6" />
 
                 <path d="M9 13h4" />
+            </svg>
+        )
+    }
+
+
+    if (
+        tipo === 'asistente'
+    ) {
+        return (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+                className="h-[18px] w-[18px]"
+                aria-hidden="true"
+            >
+                <path d="M4 5h16v10H9l-5 4V5Z" />
+
+                <path d="M8 9h8M8 12h5" />
             </svg>
         )
     }
