@@ -162,9 +162,8 @@ class _UsersScreenState extends State<UsersScreen> {
               controller: _campo,
               onChanged: _alTeclear,
               decoration: const InputDecoration(
-                // "por correo" y no "por nombre": el backend filtra sólo con
-                // `email__icontains`, y prometer otra cosa confunde.
-                hintText: 'Buscar por correo…',
+                // El backend busca por correo, nombre, apellido o documento.
+                hintText: 'Buscar por nombre, documento o correo…',
                 prefixIcon: Icon(Icons.search),
               ),
             ),
@@ -195,7 +194,7 @@ class _UsersScreenState extends State<UsersScreen> {
               Text(
                 _campo.text.trim().isEmpty
                     ? 'Todavía no hay usuarios en tu organización.'
-                    : 'Ningún correo coincide con la búsqueda.',
+                    : 'Nadie coincide con la búsqueda.',
               )
             else ...[
               Text(
