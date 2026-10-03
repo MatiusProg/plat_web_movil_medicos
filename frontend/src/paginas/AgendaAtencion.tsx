@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { abrirAtencion, verAgenda, type Agenda, type FichaAgenda } from '@/api/atencion'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -36,6 +36,7 @@ export function AgendaAtencion() {
   const navegar = useNavigate()
   const leer = puede('encounters.encounter.read')
   const atender = puede('encounters.encounter.create')
+  const historial = puede('encounters.history.read')
   const [fecha, setFecha] = useState(hoy)
   const [agenda, setAgenda] = useState<Agenda | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -90,6 +91,7 @@ export function AgendaAtencion() {
               <p className="text-sm text-tinta-500">{[f.patient.document_number && `CI ${f.patient.document_number}`, anios !== null && `${anios} años`, f.branch_name].filter(Boolean).join(' · ')}</p>
             </div>
             <EstadoAtencion ficha={f} />
+            {historial && <Link to={`/historial/${f.patient.id}`} className="text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">Historial</Link>}
             {(atender || f.encounter) && <button type="button" className={SECONDARY} disabled={abriendo === f.id} onClick={() => void abrir(f)}>
               {abriendo === f.id ? 'Abriendo…' : !f.encounter ? 'Atender' : f.encounter.status === 'signed' ? 'Ver' : 'Continuar'}
             </button>}

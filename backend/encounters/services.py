@@ -162,3 +162,52 @@ def amend(encounter, user, section, text):
         text=text,
         author=user,
     )
+
+
+# --------------------------------------------------------------------------
+#  US-25 — Quién lee el historial longitudinal de un paciente
+# --------------------------------------------------------------------------
+
+# Los dos alcances posibles, con los mismos nombres que US-08.
+OWN = "own"
+PROFESSIONAL = "professional"
+
+
+def history_scope(user, patient):
+    """Qué alcance tiene ``user`` sobre el historial de ``patient``.
+
+    Devuelve ``OWN``, ``PROFESSIONAL`` o ``None``.
+
+    - **Propio:** el paciente, o el titular sobre un dependiente a su cargo
+      (US-07). Mismo criterio que los antecedentes de US-08.
+    - **Profesional:** un médico activo que **tiene o tuvo una ficha** con el
+      paciente. El permiso solo no alcanza: lo tiene todo médico del centro, y
+      con él cualquiera podría leer la historia de cualquier paciente. La
+      ficha es el vínculo de atención que lo justifica. Una vez que existe,
+      ve **todos** los encuentros firmados, de todos los médicos y todas las
+      sucursales: es lo que hace útil al historial.
+
+    El orden importa, como en US-08: un médico que además es paciente del
+    centro lee su propia historia como propia.
+    """
+    if patient is None:
+        return None
+
+    from patients.dependents import titular_de
+
+    if patient.user_id == user.id:
+        return OWN
+    if patient.guardian_id is not None:
+        titular = titular_de(user)
+        if titular is not None and patient.guardian_id == titular.id:
+            return OWN
+
+    profesional = practitioner_of(user)
+    if profesional is not None and Appointment.objects.filter(
+        organization=patient.organization,
+        patient=patient,
+        practitioner=profesional,
+        status__in=ATTENDABLE_STATUSES,
+    ).exists():
+        return PROFESSIONAL
+    return None

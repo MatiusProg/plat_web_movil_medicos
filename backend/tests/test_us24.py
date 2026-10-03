@@ -37,6 +37,8 @@ PERMISOS_MEDICO = [
     "encounters.encounter.read",
     "encounters.encounter.create",
     "encounters.encounter.amend",
+    # US-25: el rol Médico también lee el historial de quien atiende.
+    "encounters.history.read",
 ]
 LA_PAZ = ZoneInfo("America/La_Paz")
 
