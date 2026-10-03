@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" type="device">
+  <diagram id="c3-diagrama" name="C3 - Componentes (API REST)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" math="0" shadow="0">
+      <root>
+        <mxCell id="c3-raiz"/>
+        <mxCell id="c3-capa" parent="c3-raiz"/>
+        <mxCell id="c3-limite-backend" value="API REST — backend [Python 3.13 · Django 5.2 + DRF]" style="rounded=1;arcSize=1;fontFamily=Helvetica;html=0;whiteSpace=wrap;dashed=1;dashPattern=12 6;fillColor=none;strokeColor=#444444;strokeWidth=2;fontColor=#333333;fontSize=16;fontStyle=1;verticalAlign=bottom;align=left;spacingLeft=16;spacingBottom=10;" vertex="1" parent="c3-capa">
+          <mxGeometry x="600" y="40" width="1440" height="974" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-tenancy" value="tenancy" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="640" y="90" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-scheduling" value="scheduling" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1110" y="90" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-assistant" value="assistant" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1580" y="90" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rutas-api" value="Rutas de la API" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="640" y="239" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-appointments" value="appointments" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1110" y="239" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-accounts" value="accounts" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1580" y="239" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-audit-middleware" value="AuditTrailMiddleware" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="640" y="388" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-encounters" value="encounters" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1110" y="388" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-reporting" value="reporting" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1580" y="388" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-catalog" value="catalog" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="640" y="537" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-audit" value="audit" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1110" y="537" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-payments" value="payments" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1580" y="537" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-patients" value="patients" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="640" y="686" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-backups" value="backups" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1110" y="686" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-notifications" value="notifications" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1580" y="686" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-tenant-middleware" value="TenantMiddleware" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="640" y="835" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-acceso-datos" value="Acceso a datos" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#85BBF0;strokeColor=#5D82A8;fontColor=#000000;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1580" y="835" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-web-react" value="Aplicación web" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="20" y="88" width="380" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-movil-flutter" value="Aplicación móvil" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="20" y="358" width="380" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-gemini" value="Google Gemini API" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2300" y="90" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-correo" value="Servidor de correo" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2300" y="314" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-stripe" value="Stripe" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2300" y="537" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-fcm" value="Firebase Cloud Messaging" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2300" y="686" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-base-datos" value="Base de datos" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=18;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=34;spacing=4;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2300" y="851" width="420" height="127" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-tenancy-texto" value="[App Django · tenancy/]&#xa;Organizaciones, planes, suscripciones y métricas" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="654" y="131" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-scheduling-texto" value="[App Django · scheduling/]&#xa;Agendas, bloqueos y disponibilidad" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1124" y="131" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-assistant-texto" value="[App Django · pgvector + google-genai]&#xa;Asistente RAG: urgencias, recuperación y redacción" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1594" y="131" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rutas-api-texto" value="[Django · config/urls.py]&#xa;Monta /api/{app}/ y /api/health/" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="654" y="280" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-appointments-texto" value="[App Django · appointments/]&#xa;Reserva, cancelación y reprogramación de fichas" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1124" y="280" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-accounts-texto" value="[App Django · SimpleJWT + Argon2]&#xa;Usuarios, roles, login JWT y recuperación de contraseña" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1594" y="280" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-audit-middleware-texto" value="[Middleware · audit/middleware.py]&#xa;Asienta cada petición en la bitácora" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="654" y="429" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-encounters-texto" value="[App Django · encounters/]&#xa;Registro de la atención e historial clínico" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1124" y="429" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-reporting-texto" value="[App Django · openpyxl + reportlab]&#xa;Reportes a Excel, PDF, HTML, CSV y correo" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1594" y="429" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-catalog-texto" value="[App Django · catalog/]&#xa;Sucursales, especialidades, profesionales y servicios" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="654" y="578" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-audit-texto" value="[App Django · audit/]&#xa;Consulta de la bitácora de auditoría" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1124" y="578" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-payments-texto" value="[App Django · Stripe]&#xa;Pago en línea, webhook firmado y comprobante QR" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1594" y="578" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-patients-texto" value="[App Django · patients/]&#xa;Pacientes, dependientes y antecedentes" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="654" y="727" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-backups-texto" value="[App Django · backups/]&#xa;Copia y restauración en JSON por organización" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1124" y="727" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-notifications-texto" value="[App Django · Firebase Admin]&#xa;Notificaciones push al móvil" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1594" y="727" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-tenant-middleware-texto" value="[Middleware · tenancy/middleware.py]&#xa;Abre la transacción y fija el inquilino (RLS)" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="654" y="876" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-acceso-datos-texto" value="[ORM de Django · psycopg 3 · pgvector]&#xa;Consultas SQL bajo el contexto del inquilino" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#000000;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="1594" y="876" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-web-react-texto" value="[React + Vite + TypeScript]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="34" y="130" width="352" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-movil-flutter-texto" value="[Flutter / Dart]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="34" y="400" width="352" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-gemini-texto" value="[Sistema externo]&#xa;Embeddings y redacción del asistente" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2314" y="131" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-correo-texto" value="[Sistema externo · SMTP]&#xa;Recuperación de contraseña, comprobantes y reportes" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2314" y="354" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-stripe-texto" value="[Sistema externo]&#xa;Cobro en línea de la ficha y webhook firmado" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2314" y="578" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-fcm-texto" value="[Sistema externo]&#xa;Notificaciones push al móvil" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2314" y="727" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-base-datos-texto" value="[PostgreSQL 16 + pgvector · Supabase]&#xa;Tablas con RLS y vectores del asistente" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c3-capa">
+          <mxGeometry x="2318" y="912" width="384" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-web-react-rutas-api" value="HTTPS/JSON + JWT" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-web-react" target="c3-rutas-api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-movil-flutter-rutas-api" value="HTTPS/JSON + JWT" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-movil-flutter" target="c3-rutas-api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-assistant-gemini" value="embeddings y chat&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-assistant" target="c3-gemini">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-accounts-correo" value="correo de recuperación" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-accounts" target="c3-correo">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-reporting-correo" value="envía el reporte adjunto" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-reporting" target="c3-correo">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-payments-stripe" value="cobros y webhook firmado" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-payments" target="c3-stripe">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-notifications-fcm" value="envía push" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-notifications" target="c3-fcm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3-rel-acceso-datos-base-datos" value="lee y escribe&#xa;[SQL/TLS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c3-capa" source="c3-acceso-datos" target="c3-base-datos">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

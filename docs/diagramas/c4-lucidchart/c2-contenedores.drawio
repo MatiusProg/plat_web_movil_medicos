@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" type="device">
+  <diagram id="c2-diagrama" name="C2 - Contenedores">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" math="0" shadow="0">
+      <root>
+        <mxCell id="c2-raiz"/>
+        <mxCell id="c2-capa" parent="c2-raiz"/>
+        <mxCell id="c2-limite-sistema" value="Plataforma Médica Multi-inquilino [Sistema de software]" style="rounded=1;arcSize=1;fontFamily=Helvetica;html=0;whiteSpace=wrap;dashed=1;dashPattern=12 6;fillColor=none;strokeColor=#444444;strokeWidth=2;fontColor=#333333;fontSize=16;fontStyle=1;verticalAlign=bottom;align=left;spacingLeft=16;spacingBottom=10;" vertex="1" parent="c2-capa">
+          <mxGeometry x="100" y="271" width="2160" height="912" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-recepcionista" value="Recepcionista" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=20;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="140" y="20" width="360" height="89" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-medico" value="Médico (profesional)" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=20;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="560" y="20" width="360" height="89" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-paciente" value="Paciente (titular y&#xa;dependientes)" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=30;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="980" y="20" width="360" height="131" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-admin-org" value="Administrador de&#xa;Organización" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=30;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1400" y="20" width="360" height="131" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-superadmin" value="Superadministrador de&#xa;Plataforma" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=30;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1820" y="20" width="360" height="131" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-web-react" value="Aplicación web" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="380" y="391" width="440" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-movil-flutter" value="Aplicación móvil" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1560" y="391" width="440" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-api-django" value="API REST" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="960" y="709" width="460" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-base-datos" value="Base de datos" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=18;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=34;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1010" y="957" width="360" height="146" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-fcm" value="Firebase Cloud Messaging" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2440" y="371" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-gemini" value="Google Gemini API" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2440" y="619" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-stripe" value="Stripe" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2440" y="929" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-correo" value="Servidor de correo" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2440" y="1239" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-nota" value="Las líneas sin etiqueta entre una persona y una aplicación son asociaciones «usa». Cada rol entra a la web o al móvil según los permisos de su rol." style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=13;fontColor=#444444;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2300" y="30" width="560" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-recepcionista-texto" value="[Persona]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="212" y="68" width="216" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-medico-texto" value="[Persona]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="632" y="68" width="216" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-paciente-texto" value="[Persona]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1052" y="100" width="216" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-admin-org-texto" value="[Persona]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1472" y="100" width="216" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-superadmin-texto" value="[Persona]" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1892" y="100" width="216" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-web-react-texto" value="[React 19 + Vite + TypeScript]&#xa;SPA de administración, recepción, médicos y pacientes&#xa;(Railway)" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="394" y="432" width="412" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-movil-flutter-texto" value="[Flutter / Dart · APK Android]&#xa;Reserva y pago, comprobante QR, asistente y paneles por rol" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1574" y="432" width="412" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-api-django-texto" value="[Python 3.13 · Django 5.2 + DRF]&#xa;Lógica de negocio, JWT, multi-inquilino, pagos y asistente RAG&#xa;(Railway)" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="974" y="750" width="432" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-base-datos-texto" value="[PostgreSQL 16 + pgvector]&#xa;Datos con RLS por organización y vectores del&#xa;asistente (Supabase)" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="1028" y="1018" width="324" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-fcm-texto" value="[Sistema externo]&#xa;Notificaciones push al móvil" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2454" y="412" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-gemini-texto" value="[Sistema externo]&#xa;Embeddings y redacción del asistente" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2454" y="660" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-stripe-texto" value="[Sistema externo]&#xa;Cobro en línea de la ficha y webhook firmado" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2454" y="970" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-correo-texto" value="[Sistema externo · SMTP]&#xa;Recuperación de contraseña, comprobantes y reportes" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c2-capa">
+          <mxGeometry x="2454" y="1280" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-recepcionista-web-react" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-recepcionista" target="c2-web-react">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-recepcionista-movil-flutter" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-recepcionista" target="c2-movil-flutter">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-medico-web-react" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-medico" target="c2-web-react">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-medico-movil-flutter" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-medico" target="c2-movil-flutter">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-paciente-web-react" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-paciente" target="c2-web-react">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-paciente-movil-flutter" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-paciente" target="c2-movil-flutter">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-admin-org-web-react" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-admin-org" target="c2-web-react">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-admin-org-movil-flutter" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-admin-org" target="c2-movil-flutter">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-superadmin-web-react" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-superadmin" target="c2-web-react">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-superadmin-movil-flutter" value="" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-superadmin" target="c2-movil-flutter">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-web-react-api-django" value="llama a la API&#xa;[HTTPS/JSON + JWT]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-web-react" target="c2-api-django">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-movil-flutter-api-django" value="llama a la API&#xa;[HTTPS/JSON + JWT]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-movil-flutter" target="c2-api-django">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-api-django-base-datos" value="lee y escribe&#xa;[SQL/TLS · RLS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-api-django" target="c2-base-datos">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-api-django-gemini" value="embeddings y chat&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-api-django" target="c2-gemini">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-api-django-stripe" value="cobros y webhook firmado&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-api-django" target="c2-stripe">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-api-django-correo" value="envía correos&#xa;[SMTP/TLS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-api-django" target="c2-correo">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-api-django-fcm" value="envía push&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-api-django" target="c2-fcm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2-rel-fcm-movil-flutter" value="entrega notificaciones push" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c2-capa" source="c2-fcm" target="c2-movil-flutter">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
