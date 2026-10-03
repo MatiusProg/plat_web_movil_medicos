@@ -13,11 +13,16 @@ import 'core/router/app_router.dart';
 import 'core/session/session.dart';
 import 'core/session/session_scope.dart';
 import 'core/theme/theme.dart';
+import 'core/theme/theme_controller.dart';
 
 class CentroMedicoApp extends StatefulWidget {
-  const CentroMedicoApp({super.key, required this.session});
+  const CentroMedicoApp({super.key, required this.session, required this.tema});
 
   final Session session;
+
+  /// La elección de claro, oscuro o "como el sistema" (ver
+  /// `core/theme/theme_controller.dart`).
+  final ThemeController tema;
 
   @override
   State<CentroMedicoApp> createState() => _CentroMedicoAppState();
@@ -30,15 +35,24 @@ class _CentroMedicoAppState extends State<CentroMedicoApp> {
   Widget build(BuildContext context) {
     return SessionScope(
       session: widget.session,
-      child: MaterialApp.router(
-        title: 'Centro médico',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        // Sigue el ajuste del teléfono, igual que el frontend web sigue el del
-        // sistema con `prefers-color-scheme`.
-        themeMode: ThemeMode.system,
-        routerConfig: _router,
+      child: ThemeScope(
+        controller: widget.tema,
+        // Sólo `MaterialApp` se reconstruye al cambiar el tema; el router es
+        // el mismo objeto, así que la pila de navegación no se pierde.
+        child: ValueListenableBuilder<ThemeMode>(
+          valueListenable: widget.tema,
+          builder: (context, modo, _) => MaterialApp.router(
+            title: 'Centro médico',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            // Por omisión sigue el ajuste del teléfono, igual que el frontend
+            // web con `prefers-color-scheme`; la persona puede fijarlo en su
+            // perfil o desde el menú.
+            themeMode: modo,
+            routerConfig: _router,
+          ),
+        ),
       ),
     );
   }

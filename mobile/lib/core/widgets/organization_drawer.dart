@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 
 import '../session/session_scope.dart';
 import '../theme/theme.dart';
+import 'theme_selector.dart';
 
 /// Una sección del menú: qué permiso la habilita y a dónde lleva.
 ///
@@ -185,6 +186,8 @@ class OrganizationDrawer extends StatelessWidget {
               context.push('/profile');
             },
           ),
+          // Acceso rápido al tema; el mismo selector está en el perfil.
+          const ThemeDrawerTile(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar sesión'),

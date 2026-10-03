@@ -24,6 +24,7 @@ import 'package:go_router/go_router.dart';
 
 import '../session/session_scope.dart';
 import '../theme/theme.dart';
+import 'theme_selector.dart';
 
 class PlatformDrawer extends StatelessWidget {
   const PlatformDrawer({super.key});
@@ -89,6 +90,8 @@ class PlatformDrawer extends StatelessWidget {
               context.push('/profile');
             },
           ),
+          // Acceso rápido al tema; el mismo selector está en el perfil.
+          const ThemeDrawerTile(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar sesión'),

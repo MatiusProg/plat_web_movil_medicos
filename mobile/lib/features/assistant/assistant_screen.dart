@@ -307,68 +307,81 @@ class _BurbujaAsistente extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // La burbuja es un fondo claro fijo (`ink100`) también en modo oscuro.
+    // Con el tema oscuro, lo que no lleva color propio —el subtítulo de cada
+    // fragmento, la flecha del desplegable, el ícono de la cita— salía en
+    // gris claro sobre gris claro. Se le da el tema claro a todo el contenido.
+    final theme = AppTheme.light;
     final especialidad = respuesta.specialtyName;
 
-    return _Burbuja(
-      color: Marca.ink100,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (respuesta.emergency) const _AlertaEmergencia(),
-          if (respuesta.answer.isNotEmpty)
-            Text(respuesta.answer, style: const TextStyle(color: Marca.ink900)),
-          // Con una urgencia no se ofrece reservar: se deriva (US-34).
-          if (!respuesta.emergency && especialidad != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Especialidad sugerida: $especialidad',
-              style: theme.textTheme.titleSmall?.copyWith(color: Marca.ink900),
-            ),
-            if (respuesta.specialtyId != null)
-              TextButton.icon(
-                onPressed: () =>
-                    context.push('/search?specialty=${respuesta.specialtyId}'),
-                icon: const Icon(Icons.search),
-                label: const Text('Ver profesionales'),
+    return Theme(
+      data: theme,
+      child: _Burbuja(
+        color: Marca.ink100,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (respuesta.emergency) const _AlertaEmergencia(),
+            if (respuesta.answer.isNotEmpty)
+              Text(
+                respuesta.answer,
+                style: const TextStyle(color: Marca.ink900),
+              ),
+            // Con una urgencia no se ofrece reservar: se deriva (US-34).
+            if (!respuesta.emergency && especialidad != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Especialidad sugerida: $especialidad',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: Marca.ink900,
+                ),
+              ),
+              if (respuesta.specialtyId != null)
+                TextButton.icon(
+                  onPressed: () => context.push(
+                    '/search?specialty=${respuesta.specialtyId}',
+                  ),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Ver profesionales'),
+                ),
+            ],
+            if (respuesta.fragments.isNotEmpty)
+              Theme(
+                data: theme.copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: Text(
+                    'En qué se basa (${respuesta.fragments.length})',
+                    style: const TextStyle(fontSize: 13, color: Marca.ink500),
+                  ),
+                  children: [
+                    for (final fragmento in respuesta.fragments)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.format_quote, size: 18),
+                        title: Text(
+                          fragmento.text,
+                          style: const TextStyle(color: Marca.ink800),
+                        ),
+                        subtitle: fragmento.source == null
+                            ? null
+                            : Text(fragmento.source!),
+                      ),
+                  ],
+                ),
+              ),
+            if (respuesta.isExample)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  'Respuesta de ejemplo',
+                  style: TextStyle(fontSize: 11, color: Marca.waiting),
+                ),
               ),
           ],
-          if (respuesta.fragments.isNotEmpty)
-            Theme(
-              data: theme.copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: EdgeInsets.zero,
-                title: Text(
-                  'En qué se basa (${respuesta.fragments.length})',
-                  style: const TextStyle(fontSize: 13, color: Marca.ink500),
-                ),
-                children: [
-                  for (final fragmento in respuesta.fragments)
-                    ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.format_quote, size: 18),
-                      title: Text(
-                        fragmento.text,
-                        style: const TextStyle(color: Marca.ink800),
-                      ),
-                      subtitle: fragmento.source == null
-                          ? null
-                          : Text(fragmento.source!),
-                    ),
-                ],
-              ),
-            ),
-          if (respuesta.isExample)
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
-              child: Text(
-                'Respuesta de ejemplo',
-                style: TextStyle(fontSize: 11, color: Marca.waiting),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
