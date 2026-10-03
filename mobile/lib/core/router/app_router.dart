@@ -513,6 +513,14 @@ class _HomeScreen extends StatelessWidget {
             onPressed: () => context.push('/profile'),
             icon: const Icon(Icons.account_circle_outlined),
           ),
+          // Salir a mano, sin pasar por el perfil: el paciente no tiene menú
+          // lateral, y bajar hasta el fondo del perfil para cerrar sesión era
+          // un rodeo. Sigue también en el perfil y en los menús del personal.
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            onPressed: session.signOut,
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
       body: ListView(
