@@ -153,6 +153,7 @@ export function Panel() {
 
   if (!usuario) return null
   const nombre = usuario.full_name.split(' ')[0]
+  const esPaciente = usuario.roles.some(r => r.code === 'patient')
 
   // Accesos rápidos: sólo lo que el rol puede hacer, con el mismo permiso
   // que pide la barra lateral para esa pantalla.
@@ -160,6 +161,7 @@ export function Panel() {
     { a: '/atencion', texto: 'Atención del día', ok: puede('encounters.encounter.read') },
     { a: '/buscar-profesionales', texto: 'Reservar una ficha', ok: puede('appointments.appointment.create') },
     { a: '/mis-fichas', texto: 'Mis fichas', ok: puede('appointments.appointment.read') },
+    { a: '/mi-historia', texto: 'Mi historia clínica', ok: esPaciente && puede('encounters.history.read') },
     { a: '/asistente', texto: 'Consultar al asistente', ok: puede('assistant.suggest.use') && datos?.incluye?.asistente === true },
     { a: '/usuarios', texto: 'Usuarios', ok: puede('users.user.read') },
     { a: '/respaldos', texto: 'Copias de seguridad', ok: puede('backups.backup.create') },

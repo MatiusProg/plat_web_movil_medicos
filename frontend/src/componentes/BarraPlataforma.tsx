@@ -58,6 +58,7 @@ type ItemMenu = {
         | 'estetoscopio'
         | 'servicio'
         | 'respaldo'
+        | 'historia'
     /**
      * Quién ve la entrada.
      *
@@ -67,10 +68,14 @@ type ItemMenu = {
      * `organization_id` NULL. Cualquier otro valor es un código de permiso y
      * se consulta con `puede`. Sin `requiere`, la entrada la ve todo el mundo.
      *
+     * `'paciente'` es para lo que sólo tiene sentido si la persona es
+     * paciente del centro: el médico también tiene `encounters.history.read`,
+     * pero "mi historia" de alguien que no es paciente estaría vacía.
+     *
      * Esconder una entrada no autoriza nada: la puerta real la pone el
      * backend en cada endpoint.
      */
-    requiere?: 'plataforma' | string
+    requiere?: 'plataforma' | 'paciente' | string
     /** El grupo del menú: ordena las opciones por lo que la persona va a hacer. */
     seccion: Seccion
     /**
@@ -222,6 +227,15 @@ const items: ItemMenu[] = [
         requiere: 'appointments.appointment.read',
     },
 
+    // US-25 — la historia clínica, vista por el propio paciente.
+    {
+        etiqueta: 'Mi historia clínica',
+        ruta: '/mi-historia',
+        seccion: 'Atención',
+        icono: 'historia',
+        requiere: 'paciente',
+    },
+
     // US-31 / US-34 — asistente de orientación.
     {
         etiqueta: 'Asistente',
@@ -293,6 +307,9 @@ export function BarraPlataforma({
         if (item.requierePlan && funciones && funciones[item.requierePlan] === false) return false
         if (!item.requiere) return true
         if (item.requiere === 'plataforma') return Boolean(usuario?.is_platform_admin)
+        if (item.requiere === 'paciente') {
+            return Boolean(usuario?.roles?.some((r) => r.code === 'patient')) && puede('encounters.history.read')
+        }
         return puede(item.requiere)
     })
 
@@ -734,6 +751,9 @@ function IconoMenu({
     )
     if (tipo === 'servicio') return (
         <svg {...trazo}><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" /><path d="M7.5 15h9" /></svg>
+    )
+    if (tipo === 'historia') return (
+        <svg {...trazo}><path d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z" /><path d="M9 3h6v3H9zM9 11h6M9 15h4" /></svg>
     )
     if (tipo === 'respaldo') return (
         <svg {...trazo}><path d="M7 18a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 10.5a3.8 3.8 0 0 1-1 7.5H7Z" /><path d="M12 11v5M9.8 13.8 12 16l2.2-2.2" /></svg>
