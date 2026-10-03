@@ -81,6 +81,21 @@ export function ArmazonPlataforma() {
     }, [pathname])
 
 
+    // Ctrl+B (⌘+B en Mac) pliega y despliega la barra, como en los editores.
+    // No se dispara mientras se escribe en un campo: ahí Ctrl+B es otra cosa.
+    useEffect(() => {
+        const alPresionar = (evento: KeyboardEvent) => {
+            if (evento.key.toLowerCase() !== 'b' || !(evento.ctrlKey || evento.metaKey)) return
+            const destino = evento.target as HTMLElement | null
+            if (destino?.closest('input, textarea, select, [contenteditable="true"]')) return
+            evento.preventDefault()
+            setPlegada((previa) => !previa)
+        }
+        window.addEventListener('keydown', alPresionar)
+        return () => window.removeEventListener('keydown', alPresionar)
+    }, [])
+
+
     // Escape cierra el cajón. Es lo que espera cualquiera que use teclado, y
     // cuesta cuatro líneas.
     useEffect(() => {
@@ -124,7 +139,7 @@ export function ArmazonPlataforma() {
                     // El desplazamiento sólo existe a partir de `md`: en móvil
                     // la barra flota sobre el contenido y no le quita ancho.
                     plegada
-                        ? 'md:pl-[4.5rem]'
+                        ? 'md:pl-[4.25rem]'
                         : 'md:pl-64',
                 ].join(' ')}
             >

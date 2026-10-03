@@ -3,7 +3,7 @@ import { ErrorApi } from '@/api/tipos'
 
 export const PANEL = 'rounded-2xl border border-tinta-200 bg-white p-5 dark:border-tinta-800 dark:bg-tinta-900/50'
 export const INPUT = 'w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[0.9375rem] text-tinta-800 outline-none transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100'
-export const SECONDARY = 'inline-flex items-center justify-center gap-2 rounded-xl border border-tinta-300 px-4 py-2.5 text-sm font-semibold text-tinta-700 transition hover:bg-tinta-100 disabled:opacity-50 dark:border-tinta-700 dark:text-tinta-200 dark:hover:bg-tinta-800'
+export const SECONDARY = 'inline-flex items-center justify-center gap-2 rounded-lg border border-tinta-300 bg-white px-4 py-2.5 text-sm font-semibold dark:bg-transparent text-tinta-700 transition hover:bg-tinta-100 disabled:opacity-50 dark:border-tinta-700 dark:text-tinta-200 dark:hover:bg-tinta-800'
 export const DANGER = 'rounded-xl px-3 py-2.5 text-sm font-medium text-alerta-600 hover:bg-alerta-50 disabled:opacity-50 dark:text-alerta-500 dark:hover:bg-alerta-500/10'
 
 export function mensajeError(error: unknown): string {
@@ -30,12 +30,12 @@ export function IconoCatalogo({ nombre, className='size-5' }: { nombre:string; c
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[nombre]}</svg>
 }
 
-export function CabeceraCatalogo({titulo,descripcion,children,historia='US-12'}:{
-  titulo:string;descripcion:string;children?:ReactNode;historia?:string
+export function CabeceraCatalogo({titulo,descripcion,children}:{
+  titulo:string;descripcion:string;children?:ReactNode
 }) {
   return <div className="surgir flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico · {historia}</p>
+      <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{titulo}</h1>
       <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">{descripcion}</p>
     </div>{children}

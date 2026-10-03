@@ -38,7 +38,7 @@ export function Historial() {
   return <main className="mx-auto max-w-4xl space-y-6 px-5 py-8 sm:py-10">
     <div className="surgir">
       <Link to="/atencion" className="text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">← Atención del día</Link>
-      <p className="mt-3 text-sm font-medium text-marca-700 dark:text-marca-400">Historia clínica · US-25</p>
+      <p className="mt-3 text-sm font-medium text-marca-700 dark:text-marca-400">Historia clínica</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{datos.patient.full_name}</h1>
       <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">
         {datos.encounters.length === 0 ? 'Todavía no tiene atenciones firmadas.'

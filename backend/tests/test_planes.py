@@ -273,3 +273,21 @@ def test_sin_plan_vigente_no_hay_nada_habilitado(org_a, admin_a):
         Subscription.objects.filter(organization=org_a).update(status=Subscription.Status.CANCELLED)
     respuesta = cliente(admin_a).post(reverse("catalog:branch-list"), {"name": "X"}, format="json")
     assert es_limite_de_plan(respuesta)
+
+
+# --------------------------------------------------------------------------
+#  Lo que la interfaz consulta para no ofrecer lo que el plan no incluye
+# --------------------------------------------------------------------------
+
+def test_mi_plan_dice_que_incluye_el_plan_del_centro(org_a, plans, user_a):
+    con_plan(org_a, plans, "basic")
+    datos = cliente(user_a).get(reverse("tenancy:my-plan")).json()
+    assert datos["code"] == "basic"
+    assert datos["features"]["ai_chatbot"] is False
+
+
+def test_mi_plan_sin_suscripcion(org_a, user_a):
+    with platform_admin_context():
+        Subscription.objects.filter(organization=org_a).update(status=Subscription.Status.CANCELLED)
+    datos = cliente(user_a).get(reverse("tenancy:my-plan")).json()
+    assert datos == {"code": None, "name": None, "features": {}}
