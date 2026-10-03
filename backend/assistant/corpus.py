@@ -207,8 +207,8 @@ def policy_fragments(organization) -> list[str]:
     """
     horas = organization.cancellation_notice_hours
     return [
-        f"Política de cancelación de {organization.name}: podés cancelar tu "
-        f"ficha; si avisás con al menos {horas} horas de anticipación se te "
+        f"Política de cancelación de {organization.name}: puedes cancelar tu "
+        f"ficha; si avisas con al menos {horas} horas de anticipación se te "
         f"devuelve el pago, y con menos aviso se cancela igual pero el pago "
         f"no se devuelve. Reprogramar una ficha para otro horario no tiene "
         f"ese plazo.",

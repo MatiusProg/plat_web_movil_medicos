@@ -25,6 +25,7 @@ import '../../features/organizations/register_organization_screen.dart';
 import '../../features/plans/plan_form_screen.dart';
 import '../../features/plans/plans_api.dart';
 import '../../features/plans/plans_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/search/specialties_screen.dart';
 import '../../features/subscriptions/change_plan_screen.dart';
@@ -66,6 +67,7 @@ class Routes {
   static const String dependentForm = 'dependent-form';
   static const String history = 'history';
   static const String assistant = 'assistant';
+  static const String profile = 'profile';
   static const String platformDashboard = 'platform-dashboard';
   static const String platformOrganizations = 'platform-organizations';
   static const String platformOrganizationForm = 'platform-organization-form';
@@ -328,6 +330,14 @@ GoRouter buildRouter(Session session) {
         ),
       ),
 
+      // ---------- US-05 (Karen): edición de perfil -----------------------
+      // Para todos, no sólo pacientes: todo el que entra tiene un perfil.
+      GoRoute(
+        path: '/profile',
+        name: Routes.profile,
+        builder: (context, state) => const ProfileScreen(),
+      ),
+
       // ---------- US-15 (Alexander): disponibilidad consolidada ---------
       GoRoute(
         path: '/professionals/:id/availability',
@@ -474,10 +484,12 @@ class _HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Centro médico'),
         actions: [
+          // US-05: el cierre de sesión vive en el perfil. Hasta que la
+          // historia se entregó, acá había un botón provisional de salir.
           IconButton(
-            tooltip: 'Cerrar sesión',
-            onPressed: session.signOut,
-            icon: const Icon(Icons.logout),
+            tooltip: 'Mi perfil',
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
       ),

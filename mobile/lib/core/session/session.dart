@@ -229,6 +229,22 @@ class Session extends ChangeNotifier implements AuthContext {
     _setStatus(SessionStatus.signedIn);
   }
 
+  /// US-05 — Reemplaza el par de tokens sin cerrar la sesión.
+  ///
+  /// El cambio de contraseña manda a la lista negra todos los refrescos del
+  /// usuario y devuelve un par nuevo para la sesión que hizo el cambio. Hay
+  /// que guardar los dos: con el refresco viejo, la próxima renovación falla
+  /// y la sesión se cierra sola, que es justo lo que la historia no quiere.
+  Future<void> replaceTokens({
+    required String access,
+    required String refresh,
+  }) async {
+    _access = access;
+    _refresh = refresh;
+    await _storage.saveTokens(access: access, refresh: refresh);
+    notifyListeners();
+  }
+
   /// El slug elegido antes de autenticar, para que el interceptor lo mande.
   ///
   /// El formulario de ingreso lo necesita: sin `X-Organization`, el backend no
