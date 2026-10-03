@@ -76,6 +76,12 @@ class Action:
     SERVICE_UPDATE = "catalog.service.update"
     SERVICE_DEACTIVATE = "catalog.service.deactivate"
 
+    # ---------- Historia clínica — US-24 --------------------------------
+    # Como en el asistente: se audita el hecho, nunca el texto clínico.
+    ENCOUNTER_OPEN = "encounter.open"
+    ENCOUNTER_SIGN = "encounter.sign"
+    ENCOUNTER_AMEND = "encounter.amend"
+
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
     BACKUP_DOWNLOAD = "backup.download"
@@ -84,7 +90,8 @@ class Action:
     # ---------- Sprints siguientes -------------------------------------
     # Declarados acá porque el punto (a) los enumera como acciones sensibles.
     # Los escribe el módulo que los provoque, cuando exista.
-    RECORD_READ = "record.read"              # historia clínica (Sprint 3)
+    # Lo escribe US-24 cada vez que un profesional abre un encuentro clínico.
+    RECORD_READ = "record.read"
     APPOINTMENT_CANCEL = "appointment.cancel"  # anulación de ficha (Sprint 2)
     PAYMENT_MOVEMENT = "payment.movement"      # movimiento de pago (Sprint 2)
 
@@ -115,6 +122,9 @@ LABELS = {
     Action.SERVICE_CREATE: "Servicio registrado",
     Action.SERVICE_UPDATE: "Servicio editado",
     Action.SERVICE_DEACTIVATE: "Servicio desactivado",
+    Action.ENCOUNTER_OPEN: "Atención iniciada sobre una ficha",
+    Action.ENCOUNTER_SIGN: "Encuentro clínico firmado",
+    Action.ENCOUNTER_AMEND: "Enmienda agregada a un encuentro firmado",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",

@@ -201,11 +201,14 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     del ABM de servicios —``read``, ``create`` y ``update``— y
     ``assistant.catalog.reindex``, para que lo cargado llegue al asistente
     desde la web.
+
+    US-24 suma tres en ``encounters/0003_seed_permissions``: ``read``,
+    ``create`` y ``amend`` del encuentro clínico, sólo para el rol Médico.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()
