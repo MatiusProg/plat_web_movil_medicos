@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" type="device">
+  <diagram id="c4-diagrama" name="C4 - Código (assistant)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" math="0" shadow="0">
+      <root>
+        <mxCell id="c4-raiz"/>
+        <mxCell id="c4-capa" parent="c4-raiz"/>
+        <mxCell id="c4-componente-assistant" value="assistant  [Componente · App Django · backend/assistant/]  —  US-31, US-32, US-34" style="rounded=1;arcSize=1;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;fillOpacity=35;strokeColor=#6C8EBF;strokeWidth=2;fontColor=#1F3A5F;fontSize=18;fontStyle=1;verticalAlign=top;align=left;spacingLeft=16;spacingTop=12;" vertex="1" parent="c4-capa">
+          <mxGeometry x="350" y="220" width="2619" height="1450" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-generation" value="• answer(question, fragments, specialty_name)&#xa;• answer_administrative(question, fragments)&#xa;• _call_model(question, context, *, system_prompt)&#xa;• _grounded_fallback(specialty_name)&#xa;• _administrative_fallback(fragments)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="300" width="373" height="179" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-triage" value="• check(question) → TriageResult&#xa;• TriageResult (dataclass)&#xa;• EMERGENCY_SIGNALS / COMBINED_SIGNALS" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="549" width="373" height="141" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-retrieval" value="• retrieve(organization, question, *, limit=5)&#xa;• rank_specialties(fragments)&#xa;• is_administrative(fragment)&#xa;• _source_names(organization, fragments)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="760" width="373" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-indexing" value="• index_specialties(organization, *, stdout)&#xa;• index_administrative(organization, *, stdout)&#xa;• fragments_for(specialty)&#xa;• split_into_fragments(name, description)&#xa;• medical_reference_enabled()" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="990" width="373" height="179" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-views" value="• SuggestView.post(request)&#xa;• SuggestView._administrativa(request, question, fragments)&#xa;• _emergency_response(generated_by)&#xa;• _audit(request, *, emergency_layer, specialty_suggested, kind)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1102" y="300" width="453" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-reindex-views" value="• ReindexView.post(request)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1102" y="760" width="453" height="103" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-urls" value="• path(&quot;suggest/&quot;, SuggestView)&#xa;• path(&quot;reindex/&quot;, ReindexView)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="300" width="402" height="122" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-permissions" value="• CanUseAssistant.has_permission(request, view)&#xa;• CanReindexCatalog (assistant.catalog.reindex)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="492" width="402" height="122" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-serializers" value="• SuggestRequestSerializer&#xa;• FragmentSerializer&#xa;• SpecialtySuggestionSerializer" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="684" width="402" height="141" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-embed-catalog" value="• Command.add_arguments(parser)&#xa;• Command.handle(*args, **opciones)&#xa;• Command._dry_run(organizacion)&#xa;• Command._indexar(organizacion, modelo)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="990" width="402" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-embeddings" value="• embed_query(text)&#xa;• embed_documents(texts)&#xa;• active_model_name()&#xa;• normalize_text(text)&#xa;• _gemini_embeddings(texts, task_type)&#xa;• _gemini_client()&#xa;• _local_embedding(text)&#xa;• _tokens(text)&#xa;• _l2_normalize(vector)&#xa;• _check_dimensions(vector)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="589" width="391" height="274" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-models" value="• CatalogFragment (tabla assistant_catalog_fragments)&#xa;• CatalogFragment.__str__()&#xa;• SourceType: specialty, branch, service, policy&#xa;• EMBEDDING_DIMENSIONS = 768" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="933" width="391" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-medical-reference" value="• reference_texts(specialty_name)&#xa;• find_reference(specialty_name)&#xa;• _index()" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="1163" width="391" height="141" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-corpus" value="• administrative_sources(organization)&#xa;• branch_fragments(branch, hours, staff)&#xa;• service_fragments(service)&#xa;• policy_fragments(organization)&#xa;• describe_hours(hours)&#xa;• format_price(price, currency)&#xa;• _hhmm(value)&#xa;• _join(items)" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2E6295;fontColor=#000000;fontSize=13;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=66;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="1374" width="391" height="236" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-audit-services" value="audit.services" style="rounded=1;arcSize=6;dashed=1;dashPattern=6 4;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#EEEEEE;strokeColor=#888888;fontColor=#222222;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1102" y="20" width="453" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-gemini" value="Google Gemini API" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c4-capa">
+          <mxGeometry x="3129" y="290" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-base-datos" value="Base de datos" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=18;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=34;spacing=4;" vertex="1" parent="c4-capa">
+          <mxGeometry x="3139" y="950" width="400" height="127" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-catalog-models" value="catalog.models" style="rounded=1;arcSize=6;dashed=1;dashPattern=6 4;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#EEEEEE;strokeColor=#888888;fontColor=#222222;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c4-capa">
+          <mxGeometry x="3129" y="1442" width="420" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-audit-services-texto" value="[otro componente · bitácora US-06]&#xa;record(request, action, …)" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#222222;spacing=0;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1116" y="61" width="425" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-gemini-texto" value="[Sistema externo]&#xa;models.embed_content · models.generate_content" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c4-capa">
+          <mxGeometry x="3143" y="331" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-base-datos-texto" value="[PostgreSQL 16 + pgvector]&#xa;tabla assistant_catalog_fragments" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c4-capa">
+          <mxGeometry x="3157" y="1010" width="364" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-catalog-models-texto" value="[otro componente]&#xa;Specialty · Branch · BranchHours · Service" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#222222;spacing=0;" vertex="1" parent="c4-capa">
+          <mxGeometry x="3143" y="1484" width="392" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-urls-views" value="suggest/" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-urls" target="c4-views">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-urls-reindex-views" value="reindex/" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-urls" target="c4-reindex-views">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-views-audit-services" value="record()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-views" target="c4-audit-services">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-reindex-views-audit-services" value="record()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-reindex-views" target="c4-audit-services">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1072" y="812"/>
+              <mxPoint x="1072" y="70"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4-rel-views-generation" value="answer()&#xa;answer_administrative()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-views" target="c4-generation">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-views-triage" value="check()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-views" target="c4-triage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-views-retrieval" value="retrieve()&#xa;rank_specialties()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-views" target="c4-retrieval">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1825" y="430"/>
+              <mxPoint x="1825" y="840"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4-rel-reindex-views-indexing" value="index_specialties()&#xa;index_administrative()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-reindex-views" target="c4-indexing">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-embed-catalog-indexing" value="index_specialties()&#xa;index_administrative()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-embed-catalog" target="c4-indexing">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-triage-embeddings" value="normalize_text()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-triage" target="c4-embeddings">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-retrieval-embeddings" value="embed_query()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-retrieval" target="c4-embeddings">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-retrieval-models" value="CatalogFragment&#xa;CosineDistance" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-retrieval" target="c4-models">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-indexing-embeddings" value="embed_documents()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-indexing" target="c4-embeddings">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2428" y="1040"/>
+              <mxPoint x="2428" y="823"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4-rel-indexing-models" value="guarda fragmentos" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-indexing" target="c4-models">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-indexing-medical-reference" value="reference_texts()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-indexing" target="c4-medical-reference">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-indexing-corpus" value="administrative_sources()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-indexing" target="c4-corpus">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-generation-gemini" value="generate_content()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-generation" target="c4-gemini">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-embeddings-gemini" value="embed_content()" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-embeddings" target="c4-gemini">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-models-base-datos" value="assistant_catalog_fragments" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-models" target="c4-base-datos">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-rel-corpus-catalog-models" value="lee el catálogo" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c4-capa" source="c4-corpus" target="c4-catalog-models">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-generation-titulo" value="generation.py&#xa;[redacción con el modelo]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="300" width="373" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-triage-titulo" value="triage.py&#xa;[barrera de urgencias]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="549" width="373" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-retrieval-titulo" value="retrieval.py&#xa;[búsqueda por similitud coseno]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="760" width="373" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-indexing-titulo" value="indexing.py&#xa;[construcción del índice]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1855" y="990" width="373" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-views-titulo" value="views.py&#xa;[SuggestView · POST /api/assistant/suggest/]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1102" y="300" width="453" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-reindex-views-titulo" value="reindex_views.py&#xa;[ReindexView · POST /api/assistant/reindex/]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="1102" y="760" width="453" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-urls-titulo" value="urls.py&#xa;[rutas de la app]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="300" width="402" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-permissions-titulo" value="permissions.py&#xa;[permisos DRF]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="492" width="402" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-serializers-titulo" value="serializers.py&#xa;[DRF]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="684" width="402" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-embed-catalog-titulo" value="management/commands/embed_catalog.py&#xa;[comando de manage.py]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="400" y="990" width="402" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-embeddings-titulo" value="embeddings.py&#xa;[proveedor de vectores]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="589" width="391" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-models-titulo" value="models.py&#xa;[modelo de datos]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="933" width="391" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-medical-reference-titulo" value="medical_reference.py&#xa;[referencia médica]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="1163" width="391" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4-corpus-titulo" value="corpus.py&#xa;[corpus administrativo]" style="rounded=0;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="c4-capa">
+          <mxGeometry x="2528" y="1374" width="391" height="58" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
