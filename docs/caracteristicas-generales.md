@@ -366,6 +366,40 @@ Y el detalle que hace que sea un SaaS de verdad: **el superadministrador vende y
 administra suscripciones, pero no accede a los datos clínicos de ningún
 cliente**, y eso se hace cumplir en la base.
 
+### Lo que promete el plan, se cumple
+
+Hasta el 03/10/26 los planes declaraban límites y funciones que **ningún código
+consultaba**: un Básico podía usar todo lo de un Premium. Desde entonces es una
+regla del repositorio (Definición de Terminado, criterio 7):
+
+| Lo que declara el plan | Básico | Pro | Premium | Dónde se aplica |
+|---|---|---|---|---|
+| Sucursales activas | 1 | 5 | sin límite | alta de sucursal |
+| Usuarios del personal* | 15 | 60 | sin límite | al asignar un rol de personal |
+| Profesionales activos | 8 | 40 | sin límite | alta de profesional |
+| Fichas por mes | 800 | 4.000 | sin límite | reserva |
+| Consultas a la IA por mes | 0 | 3.000 | sin límite | asistente |
+| Asistente (chatbot) | no | sí | sí | asistente y reindexado |
+| Exportar reportes | no | sí | sí | CSV, Excel, HTML, PDF y correo (ver en pantalla, siempre) |
+| Copias de seguridad | semanal | diaria | a voluntad | ver la característica 6 |
+| Predicción de inasistencia, resúmenes IA, pago en línea | | | | se aplican al construirse |
+
+\* Los pacientes son usuarios, pero **no cuentan** para el límite: es el
+personal (quien tiene algún rol que no es Paciente).
+
+- **Lo que ya existe no se borra ni se bloquea**: una organización que ya pasa
+  un límite conserva lo que tiene; sólo no puede crear más.
+- **Un plan sin asistente no tiene asistente**: el corte va antes que todo,
+  incluso que la barrera de urgencias, para no dejar un chat a medias.
+- El mensaje habla del plan **del centro médico**, porque quien lo lee puede
+  ser un paciente.
+
+`tenancy/plans.py` concentra todo: el plan vigente, `PLAN_RULES` (qué se aplica
+dónde, qué está pendiente y qué no aplica) y el conteo de uso.
+`tests/test_planes.py` —19 pruebas— incluye la guardiana: falla si un plan
+declara algo que no está en `PLAN_RULES`. Cada regla se verificó por mutación:
+rota a propósito, alguna prueba falla.
+
 ### Dónde está desplegado
 
 | Qué | Servicio |

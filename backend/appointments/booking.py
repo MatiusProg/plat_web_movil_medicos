@@ -196,6 +196,12 @@ class AppointmentViewSet(OrganizationScopedMixin, viewsets.ModelViewSet):
         entrada.is_valid(raise_exception=True)
         datos = entrada.validated_data
 
+        # Lo que promete el plan se cumple (tenancy/plans.py): fichas por mes.
+        from tenancy.plans import appointments_this_month, check_limit
+        check_limit(request.user.organization, "max_appointments_month",
+                    appointments_this_month(request.user.organization),
+                    "fichas por mes", "ficha por mes")
+
         try:
             ficha = book_appointment(
                 organization=request.user.organization,
