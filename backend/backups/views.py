@@ -1,7 +1,8 @@
 """Característica general 6 — La API de copias de seguridad y restauración.
 
     GET  /api/backups/records/    el historial: qué se respaldó y qué se restauró
-    POST /api/backups/create/     genera la copia y la descarga
+    GET  /api/backups/policy/     qué permite el plan y cuándo es la próxima copia
+    POST /api/backups/create/     genera la copia y la descarga (según el plan)
     POST /api/backups/inspect/    lee un archivo subido y dice qué contiene
     POST /api/backups/restore/    reemplaza los datos con los del archivo
 
@@ -19,6 +20,7 @@ repetida por un reintento del navegador— reemplace la organización.
 import json
 
 from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -31,6 +33,7 @@ from audit.actions import Action
 from . import manifest, services
 from .models import BackupRecord
 from .permissions import CanCreateBackup, CanRestoreBackup
+from .policy import backup_policy
 from .serializers import BackupRecordSerializer
 
 # Tope del archivo que se acepta subir. Por encima, lo razonable es restaurar
@@ -67,6 +70,21 @@ class CreateBackupView(APIView):
         if isinstance(organization, Response):
             return organization
 
+        # La frecuencia que permite el plan (ver policy.py). 429 y no 403:
+        # tiene permiso, lo que no tiene es cuota hasta la fecha que se informa.
+        politica = backup_policy(organization)
+        if not politica.allowed_now:
+            return Response(
+                {
+                    "detail": _limite(politica),
+                    "code": "backup_limit",
+                    "next_available_at": politica.next_available_at,
+                    "policy": _politica(politica),
+                },
+                status=(status.HTTP_429_TOO_MANY_REQUESTS if politica.plan_code
+                        else status.HTTP_403_FORBIDDEN),
+            )
+
         documento = services.create(organization)
         contenido = services.to_bytes(documento)
         nombre = services.filename(organization, documento["generated_at"])
@@ -94,6 +112,41 @@ class CreateBackupView(APIView):
             "Content-Disposition, X-Backup-Checksum"
         )
         return respuesta
+
+
+class BackupPolicyView(APIView):
+    """Qué permite el plan y cuándo se puede generar la próxima copia.
+
+    Es lo que la pantalla muestra junto al botón, para que nadie lo toque y
+    se entere recién por el error.
+    """
+
+    permission_classes = [IsAuthenticated, CanCreateBackup]
+
+    def get(self, request):
+        organization = _organization_or_error(request)
+        if isinstance(organization, Response):
+            return organization
+        return Response(_politica(backup_policy(organization)))
+
+
+def _politica(politica):
+    return {
+        "plan_code": politica.plan_code,
+        "plan_name": politica.plan_name,
+        "interval_hours": politica.interval_hours,
+        "last_backup_at": politica.last_backup_at,
+        "next_available_at": politica.next_available_at,
+        "allowed_now": politica.allowed_now,
+        "description": politica.describe(),
+    }
+
+
+def _limite(politica):
+    if politica.plan_code is None:
+        return politica.describe()
+    cuando = timezone.localtime(politica.next_available_at).strftime("%d/%m/%Y %H:%M")
+    return f"{politica.describe()} La próxima se puede generar desde el {cuando}."
 
 
 class InspectBackupView(APIView):

@@ -49,11 +49,13 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
 
   Future<void> _cargarProfesionales() async {
     try {
-      final pagina = await buscarProfesionales(client);
+      // Todas las páginas: es un desplegable, y el que falta no se puede
+      // elegir.
+      final profesionales = await todosLosProfesionales(client);
       if (!mounted) return;
       setState(() {
-        _profesionales = pagina.results;
-        _elegido = pagina.results.isEmpty ? null : pagina.results.first.id;
+        _profesionales = profesionales;
+        _elegido = profesionales.isEmpty ? null : profesionales.first.id;
       });
       if (_elegido != null) await _cargarAgendas();
     } on ApiError catch (error) {

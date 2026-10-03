@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import { listarSucursales, buscarProfesionales, type Sucursal } from '@/api/catalogo'
+import { listarSucursales, listarProfesionalesTodos, type Sucursal } from '@/api/catalogo'
 import {
   disponibilidadConsolidada,
   type Disponibilidad as DatosDisponibilidad,
@@ -74,11 +74,11 @@ export function Disponibilidad() {
   useEffect(() => {
     const control = new AbortController()
     Promise.all([
-      buscarProfesionales({}, { token }, control.signal),
+      listarProfesionalesTodos({ token }, control.signal),
       listarSucursales({ token }, control.signal),
     ])
       .then(([pagina, sedes]) => {
-        setProfesionales(pagina.results)
+        setProfesionales(pagina)
         setSucursales(sedes)
       })
       .catch(() => {})

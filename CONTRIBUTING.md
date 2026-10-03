@@ -72,6 +72,18 @@ Una historia está terminada cuando:
    un inquilino no ve los datos de otro.
 5. No hay credenciales ni datos de personas reales en el código.
 6. La tarjeta de Jira está en *Done*, con el enlace al pull request.
+7. **Lo que promete el plan, se cumple.** Si la historia agrega un límite
+   (`max_*`) o una función (`features`) a un plan de suscripción, o construye
+   la funcionalidad de una que estaba `pendiente`, el backend lo hace cumplir
+   y queda registrado en `tenancy/plans.py::PLAN_RULES` con dónde se aplica.
+   `tests/test_planes.py` falla si un plan declara algo que nadie hace cumplir.
+8. **Una lista que el usuario recorre se muestra paginada**, en la web y en el
+   móvil: nunca se trunca a la primera página. Los desplegables traen la lista
+   completa. Ver `config/pagination.py`.
+9. **Si toca la web, cumple la guía de diseño**
+   (`docs/frontend/guia-de-diseno.md`): componentes y colores del sistema,
+   nada interno a la vista, y probada con cada rol que la ve, en claro y
+   oscuro, en escritorio y en móvil.
 
 ---
 

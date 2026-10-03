@@ -20,7 +20,7 @@ import {
   type AgendaRegla,
   type DiaCalendario,
 } from '@/api/agenda'
-import { buscarProfesionales, listarSucursales, type Sucursal } from '@/api/catalogo'
+import { listarProfesionalesTodos, listarSucursales, type Sucursal } from '@/api/catalogo'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { useTitulo } from '@/rutas/useTitulo'
@@ -72,11 +72,11 @@ export function Agendas() {
   useEffect(() => {
     const control = new AbortController()
     Promise.all([
-      buscarProfesionales({}, { token }, control.signal),
+      listarProfesionalesTodos({ token }, control.signal),
       listarSucursales({ token }, control.signal),
     ])
       .then(([p, s]) => {
-        setProfesionales(p.results)
+        setProfesionales(p)
         setSucursales(s)
       })
       .catch(() => {})

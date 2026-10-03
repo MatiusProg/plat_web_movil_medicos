@@ -10,6 +10,10 @@
 ///      (punto c): el backend devuelve un par de tokens nuevo y la sesión lo
 ///      guarda con `Session.replaceTokens`.
 ///
+/// Más un cuarto que la web no tiene: **Apariencia**, el tema claro, oscuro
+/// o "como el sistema". Es una preferencia del teléfono, no de la cuenta: se
+/// guarda en el aparato y no viaja al backend.
+///
 /// **Y el cierre de sesión vive acá.** Hasta US-05 era un botón provisional
 /// en la barra de la pantalla de inicio; el reparto del Sprint 1 lo ubicaba
 /// en el perfil desde el principio.
@@ -21,8 +25,17 @@ import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
 import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/theme.dart';
+import 'package:mobile/core/theme/theme_controller.dart';
+import 'package:mobile/core/widgets/theme_selector.dart';
 
 import 'profile_api.dart';
+
+/// El verde de "se guardó". `primaryDark` sobre la tarjeta oscura apenas se
+/// distingue del fondo, así que en modo oscuro se usa el tono claro.
+Color _verdeDeExito(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Marca.primaryLight
+        : Marca.primaryDark;
 
 const _nombreDocumento = {
   'CI': 'Cédula de identidad',
@@ -148,6 +161,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   client: client,
                   onTokens: _guardarTokens,
                 ),
+                if (ThemeScope.maybeOf(context) case final tema?) ...[
+                  const SizedBox(height: 16),
+                  _Apariencia(controller: tema),
+                ],
                 const SizedBox(height: 24),
                 OutlinedButton.icon(
                   onPressed: _salir,
@@ -303,9 +320,9 @@ class _DatosDeContactoState extends State<_DatosDeContacto> {
         ],
         if (_guardado) ...[
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Tus datos se guardaron.',
-            style: TextStyle(color: Marca.primaryDark),
+            style: TextStyle(color: _verdeDeExito(context)),
           ),
         ],
         const SizedBox(height: 16),
@@ -515,11 +532,37 @@ class _CambioDeContrasenaState extends State<_CambioDeContrasena> {
         if (sinCampo)
           Text(error.message, style: const TextStyle(color: Marca.danger)),
         if (_cambiada != null)
-          Text(_cambiada!, style: const TextStyle(color: Marca.primaryDark)),
+          Text(_cambiada!, style: TextStyle(color: _verdeDeExito(context))),
         const SizedBox(height: 12),
         FilledButton(
           onPressed: _enviando || !_completo ? null : _cambiar,
           child: Text(_enviando ? 'Cambiando…' : 'Cambiar contraseña'),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  4. Apariencia
+// ---------------------------------------------------------------------------
+
+class _Apariencia extends StatelessWidget {
+  const _Apariencia({required this.controller});
+
+  final ThemeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Tarjeta(
+      titulo: 'Apariencia',
+      children: [
+        ThemeSelector(controller: controller),
+        const SizedBox(height: 8),
+        const Text(
+          '"Sistema" sigue el modo claro u oscuro del teléfono. Se guarda en '
+          'este teléfono.',
+          style: TextStyle(color: Marca.ink500, fontSize: 13),
         ),
       ],
     );

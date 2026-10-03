@@ -121,7 +121,7 @@ export function Servicios() {
 
   if (!leer) return <main className="mx-auto max-w-4xl px-5 py-10 text-tinta-500">No tenés permiso para consultar servicios.</main>
   return <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:py-10">
-    <CabeceraCatalogo historia="US-32" titulo="Servicios y estudios" descripcion="Precio y preparación de cada consulta, estudio o procedimiento. Es lo que el asistente le contesta al paciente cuando pregunta cuánto cuesta o cómo tiene que ir.">
+    <CabeceraCatalogo titulo="Servicios y estudios" descripcion="Precio y preparación de cada consulta, estudio o procedimiento. Es lo que el asistente le contesta al paciente cuando pregunta cuánto cuesta o cómo tiene que ir.">
       <div className="flex flex-wrap gap-2">
         {reindexar && <button type="button" disabled={indexando} onClick={() => void actualizarAsistente()} className={SECONDARY}><IconoCatalogo nombre="refresh" className="size-4" /> {indexando ? 'Actualizando…' : 'Actualizar asistente'}</button>}
         {crear && <Boton type="button" onClick={() => { setError(null); setForm({ id: null, value: VACIO }) }} className="w-auto"><IconoCatalogo nombre="plus" className="size-4" /> Nuevo servicio</Boton>}
@@ -153,7 +153,7 @@ export function Servicios() {
     </section>
     {form && <div className="fixed inset-0 z-40 overflow-y-auto bg-black/60 p-3 sm:p-6" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget && !saving) { setForm(null); setError(null) } }}>
       <div role="dialog" aria-modal="true" aria-labelledby="servicio-titulo" className="mx-auto my-4 w-full max-w-xl rounded-2xl bg-white shadow-2xl dark:bg-tinta-950">
-        <div className="flex items-start justify-between gap-4 border-b border-tinta-200 p-5 sm:p-6 dark:border-tinta-800"><div><p className="text-xs font-semibold uppercase tracking-wider text-marca-700 dark:text-marca-400">Catálogo · US-32</p><h2 id="servicio-titulo" className="mt-1 text-xl font-semibold">{form.id ? 'Editar servicio' : 'Nuevo servicio'}</h2></div><button type="button" disabled={saving} onClick={() => { setForm(null); setError(null) }} aria-label="Cerrar" className="rounded-lg p-2 text-tinta-500 hover:bg-tinta-100 dark:hover:bg-tinta-800"><IconoCatalogo nombre="close" /></button></div>
+        <div className="flex items-start justify-between gap-4 border-b border-tinta-200 p-5 sm:p-6 dark:border-tinta-800"><div><p className="text-sm font-medium text-marca-700 dark:text-marca-400">Catálogo</p><h2 id="servicio-titulo" className="mt-1 text-xl font-semibold">{form.id ? 'Editar servicio' : 'Nuevo servicio'}</h2></div><button type="button" disabled={saving} onClick={() => { setForm(null); setError(null) }} aria-label="Cerrar" className="rounded-lg p-2 text-tinta-500 hover:bg-tinta-100 dark:hover:bg-tinta-800"><IconoCatalogo nombre="close" /></button></div>
         <form onSubmit={e => void guardar(e)}><div className="space-y-5 p-5 sm:p-6">
           {error && <ErrorCatalogo mensaje={error} />}
           <Campo etiqueta="Nombre del servicio" required maxLength={120} value={form.value.name} onChange={e => cambiar('name', e.target.value)} placeholder="Ej. Análisis de sangre" />

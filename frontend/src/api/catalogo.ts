@@ -8,6 +8,7 @@
  */
 
 import { pedir, type Contexto } from './cliente'
+import { todasLasPaginas } from './paginacion'
 
 export interface Sucursal {
   id: string
@@ -83,3 +84,11 @@ export function buscarProfesionales(
     { ...contexto, senal },
   )
 }
+
+/**
+ * Todos los profesionales activos, para los desplegables de agendas,
+ * bloqueos y disponibilidad. La búsqueda de US-16 pagina de a 25: sin esto,
+ * el profesional número 26 no aparecería para elegir.
+ */
+export const listarProfesionalesTodos = (contexto: Contexto, senal?: AbortSignal) =>
+  todasLasPaginas<ProfesionalTarjeta>('/catalog/professionals/', contexto, senal)

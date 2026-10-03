@@ -23,7 +23,7 @@ import {
   type AccionBitacora,
   type AsientoBitacora,
 } from '@/api/bitacora'
-import { listarUsuarios, type UsuarioDeLaOrganizacion } from '@/api/roles'
+import { listarUsuariosTodos, type UsuarioDeLaOrganizacion } from '@/api/roles'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { useTitulo } from '@/rutas/useTitulo'
@@ -98,8 +98,10 @@ export function Bitacora() {
       .then(setAcciones)
       .catch(() => {})
 
-    listarUsuarios({ token }, control.signal)
-      .then((pagina) => setUsuarios(pagina.results))
+    // El desplegable de actor necesita a todos los usuarios, no los primeros
+    // 25: si no, lo que hicieron los demás no se puede filtrar por persona.
+    listarUsuariosTodos({ token }, control.signal)
+      .then(setUsuarios)
       .catch(() => setUsuarios([]))
 
     return () => control.abort()

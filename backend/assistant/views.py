@@ -32,6 +32,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from audit import services as bitacora
+from tenancy.plans import ai_queries_this_month, check_limit, require_feature
 from audit.actions import Action
 
 from . import generation, triage
@@ -64,6 +65,15 @@ class SuggestView(APIView):
                 {"detail": "El asistente funciona dentro de una organización."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        # 0. Lo que promete el plan se cumple (tenancy/plans.py). Va antes que
+        # todo, incluso que la barrera de urgencias: un plan sin chatbot no
+        # tiene asistente, y un chat que a veces contesta y a veces no es peor
+        # que una pantalla que dice que el centro no lo tiene.
+        require_feature(organization, "ai_chatbot", "el asistente")
+        check_limit(organization, "max_ai_queries_month",
+                    ai_queries_this_month(organization), "consultas al asistente por mes",
+                    "consulta al asistente por mes")
 
         # 1. Barrera de seguridad, primera capa de US-34: ver triage.py.
         emergency = triage.check(question)

@@ -257,13 +257,44 @@ Lo que un cliente de un SaaS necesita y no puede pedirle al proveedor: llevarse
 
 | Endpoint | Qué hace |
 |---|---|
-| `POST /api/backups/create/` | genera la copia en JSON y la descarga |
+| `GET /api/backups/policy/` | qué permite el plan y cuándo se puede generar la próxima copia |
+| `POST /api/backups/create/` | genera la copia en JSON y la descarga, **si el plan lo permite** |
 | `POST /api/backups/inspect/` | dice qué trae un archivo, **sin escribir nada** |
 | `POST /api/backups/restore/` | reemplaza los datos, con confirmación explícita |
 | `GET /api/backups/records/` | el historial: qué se respaldó y qué se restauró |
 
 También por consola: `backup_organization` (con `--all`, para una tarea
-nocturna) y `restore_organization`.
+nocturna) y `restore_organization`. En la web, la pantalla **Copias de
+seguridad** (`/respaldos`) del administrador: muestra la regla de su plan, el
+botón para generar y descargar, la restauración (con inspección previa y
+confirmación escribiendo el identificador de la organización) y el historial.
+
+### La frecuencia depende del plan
+
+| Plan | Copias |
+|---|---|
+| Básico | una por semana |
+| Pro | una por día |
+| Premium | a voluntad |
+
+La declara cada plan en `features["backup_interval_hours"]` (168, 24 y
+`null`), sembrada en `tenancy/0005_backup_por_plan`; el superadministrador la
+cambia editando el plan. Antes de generar, `backups/policy.py` busca el plan
+vigente (`tenancy/plans.py`) y la última copia de la organización: si no pasó
+el intervalo, responde **429** con la fecha de la próxima.
+
+- **Sólo se limita generar, nunca restaurar**: recuperarse de un desastre no
+  puede depender de cuánto paga el cliente.
+- **El intervalo es de la organización, no de cada administrador**: si no, dos
+  administradores duplicarían la cuota.
+- **Sin plan vigente no se respalda**: no hay contrato que diga cuánto le toca.
+
+`tenancy/plans.py` es además el primer punto del código que consulta el plan
+de una organización. Hasta acá los límites y funciones de los planes
+(`max_users`, `ai_chatbot`, `report_export`…) estaban declarados pero ningún
+código los hacía cumplir; los demás pueden colgarse de ahí.
+
+**Cómo se comprueba:** `backend/tests/test_backup_por_plan.py` — 10 pruebas.
 
 **Decisiones que valen más que el código:**
 
@@ -334,6 +365,40 @@ Web desplegada; la APK se compila en local siguiendo
 Y el detalle que hace que sea un SaaS de verdad: **el superadministrador vende y
 administra suscripciones, pero no accede a los datos clínicos de ningún
 cliente**, y eso se hace cumplir en la base.
+
+### Lo que promete el plan, se cumple
+
+Hasta el 03/10/26 los planes declaraban límites y funciones que **ningún código
+consultaba**: un Básico podía usar todo lo de un Premium. Desde entonces es una
+regla del repositorio (Definición de Terminado, criterio 7):
+
+| Lo que declara el plan | Básico | Pro | Premium | Dónde se aplica |
+|---|---|---|---|---|
+| Sucursales activas | 1 | 5 | sin límite | alta de sucursal |
+| Usuarios del personal* | 15 | 60 | sin límite | al asignar un rol de personal |
+| Profesionales activos | 8 | 40 | sin límite | alta de profesional |
+| Fichas por mes | 800 | 4.000 | sin límite | reserva |
+| Consultas a la IA por mes | 0 | 3.000 | sin límite | asistente |
+| Asistente (chatbot) | no | sí | sí | asistente y reindexado |
+| Exportar reportes | no | sí | sí | CSV, Excel, HTML, PDF y correo (ver en pantalla, siempre) |
+| Copias de seguridad | semanal | diaria | a voluntad | ver la característica 6 |
+| Predicción de inasistencia, resúmenes IA, pago en línea | | | | se aplican al construirse |
+
+\* Los pacientes son usuarios, pero **no cuentan** para el límite: es el
+personal (quien tiene algún rol que no es Paciente).
+
+- **Lo que ya existe no se borra ni se bloquea**: una organización que ya pasa
+  un límite conserva lo que tiene; sólo no puede crear más.
+- **Un plan sin asistente no tiene asistente**: el corte va antes que todo,
+  incluso que la barrera de urgencias, para no dejar un chat a medias.
+- El mensaje habla del plan **del centro médico**, porque quien lo lee puede
+  ser un paciente.
+
+`tenancy/plans.py` concentra todo: el plan vigente, `PLAN_RULES` (qué se aplica
+dónde, qué está pendiente y qué no aplica) y el conteo de uso.
+`tests/test_planes.py` —19 pruebas— incluye la guardiana: falla si un plan
+declara algo que no está en `PLAN_RULES`. Cada regla se verificó por mutación:
+rota a propósito, alguna prueba falla.
 
 ### Dónde está desplegado
 

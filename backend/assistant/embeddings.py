@@ -214,12 +214,57 @@ def active_model_name() -> str:
     return LOCAL_MODEL_NAME
 
 
+# El nivel gratuito de Gemini cuenta **cada texto** como una petición: 100 por
+# minuto. Una organización con nueve especialidades y su corpus administrativo
+# ya pasa de 100 fragmentos, así que se mandan de a tandas de menos de 100 y,
+# si igual se agota la cuota, se espera lo que Gemini pide y se reintenta.
+DOCUMENT_BATCH = 90
+QUOTA_RETRIES = 5
+_RETRY_IN = re.compile(r"retry in ([0-9.]+)s", re.IGNORECASE)
+
+
+def _quota_wait(error) -> float | None:
+    """Segundos que pide esperar Gemini si el error es de cuota (429)."""
+    texto = str(error)
+    if "429" not in texto and "RESOURCE_EXHAUSTED" not in texto:
+        return None
+    pedido = _RETRY_IN.search(texto)
+    # Un par de segundos de margen: llegar justo al borde del minuto vuelve
+    # a chocar con la cuota.
+    return (float(pedido.group(1)) if pedido else 60.0) + 2.0
+
+
+def _gemini_documents(texts: list[str], *, sleep=None) -> list[list[float]]:
+    """Los fragmentos para guardar, en tandas y respetando la cuota.
+
+    **Sólo la indexación espera.** La consulta del paciente (``embed_query``)
+    no reintenta: un chat que se queda un minuto pensando es peor que uno que
+    dice "probá en un rato", que es lo que ya hace la vista con el 503.
+    """
+    import time
+
+    sleep = sleep or time.sleep
+    vectores = []
+    for inicio in range(0, len(texts), DOCUMENT_BATCH):
+        tanda = texts[inicio:inicio + DOCUMENT_BATCH]
+        for intento in range(QUOTA_RETRIES + 1):
+            try:
+                vectores += _gemini_embeddings(tanda, task_type="RETRIEVAL_DOCUMENT")
+                break
+            except EmbeddingError as error:
+                espera = _quota_wait(error)
+                if espera is None or intento == QUOTA_RETRIES:
+                    raise
+                sleep(espera)
+    return vectores
+
+
 def embed_documents(texts: list[str]) -> list[list[float]]:
     """Vectoriza fragmentos del catálogo, para guardar."""
     if not texts:
         return []
     if settings.ASSISTANT_EMBEDDING_PROVIDER == "gemini":
-        return _gemini_embeddings(texts, task_type="RETRIEVAL_DOCUMENT")
+        return _gemini_documents(texts)
     return [_local_embedding(text) for text in texts]
 
 

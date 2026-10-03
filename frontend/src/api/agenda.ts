@@ -156,7 +156,9 @@ export interface BloqueoNuevo {
 }
 
 export function listarBloqueos(
-  filtros: { practitioner?: string; is_active?: boolean },
+  // `desde`: sólo los que terminan ese día o después (los vigentes y
+  // próximos). `pagina`: la lista se muestra paginada, no truncada.
+  filtros: { practitioner?: string; is_active?: boolean; desde?: string; pagina?: number },
   contexto: Contexto,
   senal?: AbortSignal,
 ): Promise<Pagina<Bloqueo>> {
@@ -165,6 +167,8 @@ export function listarBloqueos(
   if (filtros.is_active !== undefined) {
     parametros.set('is_active', filtros.is_active ? 'true' : 'false')
   }
+  if (filtros.desde) parametros.set('from', filtros.desde)
+  if (filtros.pagina) parametros.set('page', String(filtros.pagina))
   const sufijo = parametros.toString() ? `?${parametros.toString()}` : ''
   return pedir<Pagina<Bloqueo>>(`/scheduling/blocks/${sufijo}`, {
     ...contexto,

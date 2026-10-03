@@ -18,9 +18,10 @@ import {
   type BloqueoNuevo,
   type MotivoBloqueo,
 } from '@/api/agenda'
-import { buscarProfesionales } from '@/api/catalogo'
+import { listarProfesionalesTodos } from '@/api/catalogo'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
+import { Paginador } from '@/componentes/Paginador'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 
@@ -53,6 +54,11 @@ export function BloqueosAgenda() {
     { id: string; full_name: string }[]
   >([])
   const [bloqueos, setBloqueos] = useState<Bloqueo[]>([])
+  const [pagina, setPagina] = useState(1)
+  const [total, setTotal] = useState(0)
+  // Por defecto, los vigentes y próximos: los vencidos se acumulan (la baja
+  // es lógica) y taparían lo que importa. Se pueden ver tildando la casilla.
+  const [verVencidos, setVerVencidos] = useState(false)
   const [formulario, setFormulario] = useState<BloqueoNuevo | null>(null)
   const [afectadas, setAfectadas] = useState<Record<string, number>>({})
   const [error, setError] = useState<ErrorApi | null>(null)
@@ -65,11 +71,16 @@ export function BloqueosAgenda() {
     const control = new AbortController()
     aborto.current = control
     try {
-      const pagina = await listarBloqueos({}, { token }, control.signal)
-      setBloqueos(pagina.results)
+      const hoy = new Date().toISOString().slice(0, 10)
+      const datos = await listarBloqueos(
+        { desde: verVencidos ? undefined : hoy, pagina },
+        { token }, control.signal,
+      )
+      setBloqueos(datos.results)
+      setTotal(datos.count)
       const conteos: Record<string, number> = {}
       await Promise.all(
-        pagina.results
+        datos.results
           .filter((b) => b.is_active)
           .map(async (b) => {
             const resumen = await fichasAfectadas(b.id, { token })
@@ -85,13 +96,16 @@ export function BloqueosAgenda() {
 
   useEffect(() => {
     const control = new AbortController()
-    buscarProfesionales({}, { token }, control.signal)
-      .then((p) => setProfesionales(p.results))
+    listarProfesionalesTodos({ token }, control.signal)
+      .then(setProfesionales)
       .catch(() => {})
-    void recargar()
     return () => control.abort()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
+
+  useEffect(() => {
+    void recargar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, pagina, verVencidos])
 
   const guardar = async () => {
     if (!formulario || guardando) return
@@ -283,9 +297,17 @@ export function BloqueosAgenda() {
         </div>
       )}
 
+      <label className="text-tinta-600 dark:text-tinta-300 flex items-center gap-2 text-sm">
+        <input type="checkbox" className="accent-marca-600 size-4" checked={verVencidos}
+          onChange={(e) => { setVerVencidos(e.target.checked); setPagina(1) }} />
+        Mostrar también los bloqueos vencidos
+      </label>
+
       <ul className="space-y-2">
         {bloqueos.length === 0 && (
-          <p className="text-tinta-500 text-sm">No hay bloqueos cargados.</p>
+          <p className="text-tinta-500 text-sm">
+            {verVencidos ? 'No hay bloqueos cargados.' : 'No hay bloqueos vigentes ni próximos.'}
+          </p>
         )}
         {bloqueos.map((b) => (
           <li
@@ -325,6 +347,7 @@ export function BloqueosAgenda() {
           </li>
         ))}
       </ul>
+      <Paginador pagina={pagina} total={total} onCambiar={setPagina} />
     </main>
   )
 }
