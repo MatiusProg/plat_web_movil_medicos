@@ -141,7 +141,10 @@ function Fila({ organizacion }: { organizacion: Organizacion }) {
 
       <div className="flex items-center gap-2">
         <Etiqueta estado={organizacion.status} />
-        <span className="text-tinta-600 dark:text-tinta-300 bg-tinta-100 dark:bg-tinta-800 rounded-lg px-2.5 py-1 text-xs font-medium">
+        {/* Sin plan, el centro no puede operar: se marca como pendiente. */}
+        <span className={['rounded-lg px-2.5 py-1 text-xs font-medium', organizacion.current_plan
+          ? 'bg-tinta-100 text-tinta-600 dark:bg-tinta-800 dark:text-tinta-300'
+          : 'bg-espera-50 text-espera-700 dark:bg-espera-600/20 dark:text-espera-200'].join(' ')}>
           {organizacion.current_plan?.name ?? 'Sin plan'}
         </span>
       </div>
@@ -151,7 +154,7 @@ function Fila({ organizacion }: { organizacion: Organizacion }) {
 
 const ESTADOS = {
   active: { texto: 'Activa', clase: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  suspended: { texto: 'Suspendida', clase: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  suspended: { texto: 'Suspendida', clase: 'bg-espera-50 text-espera-700 dark:bg-espera-600/10 dark:text-espera-200' },
   inactive: { texto: 'Inactiva', clase: 'bg-tinta-100 text-tinta-600 dark:bg-tinta-800 dark:text-tinta-400' },
 } as const
 
