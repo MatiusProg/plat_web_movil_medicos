@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* El modo oscuro lo decide la clase `dark` en <html>, no el sistema operativo
+   directamente: así la persona puede elegir Claro, Oscuro o "como el sistema"
+   (src/tema/tema.ts). Con "como el sistema", tema.ts pone o quita la clase
+   siguiendo a prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* =========================================================================
    Sistema visual de la plataforma.
 
@@ -66,7 +72,10 @@
 
 @layer base {
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
   }
 
   * {
@@ -99,7 +108,7 @@
     transition: background-color 9999s ease-out;
   }
 
-  @media (prefers-color-scheme: dark) {
+  :root.dark {
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus {

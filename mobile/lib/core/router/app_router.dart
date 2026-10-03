@@ -49,7 +49,9 @@ import '../session/patient_gate.dart';
 import '../session/session.dart';
 import '../session/session_scope.dart';
 import '../theme/theme.dart';
+import '../theme/theme_controller.dart';
 import '../widgets/organization_drawer.dart';
+import '../widgets/theme_selector.dart';
 
 /// Los nombres se usan con `context.goNamed(Routes.signIn)`, para que cambiar
 /// una ruta no obligue a buscar la cadena por todo el proyecto.
@@ -484,6 +486,14 @@ class _HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Centro médico'),
         actions: [
+          // El paciente no tiene menú lateral: el acceso rápido al tema va
+          // acá, junto al perfil. Se esconde si no hay `ThemeScope` arriba.
+          if (ThemeScope.maybeOf(context) case final tema?)
+            IconButton(
+              tooltip: 'Tema: ${etiquetaDeTema(tema.value)}',
+              onPressed: () => mostrarSelectorDeTema(context, tema),
+              icon: Icon(iconoDeTema(tema.value)),
+            ),
           // US-05: el cierre de sesión vive en el perfil. Hasta que la
           // historia se entregó, acá había un botón provisional de salir.
           IconButton(
