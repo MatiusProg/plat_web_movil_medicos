@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     # US-17/US-20: la ficha. Depende de `scheduling` (deriva el turno de una
     # `Schedule`), `catalog` y `patients`.
     "appointments",
+    "encounters",
     # US-06: la bitácora. No trae modelos —lee `accounts.AuditLog`—, pero es
     # una app igual porque tiene su propio prefijo de rutas, su permiso y su
     # middleware.
