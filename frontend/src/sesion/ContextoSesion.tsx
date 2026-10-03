@@ -122,6 +122,19 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     }
   }, [sesion, olvidar])
 
+  const actualizar = useCallback<EstadoSesion['actualizar']>((cambios) => {
+    setSesion((previa) => {
+      if (!previa) return previa
+      const nueva: SesionGuardada = {
+        access: cambios.access ?? previa.access,
+        refresh: cambios.refresh ?? previa.refresh,
+        usuario: { ...previa.usuario, ...cambios.usuario },
+      }
+      guardarSesion(nueva)
+      return nueva
+    })
+  }, [])
+
   const puede = useCallback(
     (permiso: string) => sesion?.usuario.permissions.includes(permiso) ?? false,
     [sesion],
@@ -134,8 +147,9 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       entrar,
       salir,
       puede,
+      actualizar,
     }),
-    [sesion, entrar, salir, puede],
+    [sesion, entrar, salir, puede, actualizar],
   )
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>

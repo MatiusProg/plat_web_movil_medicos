@@ -8,6 +8,7 @@ import {
 import { ArmazonPlataforma } from '@/componentes/ArmazonPlataforma'
 
 import { Agendas } from '@/paginas/Agendas'
+import { Asistente } from '@/paginas/Asistente'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
 import { Bitacora } from '@/paginas/Bitacora'
 import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
@@ -18,6 +19,7 @@ import { MisFichas } from '@/paginas/MisFichas'
 import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
+import { Perfil } from '@/paginas/Perfil'
 import { Planes } from '@/paginas/Planes'
 import { RecuperarAcceso } from '@/paginas/RecuperarAcceso'
 import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
@@ -245,6 +247,26 @@ export default function App() {
                             path="/buscar-profesionales"
                             element={
                                 <BuscarProfesionales />
+                            }
+                        />
+
+
+                        {/* US-31 / US-34: asistente de orientación */}
+
+                        <Route
+                            path="/asistente"
+                            element={
+                                <Asistente />
+                            }
+                        />
+
+
+                        {/* US-05: edición de perfil */}
+
+                        <Route
+                            path="/perfil"
+                            element={
+                                <Perfil />
                             }
                         />
 

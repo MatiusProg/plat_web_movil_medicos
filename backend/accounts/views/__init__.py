@@ -9,6 +9,7 @@ traería conflicto en el mismo archivo.
     registration.py    US-01, Alexander
     roles.py           US-04, Karen
     password_reset.py  US-03, Karen
+    profile.py         US-05, Karen
 
 No se reexporta nada acá —nada de `from .auth import *`—: cada quien importa
 del módulo concreto, y así dos historias no vuelven a tocar la misma línea.

@@ -69,6 +69,9 @@ export type CodigoError =
   | 'ficha_pasada'
   | 'cancelacion_invalida'
   | 'reprogramacion_invalida'
+  // US-05 — cambio de contraseña desde el perfil.
+  | 'contrasena_actual_incorrecta'
+  | 'contrasena_repetida'
   | 'sin_conexion'
   | 'desconocido'
 

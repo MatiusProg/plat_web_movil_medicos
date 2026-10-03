@@ -222,8 +222,8 @@ class TriageResult:
 
 
 EMERGENCY_MESSAGE = (
-    "Por lo que describís, esto no se resuelve con una ficha programada. "
-    "Andá ahora mismo al servicio de emergencias más cercano o llamá al "
+    "Por lo que describes, esto no se resuelve con una ficha programada. "
+    "Ve ahora mismo al servicio de emergencias más cercano o llama al "
     "número de emergencias. No esperes a que te atiendan por consulta."
 )
 

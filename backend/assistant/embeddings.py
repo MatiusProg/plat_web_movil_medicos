@@ -94,7 +94,7 @@ def _check_dimensions(vector: list[float]) -> list[float]:
     if len(vector) != EMBEDDING_DIMENSIONS:
         raise EmbeddingError(
             f"El proveedor devolvió un vector de {len(vector)} dimensiones y "
-            f"la columna espera {EMBEDDING_DIMENSIONS}. Revisá "
+            f"la columna espera {EMBEDDING_DIMENSIONS}. Revisa "
             f"ASSISTANT_EMBEDDING_MODEL: mezclar dimensiones no da un error "
             f"claro de base de datos, da filas que no se pueden comparar."
         )
