@@ -110,6 +110,13 @@ const items: ItemMenu[] = [
         icono: 'bitacora',
         requiere: 'audit.log.read',
     },
+    // Característica general 6 — la frecuencia depende del plan.
+    {
+        etiqueta: 'Copias de seguridad',
+        ruta: '/respaldos',
+        icono: 'bitacora',
+        requiere: 'backups.backup.create',
+    },
 
     // US-11 — administración de sucursales.
     {
