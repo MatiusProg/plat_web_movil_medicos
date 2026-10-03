@@ -3,7 +3,7 @@
 Esta guía reúne en un solo lugar cómo se hacen los diagramas del documento:
 
 - **el modelo C4**, en Lucidchart, a partir de los `.drawio` de `c4-lucidchart/`;
-- **los diagramas UML** de clases, secuencia, estado, navegación y tiempo, en Enterprise Architect, sobre `PlataformaMedica.eapx`.
+- **los diagramas UML** de casos de uso, comunicación, clases, secuencia, estado, navegación y tiempo, en Enterprise Architect, sobre `PlataformaMedica.eapx`. Los del Sprint 2 se generan con los scripts `scripts/ea-*-sprint2.ps1` (sección 3.3).
 
 Sale de dos guías que ya existían:
 
@@ -17,7 +17,7 @@ Sale de dos guías que ya existían:
 1. [Reglas que valen para todos los diagramas](#1-reglas-que-valen-para-todos-los-diagramas)
 2. [Modelo C4 en Lucidchart](#2-modelo-c4-en-lucidchart)
 3. [Antes de abrir Enterprise Architect](#3-antes-de-abrir-enterprise-architect)
-4. [Diagramas de clases](#4-diagramas-de-clases)
+4. [Diagramas de clases y de comunicación](#4-diagramas-de-clases-y-de-comunicación)
 5. [Diagrama de secuencia](#5-diagrama-de-secuencia)
 6. [Diagrama de estado](#6-diagrama-de-estado)
 7. [Diagrama de navegación](#7-diagrama-de-navegación)
@@ -30,30 +30,36 @@ Sale de dos guías que ya existían:
 
 ## 1. Reglas que valen para todos los diagramas
 
-**1. Los nombres son los exactos del código.** Una clase, una línea de vida o una caja de navegación se llama como el archivo, la clase o la función que representa: `accounts/views/profile.py`, `SuggestView`, `book_appointment`. Nada de `GestorDePerfil` ni `ControladorDeReservas`. Es lo que permite defender un diagrama: cada elemento se puede abrir en el repositorio.
+**1. Todo se puede abrir en el repositorio.** Es lo que permite defender un diagrama. Según el diagrama, cambia dónde va el nombre del código:
+
+- **Comunicación, clases de análisis y secuencia usan clases conceptuales**, como el modelo de Violet Boutique: `PantallaPerfil`, `GestorPerfil`, `Usuario`. El análisis es anterior al diseño, así que una clase no es un archivo. Lo que se ancla al código es todo lo de adentro: la **nota** de cada clase dice qué archivos la implementan (web, móvil y backend), sus **operaciones** son las funciones reales con su firma, la entidad nombra su **tabla** (`users`, `audit_log`) y sus columnas, y los mensajes de secuencia son el endpoint y el SQL literales.
+- **Navegación usa los archivos**: `Perfil.tsx`, `accounts/views/profile.py`. Es el espejo de las rutas.
+- **Estado y tiempo** anclan cada guarda y cada restricción con `archivo:línea` (regla 2).
 
 **2. Cada rótulo que afirma algo lleva su ancla.** Una guarda, una restricción o un código de error van con el archivo y la línea, o con el verbo y la ruta del endpoint, entre llaves: `[correo ya usado en el centro] {400 serializers/profile.py:102}`.
 
 **3. Un solo tipo de línea entre clases.** En los diagramas de clases, la unión entre dos clases es siempre una **asociación**, con el rol en MAYÚSCULAS (`CONSULTA`, `PERTENECE_A`) y la cardinalidad en los dos extremos. Nada de dependencia, agregación ni composición: con un solo tipo de línea, los diagramas del capítulo se comparan entre sí sin discutir la semántica de cada estilo.
 
-**4. El mismo color para el mismo rol en todos los diagramas.** Frontera, controlador y entidad llevan siempre los mismos tres colores, en clases y en secuencia, con una nota al pie que diga qué es cada color.
+**4. Los colores los pone el estereotipo, no la mano.** En comunicación, `boundary`, `control` y `entity` se dibujan como sus íconos de robustez; en clases, `frontera`, `controlador` y `entidad` como tabla. En secuencia, como en el ciclo 3 de Violet, **las líneas de vida van todas del mismo color y sin estereotipo**: el orden por rol (sección 5.1) ya dice qué es cada una.
 
-**5. Qué diagrama va para qué caso de uso.** Es la regla que la ingeniera le corrigió al otro proyecto el 15/09/2026:
+**5. Qué diagrama va para qué caso de uso.** Todos van **uno por caso de uso**, con el código del CU en el título (`2.1.4.2 Secuencia - CU6 Gestión de Perfil de Usuario`). Comunicación y clases de análisis van para todos los CU del sprint con código. Secuencia, estado y tiempo se reservan a los que **escriben** (un `transaction.atomic()`, un `save()` o un `create()`) y, por decisión del equipo del 03/10/2026, **siempre** a los del asistente (IA), a los de pago y a la historia clínica, aunque sólo lean. Navegación, a los que recorren varias pantallas.
 
-- **Secuencia, estado y tiempo van solo de los casos de uso transaccionales.** Transaccional quiere decir que el caso de uso **escribe**. En este backend se reconoce por un `transaction.atomic()`, un `save()` o un `create()` en la vista o el servicio. Las consultas puras quedan fuera.
-- **Navegación va por actor**, no por caso de uso.
-- **Clases de análisis van una por caso de uso.**
+Cómo quedan los CU del Sprint 2:
 
-Cómo quedan las historias del Sprint 2 con esa regla:
+| CU | Comunicación y clases | Secuencia, estado y tiempo | Navegación |
+|---|---|---|---|
+| CU6 — Gestión de perfil de usuario (US-05) | Sí | Sí | Sí |
+| CU18 — Reserva de ficha médica (US-17) | Sí | Sí (pago) | Sí |
+| CU21 — Cancelación / reprogramación de ficha (US-20) | Sí | Sí | — |
+| CU25 — Registro de atención médica (US-24) | Sí | Sí | Sí |
+| CU26 — Consulta de historia clínica (US-25) | Sí | Sí (historia clínica) | Sí |
+| CU32 — Orientación médica mediante chatbot (US-31) | Sí | Sí (IA) | Sí |
+| CU33 — Consulta de información mediante chatbot (US-32) | Sí | Sí (IA) | — |
+| CU35 — Derivación a atención de emergencia (US-34) | Sí | Sí (IA) | — |
 
-| Historia | ¿Escribe? | Secuencia, estado, tiempo |
-|---|---|---|
-| US-05 — Edición de perfil | Sí: `profile()` y `change_password()` | Sí |
-| US-17 — Reserva de ficha | Sí: `book_appointment()` | Sí |
-| US-20 — Cancelación y reprogramación | Sí | Sí |
-| US-24 — Registro de la atención | Sí | Sí |
-| US-25 — Historial longitudinal | No: sólo lee (deja asiento de bitácora) | No |
-| US-31 / US-34 — Asistente | No escribe datos del dominio: sólo el asiento de bitácora | Secuencia sí, porque es el camino que el reparto eligió mostrar (sección 5); estado y tiempo, no |
+El modelo de casos de uso (1.3) va uno solo, **acumulado**: los actores y los CU de los Sprints 0, 1 y 2.
+
+**Lo que no tiene código no se dibuja: se dice en la nota del diagrama.** Por ejemplo, el pago con Stripe (US-18) todavía no existe, así que el CU18 no tiene `Pasarela de Pago` ni pantalla de pago; la reserva, la cancelación, la atención y el historial son sólo web, y lo dicen sus notas.
 
 **6. El `.eapx` es binario.** Dos ramas que lo tocan en paralelo no se pueden fusionar. Todos los diagramas de EA van en la misma rama y los hace una sola persona (reparto del Sprint 2, sección 5).
 
@@ -415,57 +421,103 @@ Hay dos diferencias con ese texto:
 
 Los diagramas UML de las secciones 4 a 8 van en `docs/diagramas/PlataformaMedica.eapx`.
 
+### 3.1 Requisitos
+
 | Requisito | Detalle |
 |---|---|
 | **Enterprise Architect** | Versión 15. Sirve la Trial, pero según el reparto (sección 5) **la licencia Trial del equipo caducaba cerca del 22/09/26**: confirmen que EA sigue abriendo antes de planificar el trabajo. |
 | **Una sola persona y una sola rama** | El `.eapx` es binario y no se fusiona (regla 6 de la sección 1). |
 | **EA cerrado para cualquier script** | Si EA está abierto, su copia en memoria pisa lo que escriba un script y se pierde todo el trabajo, **sin error**. |
 
-**A mano o por script.** Los cinco tipos se pueden dibujar a mano en EA. La guía de Violet Boutique los generó con scripts de PowerShell sobre la API COM de EA (`scripts/ea-*.ps1` de ese repositorio), en dos pasadas: primero la API COM crea elementos, conectores y diagramas; después, con EA cerrado, se escribe por OLEDB directo sobre el `.eapx` lo que la API no deja tocar (orden Z, colores, geometría de los mensajes de secuencia, operandos de los fragmentos). Las recetas de abajo dicen en cada caso qué hace falta saber para cualquiera de las dos formas. Si se decide automatizar, la guía completa sigue en `D:\UNI\SI2\Primer_Parcial\GUIA-DIAGRAMAS-EA.md`.
+**Tres trampas de EA que aparecen en todos los tipos:**
 
-**Tres trampas de EA que aparecen en los cinco tipos:**
-
-- **EA dibuja toda relación que exista entre los elementos presentes en el lienzo**, aunque la hayan creado para otro diagrama. Si aparece una línea que no corresponde, se oculta en ese diagrama (clic derecho › *Visibility › Hide Connector*); no se borra, porque desaparecería también del diagrama donde sí va.
+- **EA dibuja toda relación que exista entre los elementos presentes en el lienzo**, aunque la hayan creado para otro diagrama. Si aparece una línea que no corresponde, se oculta en ese diagrama (clic derecho › *Visibility › Hide Connector*); no se borra, porque desaparecería también del diagrama donde sí va. Por eso **las clases de cada caso de uso son suyas**: `GestorBitacora` del CU6 y `GestorBitacora` del CU18 son dos elementos distintos.
 - **Borrar un diagrama no borra sus conectores.** Quedan en el modelo y vuelven a aparecer en el próximo diagrama que muestre esos elementos.
-- **Un diagrama y sus elementos van en el mismo paquete.** Si no, EA escribe `(from OtroPaquete)` debajo de cada elemento.
+- **Un diagrama y sus elementos van en el mismo paquete.** Si no, EA escribe `(from OtroPaquete)` debajo de cada elemento. La excepción aceptada es el actor, que es el del modelo de casos de uso y sale `(from Sprint 2 - Casos de Uso)`.
+
+### 3.2 Cómo está organizado el modelo
+
+Como en `VioletBoutique.eapx`: **un paquete plano por tipo de diagrama**, con los diagramas y sus elementos juntos adentro, **sin subcarpetas por caso de uso**. Un diagrama se encuentra abriendo dos niveles, no cinco.
+
+```
+Plataforma Médica Multi-Inquilino
+└── CAP. 4 - Proceso de desarrollo
+    ├── Sprint 2 - Casos de Uso                 1.3      (y los actores)
+    ├── Sprint 2 - 2.1.3 Comunicación           2.1.3
+    ├── Sprint 2 - 2.1.4.1 Clases de análisis   2.1.4.1
+    ├── Sprint 2 - 2.1.4.2 Secuencia            2.1.4.2
+    ├── Sprint 2 - 2.1.4.3 Estado               2.1.4.3
+    ├── Sprint 2 - 2.1.4.4 Tiempo               2.1.4.4
+    └── Sprint 2 - 2.1.4.5 Navegación           2.1.4.5
+```
+
+### 3.3 Los generadores del Sprint 2
+
+Los diagramas del Sprint 2 **no se dibujan a mano: se generan**, y el único retoque manual es el de la sección 4.3 (los rótulos de comunicación). Se hace en dos pasadas: primero la API COM de EA crea elementos, conectores y diagramas; después, con EA cerrado, se escribe por OLEDB directo sobre el `.eapx` lo que la API no deja tocar (geometría y orden Z de la secuencia, operandos de los fragmentos, numeración de los mensajes de comunicación).
+
+| Archivo | Qué hace |
+|---|---|
+| `scripts/ea-sprint2-casos.ps1` | **Los datos**, y lo único que se edita para agregar un CU: participantes, mensajes, guion de secuencia, estados, líneas de tiempo y navegación. Comunicación, clases y secuencia comparten participantes y numeración, por eso viven una sola vez acá. |
+| `scripts/ea-sprint2-comun.ps1` | Abre el modelo, crea los paquetes planos, busca el actor, pone cajas y cierra EA pase lo que pase. |
+| `ea-cu-modelo-sprint2.ps1` | 1.3, el modelo de casos de uso acumulado. **Va primero**: los demás buscan ahí al actor. |
+| `ea-comunicacion-sprint2.ps1`, `ea-clases-sprint2.ps1` | 2.1.3 y 2.1.4.1. **Clases va antes que secuencia**: las líneas de vida se clasifican con esas clases, que encuentra por el **alias** (el código del CU). |
+| `ea-secuencia-sprint2.ps1`, `ea-estado-sprint2.ps1`, `ea-tiempo-sprint2.ps1`, `ea-navegacion-sprint2.ps1` | 2.1.4.2 a 2.1.4.5. |
+
+```powershell
+# con EA cerrado, desde la raíz del repositorio y en este orden
+foreach ($g in 'cu-modelo','comunicacion','clases','secuencia','estado','tiempo','navegacion') {
+    powershell -ExecutionPolicy Bypass -File "scripts\ea-$g-sprint2.ps1"
+}
+```
+
+- **Son aditivos**: un diagrama que ya existe no se toca. **`-Rehacer` borra el paquete entero de ese tipo** y lo genera de nuevo; tarda segundos. Después de rehacer las clases hay que rehacer la secuencia. `-Caso CU18` genera uno solo; `-Modelo` apunta a otra copia del `.eapx` para probar sin tocar la del repositorio.
+- **Cada generador declara `trap { Salir-ConError $_ }`.** Si algo falla a mitad de camino, cierra EA, que si no queda abierto en segundo plano y sin ventana, reteniendo el archivo. Si igual queda uno, se mata desde el administrador de tareas (`EA.exe`) antes de volver a correr.
+- **Nunca se recorta la salida de un generador** (`| Select-Object -First 5`, `| head`): PowerShell mata el proceso al juntar las líneas pedidas, y la segunda pasada no llega a correr. Queda la secuencia sin operandos y EA abierto.
+- **Los `.ps1` se guardan en UTF-8 con BOM.** Sin BOM, PowerShell 5.1 los lee como ANSI y cada tilde entra al modelo rota (`GestiÃ³n`), sin error.
+- **PowerShell no distingue mayúsculas en las variables**: un `$paso` de un bucle pisa la constante `$PASO`, y un `$s` pisa a `$S`. Las constantes van con nombres que no choquen.
+
+La guía completa de la automatización, con todo lo que se probó, sigue en `D:\UNI\SI2\Primer_Parcial\GUIA-DIAGRAMAS-EA.md`.
 
 ---
 
-## 4. Diagramas de clases
+## 4. Diagramas de clases y de comunicación
 
-Hay dos diagramas de clases distintos, y no hay que confundirlos: las **clases de análisis**, que son de comportamiento y van una por caso de uso, y el **modelo de dominio**, que es de datos y va uno para todo el sistema.
+Hay dos diagramas de clases distintos, y no hay que confundirlos: las **clases de análisis**, que son de comportamiento y van una por caso de uso, y el **modelo de dominio**, que es de datos y va uno para todo el sistema. El **diagrama de comunicación** va acá porque dibuja las mismas clases de análisis, con los mensajes encima.
 
 ### 4.1 Clases de análisis (una por caso de uso)
 
 **Tipo de EA:** `Logical`.
 
-Cada caso de uso tiene su diagrama, con tres estereotipos que EA dibuja como tabla: `frontera`, `controlador` y `entidad`. Son las mismas clases del diagrama de comunicación del mismo caso de uso.
+Cada caso de uso tiene su diagrama, con tres estereotipos que EA dibuja como tabla: `frontera`, `controlador` y `entidad`. **Son las mismas clases del diagrama de comunicación** del mismo caso de uso (sección 4.3), con nombre conceptual (regla 1 de la sección 1).
 
 **Nivel de detalle:**
 
-| Estereotipo | Qué es en este proyecto | Atributos | Operaciones |
-|---|---|---|---|
-| `frontera` | la pantalla (React o Flutter) **y** la vista de DRF que la atiende | — | la acción de la pantalla y el endpoint |
-| `controlador` | el servicio o la función que decide | — | las funciones reales, con su firma |
-| `entidad` | el modelo de Django, es decir, la tabla | **las columnas**, con su tipo de la base | las consultas que se hacen sobre esa tabla |
+| Estereotipo | Nombre | Qué es en este proyecto | Atributos | Operaciones |
+|---|---|---|---|---|
+| `frontera` | `Pantalla…`, `Formulario…` | la pantalla (React y Flutter) **y** la vista de DRF que la atiende | **los endpoints**, con sus códigos | las funciones de la pantalla y la de la vista |
+| `controlador` | `Gestor…` | los servicios y serializers que deciden | — | las funciones reales, con su firma |
+| `entidad` | en singular: `Usuario`, `Bitacora` | la tabla; la nota dice cuál (`audit_log`) | **las columnas**, con su tipo de la base, privadas | lo que se le pide a esa tabla |
+
+**Cada clase lleva una nota con los archivos que la implementan.** Es lo que la ancla al código: `GestorPerfil` → `accounts/views/profile.py` y `accounts/serializers/profile.py`.
 
 **El actor va en el diagrama** (corrección del 17/09/2026). La frontera existe porque alguien la usa: sin el actor, el diagrama no dice quién empieza el caso de uso. Va unido a la frontera con una asociación, con rol en mayúsculas y cardinalidad `1 — 1`. Si el caso de uso tiene dos disparadores, van los dos. En US-31, por ejemplo, el paciente pregunta (`SuggestView`) y el administrador dispara la indexación (`ReindexView`).
 
-**Las uniones son siempre asociaciones**, con el rol en MAYÚSCULAS (`DELEGA_EN`, `CONSULTA`, `PERTENECE_A`) y la cardinalidad en los dos extremos (regla 3 de la sección 1).
+**Las uniones son siempre asociaciones dirigidas**, una por cada par que se habla en la comunicación, con el rol en MAYÚSCULAS y la cardinalidad en los dos extremos (regla 3 de la sección 1). El rol sale de los dos extremos: actor → frontera `USA`, frontera → controlador `DELEGA_EN`, controlador → entidad `PERSISTE_EN` (`1` — `0..*`), controlador → frontera `RESPONDE_A`, controlador → controlador `USA`.
 
-**Ejemplo: US-05, edición de perfil.**
+**Ejemplo: CU6, gestión de perfil de usuario (US-05).**
 
 | Clase | Estereotipo | Contenido |
 |---|---|---|
-| Paciente | actor | — |
-| `api/perfil.ts` (lo que llama `Perfil.tsx`) | frontera | `obtenerPerfil(contexto)`, `actualizarPerfil(datos, contexto)`, `cambiarContrasena(datos, contexto)` |
-| `accounts/views/profile.py` | frontera | `GET /api/accounts/users/me/`, `PATCH /api/accounts/users/me/`, `POST /api/accounts/users/me/password/` |
-| `ProfileSerializer` | controlador | `to_internal_value(data)`, `validate_email(value)` |
-| `PasswordChangeSerializer` | controlador | `validate(attrs)` |
-| `accounts/passwords.py` | controlador | `validate_password_strength(password, user)`, `confirm_match(password, confirmation)` |
-| `User` | entidad | `id: uuid`, `organization_id: uuid`, `email: varchar(254)`, `first_name`, `last_name`, `phone`… |
-| `Patient` | entidad | `user_id: uuid`, `first_name`, `last_name`, `phone`… |
-| `AuditLog` | entidad | `action`, `entity`, `entity_id`, `detail: jsonb`… |
+| Usuario | actor | el abstracto del 1.3: el perfil lo usan todos los roles |
+| `PantallaPerfil` | frontera | `GET /api/accounts/users/me/ : 200 \| 401`, `PATCH …` · `obtenerPerfil(contexto)`, `actualizarPerfil(datos, contexto)`, `profile(request)` |
+| `FormularioContrasena` | frontera | `POST /api/accounts/users/me/password/ : 200 \| 400 \| 401` · `cambiarContrasena(datos, contexto)`, `change_password(request)` |
+| `GestorPerfil` | controlador | `to_internal_value(data)`, `validate_email(value)`, `get_roles(user)`, `validate(attrs)`, `_sincronizar_paciente(user, cambiados)` |
+| `GestorAutenticacion` | controlador | `authenticate(request)`, `validate_password_strength(password, user)`, `revoke_all_sessions(user)`, `tokens_for_user(user)` |
+| `GestorBitacora` | controlador | `record(request, action, entity, entity_id, detail)` |
+| `Usuario` | entidad | tabla `users`: `id: uuid`, `organization_id: uuid`, `email: varchar(254)`… |
+| `Paciente` | entidad | tabla `patients`: `user_id: uuid`, `first_name`, `last_name`, `phone`… |
+| `Bitacora` | entidad | tabla `audit_log`: `action`, `entity`, `detail: jsonb`… |
+| `TokenRevocado` | entidad | tabla `token_blacklist_blacklistedtoken` |
 
 **Cómo se escribe en EA:**
 
@@ -501,6 +553,21 @@ Dos agregados que valen la pena:
 
 **Disposición:** columnas agrupadas por app (`accounts`, `tenancy`, `catalog`, `patients`, `scheduling`, `appointments`, `encounters`, `assistant`), de izquierda a derecha. Las autorreferencias —`patients.guardian_id`, el dependiente que apunta a su titular— necesitan aire a la derecha. El alto de cada caja es más o menos `60 + columnas × 18`.
 
+### 4.3 Diagrama de comunicación (uno por caso de uso)
+
+**Tipo de EA:** `Communication`. Va en el capítulo 2.1.3 y tiene **los mismos participantes que las clases de análisis** del mismo caso de uso. Está armado como los 2.2 de Violet Boutique:
+
+- **Los participantes son clases con estereotipo de robustez** (`boundary`, `control`, `entity`), que EA dibuja como su ícono: el círculo con la barra, el círculo con la flecha y el círculo subrayado. El actor es el del 1.3.
+- **Una sola línea por par de participantes**, aunque por ella pasen diez mensajes. No se dibuja una línea por paso.
+- **Cada paso es un mensaje sobre esa línea**, con su flecha. Los mensajes se agrupan por flujo: el grupo 1 es el flujo principal, el siguiente el alternativo y el último las excepciones. EA numera cada grupo por su cuenta (`1.1`, `1.2`… `2.1`…) y lo pinta de otro color; abajo va una nota que dice qué es cada grupo.
+- **Disposición en columnas:** actor · fronteras · controladores · entidades · externos.
+
+> **El único retoque a mano de todo el Sprint 2.** Un mensaje creado por script **sale sin punta de flecha**, y cuando una línea lleva tres o más mensajes **EA los dibuja encimados**. Se probó todo lo que EA guarda cuando uno los arrastra (la posición del rótulo, la fila del conector en el diagrama) y no alcanza: en el modelo de Violet los mensajes se crearon a mano. Por eso:
+>
+> - el generador pone el sentido en el texto (`registrar(PROFILE_UPDATE) ↑`), según hacia dónde queda el destino en el lienzo;
+> - los datos nunca ponen más de **dos mensajes en el mismo sentido** sobre una misma línea; si hacen falta más, se parte el participante (el cambio de contraseña entra por su propia frontera, `FormularioContrasena`);
+> - y **después de generar, en EA se arrastran los rótulos que quedaron encimados** hasta que se lea cada uno. Es lo último que se hace antes de exportar.
+
 ---
 
 ## 5. Diagrama de secuencia
@@ -509,32 +576,55 @@ Dos agregados que valen la pena:
 
 ### 5.1 Las líneas de vida
 
-- **Una línea de vida no es la clase puesta en el lienzo.** Es un elemento de secuencia, **sin nombre**, cuyo clasificador es la clase del diagrama de clases de análisis. Así EA la rotula `: SuggestView` y **el vínculo queda vivo**: si se renombra la clase, se renombra la línea de vida. Si se escribe el nombre a mano, es texto suelto y se desincroniza.
-- **El actor es el mismo elemento del modelo de casos de uso**, no una copia.
-- **El orden es por rol, no por aparición:** actor · frontera · controladores · entidades · sistemas externos. Algunos mensajes van hacia atrás, y se acepta: lo que se gana es que el diagrama se lea por capas de izquierda a derecha.
-- **La línea de vida no muestra el estereotipo de su clase**, así que hay que ponérselo también a ella, y pintarla con el color de su rol (regla 4 de la sección 1).
+El estilo es el del **ciclo 3 de Violet Boutique** (`3.2 CU-04 Gestionar perfil del cliente`), que es el que pidió el equipo.
+
+- **Una línea de vida no es la clase puesta en el lienzo.** Es un elemento de secuencia, **sin nombre**, cuyo clasificador es la clase del diagrama de clases de análisis. Así EA la rotula `:GestorPerfil` y **el vínculo queda vivo**: si se renombra la clase, se renombra la línea de vida. Si se escribe el nombre a mano, es texto suelto y se desincroniza.
+- **El actor es el mismo elemento del modelo de casos de uso**, no una copia. Un sistema externo (el `Servicio de IA`, la `Pasarela de Pago`) va también como actor, a la derecha.
+- **El orden es por rol y, dentro del rol, por aparición:** actor · fronteras · controladores · entidades · externos. Algunos mensajes van hacia atrás, y se acepta: lo que se gana es que el diagrama se lea por capas de izquierda a derecha.
+- **Todas del mismo color y sin estereotipo** (regla 4 de la sección 1).
 
 ### 5.2 Qué se escribe en cada mensaje
 
 | Tramo | Qué se escribe | Ejemplo de este proyecto |
 |---|---|---|
-| Actor → frontera | la acción del usuario | `1.1: describirSintomas(texto)` |
-| Frontera → controlador | la función real, con su firma | `1.3: check(question)` |
-| Controlador → controlador | la función auxiliar | `1.5: embed_query(text)` |
-| Controlador → entidad | la consulta, literal | `1.6: SELECT … FROM assistant_catalog_fragments WHERE organization_id = … ORDER BY embedding <=> …` |
-| Entidad → controlador | el tipo del resultado, como **retorno** (línea punteada) | `1.6.1: list[CatalogFragment]` |
+| Actor → frontera | la acción del usuario | `1.1: solicitarPerfil()` |
+| Frontera → controlador | **el endpoint**, con el verbo y la ruta | `1.2: GET /api/accounts/users/me/()` |
+| Controlador → controlador | la función, o un mensaje a sí mismo | `1.6: validarDatos(datos)  {sólo nombres, teléfono y correo}` |
+| Controlador → entidad | **el SQL, literal**, con la tabla real | `1.7a: UPDATE users SET first_name, last_name, phone, email WHERE id = :id()` |
+| Entidad → controlador | el tipo del resultado, como **retorno** (línea punteada) | `1.3.2: Usuario(id, organization_id)` |
 | Controlador → externo | la llamada al servicio | `1.8: generate_content(prompt)` |
-| Controlador → frontera (error) | el error y su código HTTP | `4.1: turno_ocupado → 409` |
+| Controlador → frontera (error) | el error y su código HTTP, como retorno | `1.7b: datosInvalidos(campo) -> 400` |
 
-**La numeración se hereda del diagrama de comunicación** del mismo caso de uso, para que el mismo mensaje se siga en los dos capítulos. Los retornos, que el diagrama de comunicación no tiene, se numeran como subnivel del mensaje que los provoca (`1.6` → `1.6.1`), para no correr la numeración.
+- **Cada flujo empieza con una nota** a la izquierda, fuera de toda caja: `FLUJO 1 Consultar y editar el perfil`, `FLUJO 2 Cambiar la contraseña`. El flujo es el primer número del mensaje.
+- **Los retornos se numeran como subnivel** del mensaje que los provoca (`1.3` → `1.3.1`), para no correr la numeración.
+- **Las ramas de un `alt` se numeran con letra:** `1.7a`, `1.8a`… en el primer operando y `1.7b`, `1.8b`… en el segundo. Se lee enseguida que son alternativas del mismo paso.
+- **Todo mensaje termina en paréntesis.** A un mensaje sin ellos EA le agrega `()`: `200 Perfil` sale `200 Perfil()`. Por eso `200(access, refresh)`.
 
 **El mensaje a sí mismo** (el lazo que un objeto se manda) es el que muestra que el trabajo ocurre adentro y no en un ida y vuelta inventado. Toda llamada de un módulo a una función propia es uno de estos: `_grounded_fallback()` dentro de `generation.py`, o `_sincronizar_paciente()` dentro de `accounts/views/profile.py`.
 
 ### 5.3 Fragmentos combinados
 
-- **`alt`** para las ramas: cada operando lleva su guarda entre corchetes, y la guarda es la condición literal del `if`.
-- **`loop`** para una repetición: un solo operando cuyo nombre es la guarda. Puede ir anidado dentro de un operando de un `alt`.
+**Regla: los fragmentos combinados no se saltan.** Antes de dar por terminado un diagrama de secuencia, se recorre el código del caso de uso buscando dos cosas, y **cada una que aparezca va al diagrama**:
+
+| En el código | En el diagrama |
+|---|---|
+| un `if` / `else`, un `try` / `except` que cambia la respuesta, un código de error distinto | **`alt`**, un operando por rama |
+| un `for`, una comprensión de lista (`[f for f in …]`), un `any()` / `all()` sobre una colección | **`loop`**, con la guarda «por cada …» |
+
+Un diagrama de secuencia sin ningún `alt` ni `loop` casi seguro está incompleto. El 03/10/2026 los CU21, CU25, CU33 y CU35 salieron sin `loop`, aunque su código tenía repeticiones (`booking.py:63`, `services.py:120` y `:133`, `retrieval.py:148`, `triage.py:234-238`), y hubo que agregarlos.
+
+- **`alt`** para las ramas: cada operando lleva su guarda entre corchetes, y la guarda es la condición literal del `if`. Sólo donde hay una rama real en el código.
+- **`loop`** para una repetición: un solo operando cuyo nombre es la guarda. Encierra **todo** lo que se repite y nada más. Puede ir anidado dentro de un operando de un `alt`: en el CU6, `loop [por cada refresco vigente del usuario]` va dentro de la rama `[actual correcta y nueva válida]`. Cuando encierra un solo mensaje a sí mismo, la caja tiene que ser más ancha que su guarda y que el rótulo del mensaje; si no, queda tapada y no se ve (el generador la ensancha sola).
+
+**Sólo usamos `alt` y `loop`.** UML define otros diez operadores (`opt`, `par`, `break`, `critical`, `neg`, `assert`, `strict`, `seq`, `ignore`, `consider`), y no los usamos. El único que podría aparecer es **`opt`**, que conviene reconocer:
+
+- **`opt` es un `alt` de una sola rama**: el bloque se ejecuta si la guarda se cumple y, si no, no pasa nada; no hay «si no». Por ejemplo, en Violet Boutique, al guardar una dirección, `[si queda predeterminada] UPDATE direccion_cliente SET predeterminada = false` sólo corre en ese caso, y si no, se sigue de largo.
+- **No lo usamos porque un `alt` con un operando dice lo mismo**, y así todos los diagramas tienen un solo operador para las ramas. Si una rama no tiene «si no», se dibuja como `alt` con un solo operando, o con un segundo operando que dice qué pasa en el otro caso, que suele ser más claro.
 - Para cambiar el operador, doble clic sobre el fragmento y el desplegable **Interaction Operator**. Los operandos se agregan con clic derecho › *Combined Fragment › Add Operand*.
+
+> **Si los fragmentos no se ven en EA, es el orden Z.** Un fragmento creado por script queda con orden Z indefinido (`t_diagramobjects.Sequence = 999999`), y **EA no lo dibuja en su interfaz**, sin dar ningún error. Así estaban los primeros diagramas del Sprint 2. El generador escribe el orden en la segunda pasada: primero las notas, después las líneas de vida y al final los fragmentos, del más externo al anidado. A mano no pasa: EA asigna el orden al soltar el fragmento.
+>
+> Los operandos van en una fila `Partitions` de `t_xref`, **escritos en orden inverso**, y sus alturas tienen que sumar el alto de la caja.
 
 ### 5.4 EA reacomoda el diagrama cada vez que lo abre
 
@@ -544,46 +634,40 @@ Esto es lo que más tiempo costó en el otro proyecto, y vale igual a mano:
 2. **Las cajas de los fragmentos y las notas sí quedan donde están.** Por eso una caja puede terminar encerrando mensajes que no son suyos, y **no da ningún error**: el diagrama parece bien hasta que se lee.
 3. **Mover cualquier cosa "mueve todo".** Al arrastrar una nota, una caja o un mensaje, EA recalcula y las cajas de abajo dejan de encerrar lo que encerraban. **No acomoden las cajas a mano al final**: agreguen los mensajes en orden y ajusten las cajas una sola vez, revisando cada operando.
 4. **Las notas de separación de flujo van en una columna a la izquierda**, fuera de toda caja. Una nota dentro de una caja queda atada a ella.
+5. **No se puede abrir hueco para que la guarda no quede tachada.** La guarda del primer operando queda, a veces, cruzada por el primer mensaje. Se probó bajar ese mensaje un renglón y EA no lo respeta: todas las cajas de abajo quedaron corridas un mensaje, y el error de una rama cayó en la otra. Se acepta la guarda tachada; si molesta, se corre a mano en EA el texto de la guarda, no el mensaje.
 
-### 5.5 Ejemplo: US-31, consulta al asistente
+### 5.5 Ejemplo: CU6, gestión de perfil de usuario
 
-Es el camino que el reparto propone (sección 5, "Tiempo (secuencia)", alternativa). Líneas de vida, en orden de rol:
-
-| Línea de vida | Rol | Archivo |
-|---|---|---|
-| Paciente | actor | — |
-| `: Asistente.tsx` | frontera | `frontend/src/paginas/Asistente.tsx` (o `assistant_screen.dart` en el móvil) |
-| `: SuggestView` | frontera | `backend/assistant/views.py:53` |
-| `: triage` | controlador | `backend/assistant/triage.py:231` |
-| `: retrieval` | controlador | `backend/assistant/retrieval.py:117` |
-| `: embeddings` | controlador | `backend/assistant/embeddings.py:226` |
-| `: generation` | controlador | `backend/assistant/generation.py:80` |
-| `: CatalogFragment` | entidad | `backend/assistant/models.py` |
-| `: Google Gemini API` | externo | — |
-
-Guion:
+Líneas de vida, en orden de rol: `Usuario` · `:PantallaPerfil` · `:FormularioContrasena` · `:GestorPerfil` · `:GestorAutenticacion` · `:GestorBitacora` · `:Usuario` · `:Paciente` · `:Bitacora` · `:TokenRevocado`.
 
 ```
-1.1   Paciente → Asistente.tsx        describirSintomas(texto)
-1.2   Asistente.tsx → SuggestView     POST /api/assistant/suggest/ {question}
-1.3   SuggestView → triage            check(question)
-1.3.1 triage → SuggestView            TriageResult                          (retorno)
-alt  [is_emergency]
-  2.1 SuggestView → Asistente.tsx     {emergency: true, answer: EMERGENCY_MESSAGE}
-     [no es urgencia]
-  1.4 SuggestView → retrieval         retrieve(organization, question, limit=5)
-  1.5 retrieval → embeddings          embed_query(question)
-  1.5.1 embeddings → Gemini           embed_content(question)
-  1.6 retrieval → CatalogFragment     SELECT … WHERE organization_id = … ORDER BY embedding <=> …
-  1.6.1 CatalogFragment → retrieval   list[CatalogFragment]                 (retorno)
-  1.7 SuggestView → retrieval         rank_specialties(fragments)
-  1.8 SuggestView → generation        answer(question, fragments, specialty_name)
-  1.9 generation → generation         _call_model(question, context)        (mensaje a sí mismo)
-  1.9.1 generation → Gemini           generate_content(prompt)
-  1.10 SuggestView → Asistente.tsx    {specialty, fragments, answer}
+FLUJO 1 Consultar y editar el perfil
+1.1   Usuario → PantallaPerfil          solicitarPerfil()
+1.2   PantallaPerfil → GestorPerfil     GET /api/accounts/users/me/()
+1.3   GestorPerfil → GestorAutenticacion  autenticar(token)  {el usuario sale del token}
+1.3.1 GestorAutenticacion → Usuario     SELECT * FROM users WHERE id = :token_user_id()
+1.3.2 Usuario → GestorAutenticacion     Usuario(id, organization_id)            (retorno)
+1.3.3 GestorPerfil → PantallaPerfil     ProfileOut(perfil, roles)               (retorno)
+1.4 … 1.6                               modificar(datos) · PATCH … · validarDatos(datos)
+alt [sólo campos editables y correo libre]
+  1.7a  GestorPerfil → Usuario          UPDATE users SET first_name, last_name, phone, email WHERE id = :id()
+  1.8a  GestorPerfil → Paciente         UPDATE patients SET first_name, last_name, phone WHERE user_id = :id()
+  1.9a  GestorPerfil → GestorBitacora   registrar(PROFILE_UPDATE)  {sin valores}
+  …
+    [campo no editable o correo ya usado]
+  1.7b  GestorPerfil → PantallaPerfil   datosInvalidos(campo) -> 400            (retorno)
+FLUJO 2 Cambiar la contraseña
+2.1 … 2.3.1                             cambiarContrasena(…) · POST …/password/ · check_password(actual) · bool()
+alt [actual correcta y nueva válida]
+  2.4a … 2.6a                           validate_password_strength · UPDATE users SET password · renovarSesiones(usuario)
+  loop [por cada refresco vigente del usuario]
+    2.7a GestorAutenticacion → TokenRevocado  INSERT INTO token_blacklist_blacklistedtoken (token_id)()
+  2.8a … 2.11a                          tokens_for_user (par nuevo) · registrar(PASSWORD_CHANGE) · 200(access, refresh) · guardarTokens
+    [actual incorrecta o nueva repetida]
+  2.4b … 2.5b                           registrar(PASSWORD_CHANGE, fallido) · contrasenaActualIncorrecta() -> 400
 ```
 
-Dos cosas que el diagrama tiene que dejar ver, porque son las que se defienden: **el `WHERE organization_id` va antes del `ORDER BY`** (regla 9 del reparto), y **si `triage` dispara, no se consulta a nadie más**.
+El guion completo de cada CU está en `scripts/ea-sprint2-casos.ps1`. En los del asistente hay que dejar ver dos cosas, porque son las que se defienden: **el `WHERE organization_id` va antes del `ORDER BY`** en la búsqueda por vectores (regla 9 del reparto), y **si el triaje detecta una emergencia, no se consulta a nadie más**.
 
 ---
 
@@ -593,7 +677,7 @@ Dos cosas que el diagrama tiene que dejar ver, porque son las que se defienden: 
 
 ### 6.1 Qué se dibuja, y qué no
 
-**No es el ciclo de vida de un objeto.** Es el **flujo de una transacción** de principio a fin, y va **uno por caso de uso transaccional**. Así es el ejemplo de cátedra (`CU1`, pág. 10 de *todos los diagramas.pdf*):
+**No es el ciclo de vida de un objeto.** Es el **flujo de una transacción** de principio a fin, y va **uno por caso de uso** de la tabla de la regla 5 (sección 1). Así es el ejemplo de cátedra (`CU1`, pág. 10 de *todos los diagramas.pdf*):
 
 ```
 Inicio → Loguear Administrador ─[correcto]→ Seleccionar opcion Usuario
@@ -604,7 +688,7 @@ Inicio → Loguear Administrador ─[correcto]→ Seleccionar opcion Usuario
                                    → Transaccion completada → Fin
 ```
 
-> **Ojo con la propuesta del reparto.** La sección 5 del reparto del Sprint 2 propone como diagrama de estados "el ciclo de vida de la ficha" (*pendiente de pago → confirmada → atendida…*). En el otro proyecto se hizo justamente eso con el objeto `Reserva`, y la ingeniera lo corrigió el 15/09/2026: estaba bien como máquina de estados y mal como entregable. **Conviene seguir el ejemplo de cátedra.** Los estados de la ficha no se pierden: son la segunda línea de vida del diagrama de tiempo de US-17 (sección 8.4).
+> **Ojo con la propuesta del reparto.** La sección 5 del reparto del Sprint 2 propone como diagrama de estados "el ciclo de vida de la ficha" (*pendiente de pago → confirmada → atendida…*). En el otro proyecto se hizo justamente eso con el objeto `Reserva`, y la ingeniera lo corrigió el 15/09/2026: estaba bien como máquina de estados y mal como entregable. **Conviene seguir el ejemplo de cátedra.** Los estados de la ficha no se pierden: son la segunda línea de vida del diagrama de tiempo del CU18 (sección 8.4).
 
 **Los estados son actividades de la transacción**, no valores de una columna: autenticar, seleccionar, capturar, validar, informar. El sumidero es siempre `Transaccion completada`, y después el estado final.
 
@@ -622,13 +706,13 @@ Inicio → Loguear Administrador ─[correcto]→ Seleccionar opcion Usuario
 | Guarda de cada transición | la condición literal del `if`, entre corchetes |
 | `{...}` al final del rótulo | el ancla: `archivo:línea`, o el código HTTP |
 
-### 6.3 Ejemplo completo: US-05, edición de perfil
+### 6.3 Ejemplo completo: CU6, gestión de perfil de usuario
 
 | Desde | Hasta | Guarda | Sale de |
 |---|---|---|---|
-| *(inicial)* | Autenticar Paciente | — | — |
-| Autenticar Paciente | Seleccionar operacion | `[token válido]` | `IsAuthenticated`, `views/profile.py:45` |
-| Autenticar Paciente | *(final de rechazo)* | `[sin token]` | `{401}` |
+| *(inicial)* | Autenticar Usuario | — | — |
+| Autenticar Usuario | Seleccionar operacion | `[token válido]` | `IsAuthenticated`, `views/profile.py:45` |
+| Autenticar Usuario | *(final de rechazo)* | `[sin token]` | `{401}` |
 | Seleccionar operacion | Desplegar perfil | `[consultar]` | `GET /api/accounts/users/me/` |
 | Seleccionar operacion | Capturar datos de contacto | `[editar datos]` | `PATCH /api/accounts/users/me/` |
 | Seleccionar operacion | Capturar contraseñas | `[cambiar contraseña]` | `POST /api/accounts/users/me/password/` |
@@ -651,6 +735,7 @@ El rótulo usa la notación de UML `evento [guarda] / acción`. La acción `/ re
 - **Las piezas son tres:** estados, el pseudoestado inicial (círculo negro) y el estado final (círculo negro con anillo). En EA, el inicial y el final son elementos `StateNode`; si se crean por script, sólo se dibujan los subtipos `100` (inicial), `101` (final) y `102` (punto de salida). Del `103` en adelante el elemento queda en el árbol y el lienzo sale vacío en ese punto, sin error.
 - **Todos los rechazos van a un sumidero único** (`Informar error`), y de ahí sale **una sola** flecha de vuelta al menú. **Nunca dos flechas entre las mismas dos cajas**: EA pone el rótulo en el punto medio del conector, y con ida y vuelta los dos rótulos salen encimados, sin ningún error.
 - **Puede haber varios estados finales, y conviene.** El rechazo de autorización muere en uno propio, dibujado al lado de la autenticación. Es UML válido, dice algo verdadero —un 401 no llega a haber transacción— y evita una flecha que cruce el lienzo entero.
+- **No se escriben coordenadas: cada estado declara su columna y su fila** (admite medias filas), y el generador calcula la posición. La vuelta `reintentar()` del sumidero al menú va **en ángulo recto**, por debajo de las operaciones.
 - **La maqueta va en cinco columnas:** autenticación · menú · operaciones · validación · cierre. Las operaciones se apilan en la columna del medio, con unos 180 px entre una y otra, y el hueco entre el menú y las operaciones tiene que ser ancho (unos 600 px): por ahí salen las flechas del menú con sus rótulos, que son largos.
 - **El rótulo de cada flecha cae en su punto medio, y el punto medio choca.** Si dos flechas terminan a la misma altura, los rótulos se encima. Se arregla corriendo medio renglón un estado: el sumidero de errores un poco más abajo que la última operación, el cierre entre dos filas. La regla general: **el punto medio de la flecha de vuelta tiene que caer en el hueco entre dos operaciones, nunca sobre una.**
 - **El pseudoestado inicial va lejos del primer estado**: con la flecha corta, el rótulo queda encima del círculo.
@@ -665,23 +750,24 @@ El rótulo usa la notación de UML `evento [guarda] / acción`. La acción `/ re
 
 El diagrama de navegación **no existe en UML 2.5**. Es la extensión **UWE** (*UML-based Web Engineering*): un diagrama de clases con un perfil de navegación encima. Si en la defensa preguntan qué diagrama UML es, la respuesta honesta es que no lo es.
 
-### 7.2 Va uno por actor
+### 7.2 Va uno por caso de uso
 
-El ejemplo de cátedra se titula `class navegacion cliente`, y eso fija tres reglas:
+El ejemplo de cátedra se titula `class navegacion cliente` y es uno por actor. **En este proyecto va uno por caso de uso** (decisión del equipo del 03/10/2026), igual que la comunicación, las clases y la secuencia: `2.1.4.5 Navegación - CU6 Gestión de Perfil de Usuario`. Así cada caso de uso se explica con todos sus diagramas cortados igual. Del ejemplo de cátedra se conservan dos reglas:
 
-1. **Va uno por actor.** El título nombra al actor, y el actor está dibujado adentro. No es un mapa del sistema entero.
-2. **Lleva los controladores**, no sólo las pantallas.
-3. **Los enlaces van rotulados `build` y `submit`**: se construye una vista, una vista postea.
+1. **El actor está dibujado adentro**, y entra al menú por el enlace `[sesión]`. Es el del modelo de casos de uso: en el CU6, el abstracto `Usuario`, porque el perfil lo usan todos los roles.
+2. **Lleva los controladores**, no sólo las pantallas, y **los enlaces van rotulados `build` y `submit`**: se construye una vista, una vista postea.
 
-En este proyecto hay dos clientes, así que el corte natural es **un diagrama por actor y por cliente**: *navegación Paciente — móvil*, *navegación Paciente — web*, *navegación Recepcionista — web*, etc. El reparto propone empezar por las pantallas del móvil del paciente (sección 5), porque es la superficie que más creció y la que se demuestra.
+**Sólo van las pantallas por las que pasa el caso de uso**, desde el menú. Si el flujo principal es móvil, las cajas son las pantallas y las rutas de Flutter, y la nota lo dice.
+
+**Una pantalla a la que se llega desde otra cuelga de esa otra, no del menú.** En el CU32, `Asistente.tsx ─build→ BuscarProfesionales.tsx ─build→ Disponibilidad.tsx`: es el botón «Ver profesionales» y la tarjeta de cada profesional. En los datos, el área lleva `desde = 'Asistente.tsx'`. Una pantalla que no es formulario pero cuelga de otra (el historial, que se abre desde la agenda) lleva `tipo = 'navigationClass'`.
 
 ### 7.3 Qué es cada caja
 
 | Estereotipo | Qué es | Ejemplo de este proyecto |
 |---|---|---|
 | `«menu»` | la pantalla eje del actor, la que deja el login | `Panel.tsx` (web), `_HomeScreen` de `app_router.dart` (móvil) |
-| `«navigationClass»` | una vista de lista. Sus atributos son **los filtros reales** que manda al endpoint | `MisFichas.tsx`, `BuscarProfesionales.tsx` (`q`, `specialty`, `branch`) |
-| `«formClass»` | un formulario. Sus atributos son **los campos reales** | `Perfil.tsx` (`first_name`, `last_name`, `phone`, `email`) |
+| `«navigationClass»` | una pantalla. Sus atributos son la ruta y **lo que muestra**, o los filtros reales que manda al endpoint | `Perfil.tsx` (`document_type`, `document_number`, `roles`), `BuscarProfesionales.tsx` (`q`, `specialty`, `branch`) |
+| `«formClass»` | un formulario, aunque sea un componente dentro de la página. Sus atributos son **los campos reales** (el `name` de cada casilla) | `DatosDeContacto` (`first_name`, `last_name`, `phone`, `email`) y `CambioDeContrasena`, los dos de `Perfil.tsx` |
 | `«controller»` | el archivo de vistas del backend. Sus operaciones son **las funciones**, una por una | `accounts/views/profile.py` (`profile`, `change_password`) |
 | actor | el mismo del modelo de casos de uso, no una copia | Paciente |
 
@@ -704,21 +790,21 @@ En este proyecto hay dos clientes, así que el corte natural es **un diagrama po
 ### 7.5 La cadena, sin idas y vueltas
 
 ```
-Paciente ─[sesión]→ Panel.tsx ─build→ Perfil.tsx ─submit→ accounts/views/profile.py
-                             ─build→ Asistente.tsx ─submit→ assistant/views.py
-                             ─build→ MisFichas.tsx ─submit→ appointments/booking.py
+Usuario ─[sesión]→ Panel.tsx ─build [sesión]→ Perfil.tsx ─submit→ accounts/views/profile.py
+                                               Perfil.tsx ─build→ DatosDeContacto    ─submit→ accounts/views/profile.py
+                                               Perfil.tsx ─build→ CambioDeContrasena ─submit→ accounts/views/profile.py
 ```
 
 - **No hay flecha de vuelta del controlador a la vista.** Con ida y vuelta entre las mismas dos cajas, EA encima los dos rótulos (sale `sbuild:` en lugar de `submit` y `build`). Además, la vuelta ya está contada: `Panel → Vista` es el mismo `build` que hace el controlador al devolver la página.
 - **El cliente HTTP no se dibuja como clase** (`frontend/src/api/*.ts`, `mobile/lib/features/*/…_api.dart`): serían cajas que no deciden nada. Se nombra en la nota de cada controlador.
-- **Si dos áreas comparten archivo, comparten caja.** Un elemento no puede estar dos veces en el mismo lienzo: se dibuja en la primera banda que lo usa y las demás le tiran la flecha. En dos diagramas distintos sí puede estar, y es **el mismo elemento**: `accounts/views/profile.py` sale en la navegación de todos los actores, porque todos tienen perfil.
+- **Si dos áreas comparten archivo, comparten caja.** Un elemento no puede estar dos veces en el mismo lienzo: se dibuja en la primera banda que lo usa y las demás le tiran la flecha. En dos diagramas distintos sí puede estar, y es **el mismo elemento**: `Panel.tsx` sale en la navegación de todos los casos de uso. El generador lo busca por nombre antes de crearlo y le suma los atributos y operaciones que le falten.
 
 ### 7.6 Maqueta
 
-- **Una banda por área funcional:** la vista arriba, su formulario debajo y el controlador a la derecha, centrado entre los dos. Así ninguna flecha cruza una caja.
-- **El alto de una caja es un mínimo, no una medida.** Si tiene más atributos u operaciones de los que entran, **EA la agranda hacia abajo sin avisar** y se come la banda siguiente. Calculen el alto con el contenido.
-- **El corredor entre el menú y la columna de vistas tiene que ser ancho** (unos 680 px): por ahí se abren en abanico las flechas `build` del menú. Si es angosto, cruzan por encima de los formularios.
-- **Son acumulativos por sprint:** el del Sprint 2 lleva también lo del Sprint 1, porque un mapa de navegación es la foto de todo lo que el actor puede alcanzar.
+- **Cinco columnas:** actor · menú · pantalla · formularios · controlador. En cada banda, la pantalla va arriba, sus formularios **apilados en la columna siguiente, empezando debajo de ella**, y el controlador arriba a la derecha. Así `pantalla ─submit→ controlador` pasa por encima de los formularios y los `build` salen en abanico hacia abajo: **ninguna flecha atraviesa una caja**. Con los formularios en la misma columna que la pantalla, el `build` al segundo formulario cruzaba el primero.
+- **El alto de una caja es un mínimo, no una medida.** Si tiene más atributos u operaciones de los que entran, **EA la agranda hacia abajo sin avisar** y se come la banda siguiente. El generador calcula el alto con el contenido.
+- **El corredor entre el menú y la columna de pantallas tiene que ser ancho:** por ahí se abren en abanico las flechas `build` del menú.
+- **La nota al pie** dice de dónde salen las rutas y las guardas, y nombra el par móvil.
 
 ---
 
@@ -728,7 +814,7 @@ Paciente ─[sesión]→ Panel.tsx ─build→ Perfil.tsx ─submit→ accounts/
 
 ### 8.1 Qué mide
 
-Va **uno por caso de uso transaccional**. La línea de vida principal es **la transacción**, es decir, el viaje de una petición por las capas del backend:
+Va **uno por caso de uso** de la tabla de la regla 5 (sección 1). La línea de vida principal es **la transacción**, es decir, el viaje de una petición por las capas del backend:
 
 ```
 Inactiva → Autenticando → Validando → Escribiendo → Confirmada → Inactiva
@@ -765,7 +851,7 @@ Un caso de uso tiene varias ramas y una línea de vida dibuja una sola. **Se eli
 
 Inventar milisegundos es peor que dejar la regla relativa y decirlo.
 
-### 8.4 Ejemplo: US-17, la ficha que vence
+### 8.4 Ejemplo: CU18 (US-17), la ficha que vence
 
 Es el escenario donde el reloj manda en este sistema.
 
@@ -787,6 +873,8 @@ Es el escenario donde el reloj manda en este sistema.
 `Validando` son las comprobaciones de `book_appointment()` antes de entrar a la transacción (paciente, profesional, sucursal y `turno_pasado`). La validación del espacio, `_validate_slot_is_real()`, corre **después** del `select_for_update()`, ya con la agenda bloqueada (`booking.py:113` y `:127`): por eso está dentro de `Escribiendo` y no en `Validando`.
 
 Las dos líneas escalonan **en el mismo instante del `COMMIT`**: ahí nace la ficha y empieza a correr su plazo. La rama alternativa —el pago llega antes de los 15 minutos y la ficha pasa a `confirmed`— es de US-18, y se puede dibujar como un segundo diagrama cuando exista.
+
+> **Cuidado: hoy el paso a `expired` no ocurre.** `expires_at` se guarda (`booking.py:140`), pero ningún proceso marca la ficha como `expired`, y la disponibilidad (`availability.py:62`) y el índice `uq_appointment_active_slot` siguen contando como ocupada toda ficha `pending_payment`. Por eso el diagrama generado del CU18 deja la ficha en `pending_payment` con el plazo vencido y el turno ocupado, y lo dice en la nota. Cuando exista el job que vence las fichas (o el pago de US-18), se cambia esa línea.
 
 ### 8.5 Lo que este diagrama tiene flojo, y qué contestar
 
@@ -812,13 +900,13 @@ Las dos líneas escalonan **en el mismo instante del `COMMIT`**: ahí nace la fi
 - **Exporten después de abrir el diagrama**, no desde el árbol: EA recalcula la maqueta (sobre todo la de secuencia) al abrirlo.
 - **Por script**, `PutDiagramImageToFile(guid, ruta, 1)` recibe el `DiagramGUID`, no el `DiagramID`, y los ids cambian cada vez que se regenera un paquete.
 
-**Dónde y con qué nombre:** `docs/diagramas/png/Sprint 2/`, con el número de figura del documento y el nombre del caso de uso, como los del Sprint 1: `3.2 Diagrama de Estado - US-05 Edicion de perfil.png`.
+**Dónde y con qué nombre:** `docs/diagramas/png/Sprint 2/`, con el mismo nombre del diagrama en EA: `2.1.4.2 Secuencia - CU6 Gestión de Perfil de Usuario.png`. **Se exporta después de acomodar los rótulos de comunicación** (sección 4.3) y de revisar cada diagrama en EA.
 
 ---
 
 ## 10. Errores frecuentes en EA: síntoma, causa y arreglo
 
-Los de esta tabla aparecen en los cinco tipos de diagrama de esta guía. La lista completa, con los de comunicación, componentes y la automatización, está en la sección 9 de `GUIA-DIAGRAMAS-EA.md`.
+Los de esta tabla aparecen en los cinco tipos de diagrama de esta guía. La lista completa, con los de componentes y toda la automatización, está en la sección 9 de `GUIA-DIAGRAMAS-EA.md`.
 
 | Síntoma | Causa | Arreglo |
 |---|---|---|
@@ -838,6 +926,13 @@ Los de esta tabla aparecen en los cinco tipos de diagrama de esta guía. La list
 | Las franjas del de tiempo **salen duplicadas** | Por script, se corrió dos veces sobre el mismo elemento | Crear la línea de vida nueva en cada corrida |
 | Los **atributos salen en orden alfabético** | Opción de EA *ordenar características alfabéticamente* | Desactivarla en las preferencias |
 | El PNG sale con **marca de agua** | EA 15 Trial | Exportar de nuevo desde la interfaz |
+| En secuencia, **los fragmentos `alt`/`loop` no se ven** en EA | Creados por script con orden Z indefinido (`Sequence = 999999`) | Escribir el orden Z: notas, líneas de vida y fragmentos (sección 5.3) |
+| En comunicación, los mensajes **salen sin punta de flecha y encimados** | Creados por script: EA sólo los acomoda si se crean a mano | El sentido en el texto, dos por sentido como mucho, y arrastrar los rótulos a mano (sección 4.3) |
+| Un mensaje de secuencia sale **`200 Perfil()`** | EA agrega `()` a todo mensaje sin paréntesis | Escribir siempre con paréntesis: `200(perfil)` |
+| La guarda sale **`[[actual correcta]]`** | Se escribió con corchetes | Escribirla sin corchetes: los pone EA |
+| Después de un error, **el `.eapx` queda bloqueado** | EA quedó abierto en segundo plano | Matar `EA.exe`; los generadores lo cierran solos con `trap` (sección 3.3) |
+| Las tildes entran rotas: **`GestiÃ³n`** | El `.ps1` se guardó sin BOM | Guardarlo en UTF-8 con BOM |
+| Un generador se cae con **`RPC_E_SERVERFAULT`** siempre en la misma línea, sobre un modelo donde antes funcionaba | EA se cae por dentro; pasó el 03/10/2026 con el de tiempo sobre el `.eapx` del repositorio | Generar sobre una copia fresca (`-Modelo`), revisar y reemplazar el `.eapx` con la copia |
 
 ---
 
@@ -848,8 +943,10 @@ Los de esta tabla aparecen en los cinco tipos de diagrama de esta guía. La list
 - [ ] No hay relaciones ajenas visibles ni elementos duplicados en el árbol del proyecto.
 - [ ] Las cardinalidades están en los dos extremos de cada asociación.
 - [ ] Los estereotipos se ven entre comillas angulares (`«controlador»`), y en el caso correcto.
-- [ ] **Secuencia:** cada operando del `alt` encierra exactamente los mensajes que le tocan, mirado **después** de que EA reacomodó el diagrama al abrirlo.
+- [ ] **Comunicación:** una sola línea por par, y ningún rótulo encimado (sección 4.3).
+- [ ] **Secuencia:** cada `if` del código tiene su `alt` y cada `for` su `loop` (sección 5.3).
+- [ ] **Secuencia:** los fragmentos se ven en EA, y cada operando del `alt` encierra exactamente los mensajes que le tocan, mirado **después** de que EA reacomodó el diagrama al abrirlo.
 - [ ] **Estado:** no hay dos flechas entre las mismas dos cajas, y ningún rótulo está encimado.
-- [ ] **Navegación:** las rutas coinciden una por una con `App.tsx` o `app_router.dart`.
+- [ ] **Navegación:** las rutas coinciden una por una con `App.tsx` o `app_router.dart`, y ninguna flecha atraviesa una caja.
 - [ ] **Tiempo:** la nota del diagrama dice que la regla es relativa y qué significa cada restricción.
 - [ ] El PNG no tiene la marca de agua de la versión Trial, y tiene fondo blanco.
