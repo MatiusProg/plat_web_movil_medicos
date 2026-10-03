@@ -25,6 +25,8 @@ import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
 import { Especialidades } from '@/paginas/Especialidades'
 import { Servicios } from '@/paginas/Servicios'
+import { AgendaAtencion } from '@/paginas/AgendaAtencion'
+import { Atencion } from '@/paginas/Atencion'
 import { Profesionales } from '@/paginas/Profesionales'
 import { Usuarios } from '@/paginas/Usuarios'
 import { Sucursales } from '@/paginas/Sucursales'
@@ -194,6 +196,10 @@ export default function App() {
 
                         {/* US-32: servicios con precio y preparación, para el asistente */}
                         <Route path="/servicios" element={<Servicios />} />
+
+                        {/* US-24: registro de la atención médica */}
+                        <Route path="/atencion" element={<AgendaAtencion />} />
+                        <Route path="/atencion/:id" element={<Atencion />} />
 
                         <Route
                             path="/agendas"

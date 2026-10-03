@@ -137,6 +137,13 @@ const items: ItemMenu[] = [
         icono: 'catalogo',
         requiere: 'catalog.service.read',
     },
+    // US-24 — la agenda del profesional para registrar la atención.
+    {
+        etiqueta: 'Atención',
+        ruta: '/atencion',
+        icono: 'agendas',
+        requiere: 'encounters.encounter.read',
+    },
 
     // US-13 a US-16 — agendas y catálogo.
     {
