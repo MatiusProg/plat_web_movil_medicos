@@ -17,6 +17,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views.metrics import IsolationAlertViewSet, dashboard
+from .views.mi_panel import mi_panel
 from .views.mi_plan import mi_plan
 from .views.organizations import OrganizationViewSet
 from .views.plans import (
@@ -53,4 +54,6 @@ urlpatterns = router.urls + [
     path("dashboard/", dashboard, name="dashboard"),
     # ---------- Lo que incluye el plan de mi centro (tenancy/plans.py) ------
     path("my-plan/", mi_plan, name="my-plan"),
+    # ---------- El panel de inicio de cada rol --------------------------------
+    path("my-panel/", mi_panel, name="my-panel"),
 ]
