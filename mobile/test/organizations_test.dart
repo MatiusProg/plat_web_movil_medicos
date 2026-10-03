@@ -172,6 +172,48 @@ void main() {
     });
   });
 
+  group('OrganizationsScreen paginada', () {
+    testWidgets('muestra la primera página y "Cargar más" suma la segunda',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mock = MockClient((req) async {
+        final segunda = req.url.queryParameters['page'] == '2';
+        return _json({
+          'count': 2,
+          'next': segunda ? null : 'http://x/?page=2',
+          'previous': null,
+          'results': [
+            {..._organizacion(), 'id': segunda ? 'o2' : 'o1',
+              'name': segunda ? 'Clínica Dos' : 'Centro Uno'},
+          ],
+        }, 200);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: OrganizationsScreen(client: ApiClient(httpClient: mock)),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Mostrando 1 de 2'), findsOneWidget);
+      expect(find.text('Clínica Dos'), findsNothing);
+
+      await tester.tap(find.text('Cargar más'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Mostrando 2 de 2'), findsOneWidget);
+      expect(find.text('Clínica Dos'), findsOneWidget);
+      expect(find.text('Cargar más'), findsNothing);
+    });
+  });
+
   group('OrganizationsScreen pull-to-refresh', () {
     testWidgets('no revienta y trae datos nuevos', (tester) async {
       // Mismo bug que en `SubscriptionsScreen`: `setState(() => _futuro =

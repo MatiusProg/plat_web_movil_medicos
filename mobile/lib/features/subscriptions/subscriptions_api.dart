@@ -2,6 +2,7 @@
 library;
 
 import '../../core/api/client.dart';
+import '../../core/api/paginacion.dart';
 
 class Subscription {
   const Subscription({
@@ -58,13 +59,16 @@ class Subscription {
 Future<List<Subscription>> listSubscriptions(
   ApiClient client, {
   bool current = true,
-}) async {
-  final data = await client.get('/platform/subscriptions/?current=$current');
-  final mapa = data as Map<String, dynamic>;
-  return (mapa['results'] as List? ?? const [])
-      .map((e) => Subscription.fromJson(e as Map<String, dynamic>))
-      .toList();
-}
+}) =>
+    // Todas las páginas y no "cargar más": la pantalla calcula en el cliente
+    // el resumen (cuántas, cuántas organizaciones, el plan más usado) y busca
+    // localmente, porque el backend no tiene `?search=` en este endpoint. Con
+    // una lista a medias, las tres cifras y la búsqueda mentirían.
+    todasLasPaginas(
+      client,
+      '/platform/subscriptions/?current=$current',
+      Subscription.fromJson,
+    );
 
 Future<Subscription> assignPlan(
   ApiClient client, {
@@ -88,11 +92,10 @@ Future<Subscription> assignPlan(
 Future<List<Subscription>> organizationSubscriptionHistory(
   ApiClient client,
   String organizationId,
-) async {
-  final data =
-      await client.get('/platform/organizations/$organizationId/subscriptions/');
-  final mapa = data as Map<String, dynamic>;
-  return (mapa['results'] as List? ?? const [])
-      .map((e) => Subscription.fromJson(e as Map<String, dynamic>))
-      .toList();
-}
+) =>
+    // El historial de una sola organización: unas pocas filas, completas.
+    todasLasPaginas(
+      client,
+      '/platform/organizations/$organizationId/subscriptions/',
+      Subscription.fromJson,
+    );

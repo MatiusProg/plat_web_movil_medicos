@@ -10,6 +10,7 @@
 library;
 
 import 'package:mobile/core/api/client.dart';
+import 'package:mobile/core/api/paginacion.dart';
 
 /// Los parentescos que acepta el backend, con su etiqueta.
 ///
@@ -134,14 +135,12 @@ class DependienteNuevo {
       };
 }
 
-Future<List<Dependiente>> listarDependientes(ApiClient client) async {
-  final data = await client.get('/patients/dependents/');
-  final mapa = data is Map<String, dynamic> ? data : const <String, dynamic>{};
-  return (mapa['results'] as List? ?? const [])
-      .whereType<Map<String, dynamic>>()
-      .map(Dependiente.fromJson)
-      .toList();
-}
+/// Todos los dependientes del titular.
+///
+/// Completos aunque sean pocos: la lista alimenta el selector de paciente
+/// (`patient_selector.dart`), y ahí no hay "cargar más".
+Future<List<Dependiente>> listarDependientes(ApiClient client) =>
+    todasLasPaginas(client, '/patients/dependents/', Dependiente.fromJson);
 
 /// Da de alta al dependiente.
 ///
