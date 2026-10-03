@@ -162,6 +162,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     });
   }
 
+  bool get _conExportar =>
+      SessionScope.maybeOf(context)?.incluyeExportarReportes ?? true;
+
   Future<void> _enviarPorCorreo() async {
     final conjunto = _conjunto;
     final catalogo = _catalogo;
@@ -340,18 +343,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           label: const Text('Ejecutar'),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _columnas.isEmpty || _ejecutando
-                              ? null
-                              : _enviarPorCorreo,
-                          icon: const Icon(Icons.mail_outline),
-                          label: const Text('Enviar'),
+                      // Enviar es exportar: sólo si el plan lo incluye.
+                      if (_conExportar) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _columnas.isEmpty || _ejecutando
+                                ? null
+                                : _enviarPorCorreo,
+                            icon: const Icon(Icons.mail_outline),
+                            label: const Text('Enviar'),
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
+                  if (!_conExportar) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tu plan no incluye exportar reportes: puedes verlos acá, pero no enviarlos.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                   if (_ejecutando) ...[
                     const SizedBox(height: 16),
                     const Center(child: CircularProgressIndicator()),

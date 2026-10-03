@@ -23,6 +23,7 @@ class Plan {
     required this.maxAiQueriesMonth,
     required this.storageMb,
     required this.isActive,
+    this.features = const {},
   });
 
   final String id;
@@ -45,6 +46,12 @@ class Plan {
 
   final bool isActive;
 
+  /// Las funciones que el plan enciende (`ai_chatbot`, `report_export`…).
+  /// Las hace cumplir el backend con `PLAN_RULES`; acá sólo se muestran.
+  final Map<String, bool> features;
+
+  bool incluye(String clave) => features[clave] == true;
+
   factory Plan.fromJson(Map<String, dynamic> json) => Plan(
         id: json['id'] as String? ?? '',
         code: json['code'] as String? ?? '',
@@ -59,6 +66,11 @@ class Plan {
         maxAiQueriesMonth: json['max_ai_queries_month'] as int?,
         storageMb: json['storage_mb'] as int?,
         isActive: json['is_active'] as bool? ?? false,
+        features: {
+          for (final e
+              in (json['features'] as Map<String, dynamic>? ?? const {}).entries)
+            if (e.value is bool) e.key: e.value as bool,
+        },
       );
 }
 
