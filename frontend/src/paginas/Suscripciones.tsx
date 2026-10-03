@@ -77,10 +77,10 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
+                'border-tinta-200 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-800 text-tinta-700 dark:text-tinta-200',
 
             dot:
-                'bg-blue-500',
+                'bg-tinta-400',
         }
     }
 
@@ -89,16 +89,16 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400',
+                'border-tinta-200 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-800 text-tinta-700 dark:text-tinta-200',
 
             dot:
-                'bg-violet-500',
+                'bg-tinta-400',
         }
     }
 
     return {
         badge:
-            'border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400',
+            'border-tinta-200 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-800 text-tinta-700 dark:text-tinta-200',
 
         dot:
             'bg-marca-500',
@@ -454,7 +454,7 @@ export function Suscripciones() {
                 {/* Error */}
 
                 {error && (
-                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-5 py-4 text-sm text-red-700 dark:text-red-300">
+                    <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-alerta-200 dark:border-alerta-500/40 bg-alerta-50 dark:bg-alerta-500/10 px-5 py-4 text-sm text-alerta-700 dark:text-alerta-200">
 
                         <div>
 
@@ -462,7 +462,7 @@ export function Suscripciones() {
                                 No se pudo completar la operación
                             </p>
 
-                            <p className="mt-1 text-red-600 dark:text-red-400">
+                            <p className="mt-1 text-alerta-600 dark:text-alerta-200">
                                 {error}
                             </p>
 
@@ -474,7 +474,7 @@ export function Suscripciones() {
                             onClick={() =>
                                 setError(null)
                             }
-                            className="font-bold text-red-600 dark:text-red-400 transition hover:text-red-700 dark:hover:text-red-300"
+                            className="font-bold text-alerta-600 dark:text-alerta-200 transition hover:text-alerta-700 dark:hover:text-alerta-200"
                             aria-label="Cerrar aviso"
                         >
                             ×
@@ -486,7 +486,7 @@ export function Suscripciones() {
 
                 {/* Resumen */}
 
-                <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                     <Resumen
                         titulo="Suscripciones activas"
@@ -494,13 +494,6 @@ export function Suscripciones() {
                             activas,
                         )}
                         valorClase="text-emerald-600 dark:text-emerald-400"
-                    />
-
-                    <Resumen
-                        titulo="Organizaciones"
-                        valor={String(
-                            suscripciones.length,
-                        )}
                     />
 
                     <Resumen
@@ -575,23 +568,23 @@ export function Suscripciones() {
 
                                 <tr className="border-b border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-950/50 text-left">
 
-                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                    <th className="px-6 py-4 text-sm font-medium text-tinta-500">
                                         Organización
                                     </th>
 
-                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                    <th className="px-6 py-4 text-sm font-medium text-tinta-500">
                                         Plan actual
                                     </th>
 
-                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                    <th className="px-6 py-4 text-sm font-medium text-tinta-500">
                                         Estado
                                     </th>
 
-                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                    <th className="px-6 py-4 text-sm font-medium text-tinta-500">
                                         Inicio
                                     </th>
 
-                                    <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-tinta-500">
                                         Acciones
                                     </th>
 
@@ -766,11 +759,9 @@ export function Suscripciones() {
                                                                     suscripcion,
                                                                 )
                                                             }
-                                                            className="flex items-center gap-2 rounded-xl bg-marca-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-marca-700"
+                                                            className="rounded-lg border border-marca-300 px-4 py-2 text-sm font-semibold text-marca-700 transition hover:bg-marca-50 dark:border-marca-800 dark:text-marca-300 dark:hover:bg-marca-950"
                                                         >
                                                             Cambiar plan
-
-                                                            <IconoFlecha />
                                                         </button>
 
                                                     </div>
@@ -966,19 +957,3 @@ function IconoCalendario() {
 }
 
 
-function IconoFlecha() {
-    return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="h-4 w-4"
-            aria-hidden="true"
-        >
-            <path d="M5 12h14" />
-
-            <path d="m13 6 6 6-6 6" />
-        </svg>
-    )
-}

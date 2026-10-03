@@ -102,13 +102,13 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
+                'border-tinta-200 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-800 text-tinta-700 dark:text-tinta-200',
 
             dot:
-                'bg-blue-500',
+                'bg-tinta-400',
 
             linea:
-                'bg-blue-700',
+                'bg-tinta-300 dark:bg-tinta-700',
         }
     }
 
@@ -117,19 +117,19 @@ function estiloPlan(
     ) {
         return {
             badge:
-                'border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400',
+                'border-tinta-200 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-800 text-tinta-700 dark:text-tinta-200',
 
             dot:
-                'bg-violet-500',
+                'bg-tinta-400',
 
             linea:
-                'bg-violet-700',
+                'bg-tinta-300 dark:bg-tinta-700',
         }
     }
 
     return {
         badge:
-            'border-marca-200 dark:border-marca-900 bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400',
+            'border-tinta-200 dark:border-tinta-700 bg-tinta-50 dark:bg-tinta-800 text-tinta-700 dark:text-tinta-200',
 
         dot:
             'bg-marca-500',
@@ -315,7 +315,7 @@ export function HistorialSuscripcion() {
 
                         <div>
 
-                            <p className="text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                            <p className="text-sm font-medium text-tinta-500">
                                 Organización
                             </p>
 
@@ -354,13 +354,13 @@ export function HistorialSuscripcion() {
             {/* Error */}
 
             {error && (
-                <div className="mb-6 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-5 py-4">
+                <div className="mb-6 rounded-2xl border border-alerta-200 dark:border-alerta-500/40 bg-alerta-50 dark:bg-alerta-500/10 px-5 py-4">
 
-                    <p className="font-semibold text-red-700 dark:text-red-300">
+                    <p className="font-semibold text-alerta-700 dark:text-alerta-200">
                         No se pudo cargar el historial
                     </p>
 
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p className="mt-1 text-sm text-alerta-600 dark:text-alerta-200">
                         {error}
                     </p>
 
@@ -618,7 +618,7 @@ function Dato({
                     : ''
             }
         >
-            <dt className="text-xs font-medium uppercase tracking-wider text-tinta-500">
+            <dt className="text-sm text-tinta-500">
                 {titulo}
             </dt>
 

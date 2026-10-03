@@ -168,7 +168,7 @@ export function ModalCambiarPlan({
 
                     <div>
 
-                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-600 dark:text-marca-400">
+                        <p className="text-sm font-medium text-marca-600 dark:text-marca-400">
                             Suscripción
                         </p>
 
@@ -227,7 +227,7 @@ export function ModalCambiarPlan({
 
                                 <div>
 
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-tinta-500">
+                                    <p className="text-sm font-medium text-tinta-500">
                                         Organización
                                     </p>
 
@@ -414,17 +414,17 @@ export function ModalCambiarPlan({
 
                         {/* Aviso */}
 
-                        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/70 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
+                        <div className="rounded-2xl border border-espera-200 dark:border-espera-600/40 bg-espera-50 dark:bg-espera-600/10 px-4 py-3">
 
                             <div className="flex gap-3">
 
-                                <div className="mt-0.5 text-amber-600 dark:text-amber-400">
+                                <div className="mt-0.5 text-espera-600 dark:text-espera-200">
 
                                     <IconoInformacion />
 
                                 </div>
 
-                                <p className="text-xs leading-5 text-amber-700 dark:text-amber-300/90">
+                                <p className="text-xs leading-5 text-espera-700 dark:text-espera-200">
                                     Al confirmar, la suscripción vigente
                                     se cerrará y se abrirá la nueva.
                                     La organización conservará su historial
