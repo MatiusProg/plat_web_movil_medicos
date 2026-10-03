@@ -54,6 +54,13 @@ class BranchListView(OrganizationScopedMixin, ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        # Lo que promete el plan se cumple (tenancy/plans.py).
+        from tenancy.plans import check_limit
+        organizacion = request.user.organization
+        check_limit(organizacion, "max_branches",
+                    Branch.objects.filter(organization=organizacion, is_active=True).count(),
+                    "sucursales activas", "sucursal activa")
+
         branch = create_branch(
             organization=request.user.organization,
             data=serializer.validated_data,

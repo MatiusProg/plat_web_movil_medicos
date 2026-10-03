@@ -231,6 +231,11 @@ def _run(request, datos, saved_report=None):
             "truncated": truncado,
         })
 
+    # Ver en pantalla (json) lo permite todo plan; llevarse el archivo
+    # —CSV, Excel, HTML, PDF, o mandarlo por correo— es report_export.
+    from tenancy.plans import require_feature
+    require_feature(request.user.organization, "report_export", "la exportación de reportes")
+
     filas, truncado = report.rows()
     contenido, mime, nombre = exporters.export(
         formato, report.headers, filas, titulo,

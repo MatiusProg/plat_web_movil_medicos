@@ -93,7 +93,14 @@ def catalogo_indexado_a(db, org_a, proveedor_local):
 
 
 @pytest.fixture
-def catalogo_indexado_b(db, org_b, proveedor_local):
+def catalogo_indexado_b(db, org_b, plans, proveedor_local):
+    # B nace con plan Básico, que no incluye el asistente (tenancy/plans.py).
+    # Para probar que dos organizaciones no comparten catálogo, B necesita un
+    # plan que sí lo incluya.
+    from tenancy.context import platform_admin_context
+    from tenancy.models import Subscription
+    with platform_admin_context():
+        Subscription.objects.filter(organization=org_b).update(plan=plans["pro"])
     with tenant_context(org_b.id):
         Specialty.objects.create(
             organization=org_b, name="Odontología", description=ODONTOLOGIA,

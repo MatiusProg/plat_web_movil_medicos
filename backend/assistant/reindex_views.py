@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 
 from audit.actions import Action
 from audit.services import record
+from tenancy.plans import require_feature
 
 from .embeddings import EmbeddingError
 from .indexing import index_administrative, index_specialties
@@ -32,6 +33,8 @@ class ReindexView(APIView):
                 {"detail": "La reindexación es de una organización."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        # Reindexar es preparar el asistente: sólo para planes que lo incluyen.
+        require_feature(organization, "ai_chatbot", "el asistente")
         try:
             especialidades = index_specialties(organization)
             administrativo = index_administrative(organization)

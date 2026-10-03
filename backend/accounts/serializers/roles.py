@@ -272,6 +272,15 @@ class AssignRoleSerializer(serializers.Serializer):
                 {"role": "El rol está inactivo y no se puede asignar."}
             )
 
+        # max_users del plan cuenta al personal: dar un rol que no es Paciente
+        # a alguien que todavía no es personal suma uno. Los pacientes no
+        # cuentan (tenancy/plans.py).
+        from tenancy.plans import PATIENT_ROLE, check_limit, is_staff_member, staff_count
+        if role.code != PATIENT_ROLE and not is_staff_member(organization, user):
+            check_limit(organization, "max_users", staff_count(organization),
+                        "usuarios del personal (los pacientes no cuentan)",
+                        "usuario del personal (los pacientes no cuentan)")
+
         if UserRole.objects.filter(user=user, role=role).exists():
             raise serializers.ValidationError(
                 {"role": "El usuario ya tiene ese rol."}
