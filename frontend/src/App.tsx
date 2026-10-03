@@ -30,6 +30,7 @@ import { Servicios } from '@/paginas/Servicios'
 import { AgendaAtencion } from '@/paginas/AgendaAtencion'
 import { Atencion } from '@/paginas/Atencion'
 import { Historial } from '@/paginas/Historial'
+import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
 import { Usuarios } from '@/paginas/Usuarios'
 import { Sucursales } from '@/paginas/Sucursales'
@@ -205,6 +206,8 @@ export default function App() {
                         <Route path="/atencion/:id" element={<Atencion />} />
                         {/* US-25: historial clínico longitudinal */}
                         <Route path="/historial/:pacienteId" element={<Historial />} />
+                        {/* Característica general 6: copias de seguridad por plan */}
+                        <Route path="/respaldos" element={<Respaldos />} />
 
                         <Route
                             path="/agendas"

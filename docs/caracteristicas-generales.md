@@ -257,13 +257,44 @@ Lo que un cliente de un SaaS necesita y no puede pedirle al proveedor: llevarse
 
 | Endpoint | Qué hace |
 |---|---|
-| `POST /api/backups/create/` | genera la copia en JSON y la descarga |
+| `GET /api/backups/policy/` | qué permite el plan y cuándo se puede generar la próxima copia |
+| `POST /api/backups/create/` | genera la copia en JSON y la descarga, **si el plan lo permite** |
 | `POST /api/backups/inspect/` | dice qué trae un archivo, **sin escribir nada** |
 | `POST /api/backups/restore/` | reemplaza los datos, con confirmación explícita |
 | `GET /api/backups/records/` | el historial: qué se respaldó y qué se restauró |
 
 También por consola: `backup_organization` (con `--all`, para una tarea
-nocturna) y `restore_organization`.
+nocturna) y `restore_organization`. En la web, la pantalla **Copias de
+seguridad** (`/respaldos`) del administrador: muestra la regla de su plan, el
+botón para generar y descargar, la restauración (con inspección previa y
+confirmación escribiendo el identificador de la organización) y el historial.
+
+### La frecuencia depende del plan
+
+| Plan | Copias |
+|---|---|
+| Básico | una por semana |
+| Pro | una por día |
+| Premium | a voluntad |
+
+La declara cada plan en `features["backup_interval_hours"]` (168, 24 y
+`null`), sembrada en `tenancy/0005_backup_por_plan`; el superadministrador la
+cambia editando el plan. Antes de generar, `backups/policy.py` busca el plan
+vigente (`tenancy/plans.py`) y la última copia de la organización: si no pasó
+el intervalo, responde **429** con la fecha de la próxima.
+
+- **Sólo se limita generar, nunca restaurar**: recuperarse de un desastre no
+  puede depender de cuánto paga el cliente.
+- **El intervalo es de la organización, no de cada administrador**: si no, dos
+  administradores duplicarían la cuota.
+- **Sin plan vigente no se respalda**: no hay contrato que diga cuánto le toca.
+
+`tenancy/plans.py` es además el primer punto del código que consulta el plan
+de una organización. Hasta acá los límites y funciones de los planes
+(`max_users`, `ai_chatbot`, `report_export`…) estaban declarados pero ningún
+código los hacía cumplir; los demás pueden colgarse de ahí.
+
+**Cómo se comprueba:** `backend/tests/test_backup_por_plan.py` — 10 pruebas.
 
 **Decisiones que valen más que el código:**
 
