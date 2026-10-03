@@ -21,6 +21,7 @@
  *   que se distinga sin depender sólo del color.
  */
 
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
 import {
@@ -30,6 +31,7 @@ import {
     IconoSalir,
 } from '@/componentes/iconos'
 
+import { pedir } from '@/api/cliente'
 import { useSesion } from '@/sesion/useSesion'
 
 
@@ -48,6 +50,13 @@ type ItemMenu = {
         | 'catalogo'
         | 'asistente'
         | 'perfil'
+        | 'calendario'
+        | 'reloj'
+        | 'buscar'
+        | 'ficha'
+        | 'estetoscopio'
+        | 'servicio'
+        | 'respaldo'
     /**
      * Quién ve la entrada.
      *
@@ -61,30 +70,47 @@ type ItemMenu = {
      * backend en cada endpoint.
      */
     requiere?: 'plataforma' | string
+    /** El grupo del menú: ordena las opciones por lo que la persona va a hacer. */
+    seccion: Seccion
+    /**
+     * La función del plan que la opción necesita (`features` del plan). Si el
+     * plan del centro no la incluye, la opción no se ofrece: la puerta real la
+     * pone el backend (tenancy/plans.py); esto evita un botón que diga que no.
+     */
+    requierePlan?: string
 }
+
+type Seccion = 'General' | 'Atención' | 'Catálogo' | 'Organización' | 'Plataforma'
+
+/** El orden en que se muestran los grupos. */
+const SECCIONES: Seccion[] = ['General', 'Atención', 'Catálogo', 'Organización', 'Plataforma']
 
 
 const items: ItemMenu[] = [
     {
         etiqueta: 'Panel',
         ruta: '/panel',
+        seccion: 'General',
         icono: 'panel',
     },
     {
         etiqueta: 'Organizaciones',
         ruta: '/organizaciones',
+        seccion: 'Plataforma',
         icono: 'organizaciones',
         requiere: 'plataforma',
     },
     {
         etiqueta: 'Planes',
         ruta: '/planes',
+        seccion: 'Plataforma',
         icono: 'planes',
         requiere: 'plataforma',
     },
     {
         etiqueta: 'Suscripciones',
         ruta: '/suscripciones',
+        seccion: 'Plataforma',
         icono: 'suscripciones',
         requiere: 'plataforma',
     },
@@ -93,12 +119,14 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Roles y permisos',
         ruta: '/roles',
+        seccion: 'Organización',
         icono: 'roles',
         requiere: 'users.role.read',
     },
     {
         etiqueta: 'Usuarios',
         ruta: '/usuarios',
+        seccion: 'Organización',
         icono: 'usuarios',
         requiere: 'users.user.read',
     },
@@ -107,6 +135,7 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Bitácora',
         ruta: '/bitacora',
+        seccion: 'Organización',
         icono: 'bitacora',
         requiere: 'audit.log.read',
     },
@@ -114,7 +143,8 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Copias de seguridad',
         ruta: '/respaldos',
-        icono: 'bitacora',
+        seccion: 'Organización',
+        icono: 'respaldo',
         requiere: 'backups.backup.create',
     },
 
@@ -122,6 +152,7 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Sucursales',
         ruta: '/sucursales',
+        seccion: 'Catálogo',
         icono: 'organizaciones',
         requiere: 'catalog.branch.read',
     },
@@ -130,12 +161,14 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Especialidades',
         ruta: '/especialidades',
-        icono: 'catalogo',
+        seccion: 'Catálogo',
+        icono: 'estetoscopio',
         requiere: 'catalog.specialty.read',
     },
     {
         etiqueta: 'Profesionales',
         ruta: '/profesionales',
+        seccion: 'Catálogo',
         icono: 'usuarios',
         requiere: 'catalog.professional.read',
     },
@@ -143,14 +176,16 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Servicios',
         ruta: '/servicios',
-        icono: 'catalogo',
+        seccion: 'Catálogo',
+        icono: 'servicio',
         requiere: 'catalog.service.read',
     },
     // US-24 — la agenda del profesional para registrar la atención.
     {
         etiqueta: 'Atención',
         ruta: '/atencion',
-        icono: 'agendas',
+        seccion: 'Atención',
+        icono: 'estetoscopio',
         requiere: 'encounters.encounter.read',
     },
 
@@ -158,19 +193,22 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Agendas',
         ruta: '/agendas',
-        icono: 'agendas',
+        seccion: 'Atención',
+        icono: 'calendario',
         requiere: 'scheduling.schedule.read',
     },
     {
         etiqueta: 'Disponibilidad',
         ruta: '/disponibilidad',
-        icono: 'agendas',
+        seccion: 'Atención',
+        icono: 'reloj',
         requiere: 'scheduling.slot.read',
     },
     {
         etiqueta: 'Buscar profesionales',
         ruta: '/buscar-profesionales',
-        icono: 'catalogo',
+        seccion: 'Atención',
+        icono: 'buscar',
         requiere: 'catalog.professional.read',
     },
 
@@ -178,7 +216,8 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Mis fichas',
         ruta: '/mis-fichas',
-        icono: 'agendas',
+        seccion: 'Atención',
+        icono: 'ficha',
         requiere: 'appointments.appointment.read',
     },
 
@@ -186,6 +225,8 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Asistente',
         ruta: '/asistente',
+        requierePlan: 'ai_chatbot',
+        seccion: 'General',
         icono: 'asistente',
         requiere: 'assistant.suggest.use',
     },
@@ -194,6 +235,7 @@ const items: ItemMenu[] = [
     {
         etiqueta: 'Mi perfil',
         ruta: '/perfil',
+        seccion: 'General',
         icono: 'perfil',
     },
 ]
@@ -208,262 +250,189 @@ interface Props {
 }
 
 
+/** "Laura Gómez" → "LG". Para el avatar del pie. */
+function iniciales(nombre: string) {
+    const partes = nombre.trim().split(/\s+/).filter(Boolean)
+    return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase() || '·'
+}
+
+
 export function BarraPlataforma({
-                                    plegada,
-                                    alternarPlegada,
-                                    abiertaEnMovil,
-                                    cerrarEnMovil,
-                                }: Props) {
-    const {
-        usuario,
-        salir,
-        puede,
-    } = useSesion()
+    plegada,
+    alternarPlegada,
+    abiertaEnMovil,
+    cerrarEnMovil,
+}: Props) {
+    const { usuario, salir, puede, token } = useSesion()
+    const navigate = useNavigate()
 
-    const navigate =
-        useNavigate()
+    // Qué incluye el plan del centro, para no ofrecer lo que no tiene.
+    // Mientras carga (o si falla) se muestra todo: el backend igual corta.
+    const [funciones, setFunciones] = useState<Record<string, unknown> | null>(null)
+    useEffect(() => {
+        if (!token || usuario?.is_platform_admin) return
+        const control = new AbortController()
+        pedir<{ features: Record<string, unknown> }>('/platform/my-plan/', { token, senal: control.signal })
+            .then((plan) => setFunciones(plan.features))
+            .catch(() => {})
+        return () => control.abort()
+    }, [token, usuario?.is_platform_admin])
+    // La etiqueta flotante de la barra plegada. Va en una capa fija y no al
+    // lado de cada opción: la lista tiene scroll propio y recortaría todo lo
+    // que sobresale hacia el costado.
+    const [flotante, setFlotante] = useState<{ texto: string; top: number } | null>(null)
+    const mostrar = (texto: string) => (evento: React.MouseEvent | React.FocusEvent) => {
+        if (!plegada) return
+        const caja = (evento.currentTarget as HTMLElement).getBoundingClientRect()
+        setFlotante({ texto, top: caja.top + caja.height / 2 })
+    }
+    const ocultar = () => setFlotante(null)
 
+    const visibles = items.filter((item) => {
+        if (item.requierePlan && funciones && funciones[item.requierePlan] === false) return false
+        if (!item.requiere) return true
+        if (item.requiere === 'plataforma') return Boolean(usuario?.is_platform_admin)
+        return puede(item.requiere)
+    })
 
-    const visibles =
-        items.filter((item) => {
-            if (!item.requiere) return true
+    // Los grupos que tienen al menos una opción visible, en su orden.
+    const grupos = SECCIONES
+        .map((seccion) => ({ seccion, opciones: visibles.filter((i) => i.seccion === seccion) }))
+        .filter((g) => g.opciones.length > 0)
 
-            if (item.requiere === 'plataforma') {
-                return Boolean(
-                    usuario?.is_platform_admin,
-                )
-            }
-
-            return puede(item.requiere)
-        })
-
-
-    const cerrarSesion =
-        async () => {
-            await salir()
-            navigate('/ingresar')
-        }
-
+    const cerrarSesion = async () => {
+        await salir()
+        navigate('/ingresar')
+    }
 
     // Plegada sólo aplica de `md` para arriba. Dentro del cajón de móvil las
     // etiquetas se ven siempre: ahí sobra el ancho.
-    const soloAncha =
-        plegada ? 'md:hidden' : ''
-
+    const soloAncha = plegada ? 'md:hidden' : ''
+    const nombre = usuario?.full_name || 'Superadministrador'
+    const rol = usuario?.is_platform_admin
+        ? 'Administración de la plataforma'
+        : usuario?.roles?.[0]?.name ?? 'Usuario'
 
     return (
         <aside
             className={[
-                'fixed inset-y-0 left-0 z-40 flex h-dvh flex-col border-r border-tinta-800 bg-tinta-900',
+                'group/barra fixed inset-y-0 left-0 z-40 flex h-dvh flex-col bg-tinta-900 text-tinta-300',
                 'transition-[width,transform] duration-200 ease-out',
-
-                // Ancho: en móvil siempre cómoda; en escritorio, según se pliegue.
                 'w-64',
-                plegada ? 'md:w-[4.5rem]' : 'md:w-64',
-
-                // En móvil entra y sale; de `md` en adelante está siempre puesta.
+                plegada ? 'md:w-[4.25rem]' : 'md:w-64',
                 abiertaEnMovil ? 'translate-x-0' : '-translate-x-full',
                 'md:translate-x-0',
             ].join(' ')}
         >
-
-            {/* Marca */}
-
-            <div className="flex shrink-0 items-center gap-3 px-4 py-5">
-
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-950/30">
-
-                    <IconoEscudo className="size-6" />
-
+            {/* Marca y centro médico */}
+            <div className={['flex h-16 shrink-0 items-center gap-3 px-4', plegada ? 'md:justify-center md:px-0' : ''].join(' ')}>
+                <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-marca-500 text-tinta-950">
+                    <IconoEscudo className="size-5" />
                 </div>
-
-
-                <div className={`leading-tight ${soloAncha}`}>
-
-                    <h1 className="text-[17px] font-bold tracking-tight text-tinta-50">
-                        MediAdmin
-                    </h1>
-
-                    <p className="mt-1 text-[10px] font-bold tracking-[0.18em] text-marca-400">
-                        PLATAFORMA
+                <div className={`min-w-0 leading-tight ${soloAncha}`}>
+                    <p className="text-[0.9375rem] font-semibold text-white">MediAdmin</p>
+                    <p className="truncate text-xs text-tinta-400">
+                        {usuario?.is_platform_admin ? 'Plataforma' : usuario?.organization}
                     </p>
-
                 </div>
-
-
-                {/* Cerrar el cajón. Sólo en móvil: en escritorio no hay cajón. */}
-
                 <button
                     type="button"
                     onClick={cerrarEnMovil}
                     aria-label="Cerrar el menú"
-                    className="ml-auto grid size-9 shrink-0 place-items-center rounded-xl text-tinta-400 transition hover:bg-tinta-800 hover:text-tinta-100 md:hidden"
+                    className="ml-auto grid size-9 shrink-0 place-items-center rounded-lg text-tinta-400 hover:bg-tinta-800 hover:text-white md:hidden"
                 >
                     <IconoCerrar />
                 </button>
-
             </div>
 
-
-            {/* Menú */}
-
-            <div className={`mb-3 px-7 ${soloAncha}`}>
-
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-tinta-500">
-                    Menú principal
-                </p>
-
-            </div>
-
-
-            {/* `flex-1` con `overflow-y-auto`: las opciones scrollean acá dentro
-                en vez de empujar el perfil fuera de la pantalla. */}
-
-            <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-4 pb-2">
-
-                {visibles.map((item) => (
-                    <NavLink
-                        key={item.ruta}
-                        to={item.ruta}
-                        title={plegada ? item.etiqueta : undefined}
-                        className={({ isActive }) =>
-                            [
-                                'group relative flex shrink-0 items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
-
-                                isActive
-                                    ? 'bg-marca-950 text-marca-300'
-                                    : 'text-tinta-400 hover:bg-tinta-800 hover:text-tinta-100',
-                            ].join(' ')
-                        }
-                    >
-                        {({ isActive }) => (
-                            <>
-                                {isActive && (
-                                    <span className="absolute left-0 h-6 w-1 rounded-r-full bg-marca-500" />
-                                )}
-
-
-                                <div
-                                    className={[
-                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition',
-
-                                        isActive
-                                            ? 'bg-marca-900 text-marca-300'
-                                            : 'text-tinta-500 group-hover:bg-tinta-700 group-hover:text-tinta-200',
-                                    ].join(' ')}
-                                >
-                                    <IconoMenu
-                                        tipo={
-                                            item.icono
-                                        }
-                                    />
-                                </div>
-
-
-                                <span className={`truncate ${soloAncha}`}>
-                                    {item.etiqueta}
-                                </span>
-                            </>
-                        )}
-                    </NavLink>
-                ))}
-
-            </nav>
-
-
-            {/* Plegar. Sólo en escritorio, que es donde plegar significa algo. */}
-
+            {/* Tirador para plegar: en el borde, a mano del cursor, y Ctrl+B.
+                Se ve al pasar por la barra o al llegar con el teclado. */}
             <button
                 type="button"
                 onClick={alternarPlegada}
-                aria-label={plegada ? 'Desplegar el menú' : 'Plegar el menú'}
-                title={plegada ? 'Desplegar el menú' : 'Plegar el menú'}
-                className="mx-4 hidden shrink-0 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-tinta-500 transition hover:bg-tinta-800 hover:text-tinta-200 md:flex"
+                aria-label={plegada ? 'Expandir el menú (Ctrl+B)' : 'Contraer el menú (Ctrl+B)'}
+                aria-expanded={!plegada}
+                className="absolute top-[3.25rem] -right-3 z-10 hidden size-6 place-items-center rounded-full border border-tinta-700 bg-tinta-900 text-tinta-300 opacity-0 shadow-sm transition hover:border-marca-500 hover:text-white focus-visible:opacity-100 group-hover/barra:opacity-100 md:grid"
             >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-                    <IconoPlegar plegada={plegada} />
-                </div>
-
-                <span className={soloAncha}>
-                    Plegar
-                </span>
+                <IconoPlegar plegada={plegada} />
             </button>
 
+            {/* Opciones, agrupadas. Scroll vertical propio y nunca horizontal. */}
+            <nav className="barra-scroll flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto px-3 pt-2 pb-4" aria-label="Menú principal">
+                {grupos.map(({ seccion, opciones }) => (
+                    <div key={seccion} role="group" aria-labelledby={`seccion-${seccion}`}>
+                        <p
+                            id={`seccion-${seccion}`}
+                            className={['mb-1 px-2.5 text-xs font-medium text-tinta-500', plegada ? 'md:sr-only' : ''].join(' ')}
+                        >
+                            {seccion}
+                        </p>
+                        {plegada && <div className="mx-auto mb-1 hidden h-px w-6 bg-tinta-800 md:block" aria-hidden="true" />}
+                        <ul className="flex flex-col gap-0.5">
+                            {opciones.map((item) => (
+                                <li key={item.ruta} className="relative">
+                                    <NavLink
+                                        to={item.ruta}
+                                        onClick={cerrarEnMovil}
+                                        onMouseEnter={mostrar(item.etiqueta)}
+                                        onMouseLeave={ocultar}
+                                        onFocus={mostrar(item.etiqueta)}
+                                        onBlur={ocultar}
+                                        aria-label={plegada ? item.etiqueta : undefined}
+                                        className={({ isActive }) => [
+                                            'relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors',
+                                            plegada ? 'md:justify-center md:px-0' : '',
+                                            isActive
+                                                ? 'bg-marca-500/15 font-medium text-white'
+                                                : 'text-tinta-400 hover:bg-tinta-800 hover:text-tinta-100',
+                                        ].join(' ')}
+                                    >
+                                        {({ isActive }) => (
+                                            <>
+                                                {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-marca-400" aria-hidden="true" />}
+                                                <span className={isActive ? 'text-marca-300' : ''}>
+                                                    <IconoMenu tipo={item.icono} />
+                                                </span>
+                                                <span className={`whitespace-nowrap ${soloAncha}`}>{item.etiqueta}</span>
+                                            </>
+                                        )}
+                                    </NavLink>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </nav>
 
-            {/* Perfil. `shrink-0` para que quede anclado abajo pase lo que pase. */}
+            {plegada && flotante && (
+                <span
+                    role="tooltip"
+                    style={{ top: flotante.top }}
+                    className="pointer-events-none fixed left-[4.75rem] z-50 hidden -translate-y-1/2 rounded-md bg-tinta-950 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg ring-1 ring-tinta-800 md:block"
+                >
+                    {flotante.texto}
+                </span>
+            )}
 
-            <div className="mt-3 shrink-0 border-t border-tinta-800 px-4 pt-4 pb-5">
-
+            {/* Quién está adentro, y cómo salir. */}
+            <div className={['flex shrink-0 items-center gap-3 border-t border-tinta-800 p-3', plegada ? 'md:flex-col md:gap-2' : ''].join(' ')}>
+                <div className="grid size-9 shrink-0 place-items-center rounded-full bg-tinta-800 text-xs font-semibold text-marca-300" title={plegada ? `${nombre} · ${rol}` : undefined}>
+                    {iniciales(nombre)}
+                </div>
+                <div className={`min-w-0 flex-1 leading-tight ${soloAncha}`}>
+                    <p className="truncate text-sm font-medium text-white">{nombre}</p>
+                    <p className="truncate text-xs text-tinta-400">{rol}</p>
+                </div>
                 <button
                     type="button"
                     onClick={cerrarSesion}
-                    title={plegada ? 'Cerrar sesión' : undefined}
-                    className="mb-3 flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-tinta-400 transition hover:bg-red-950/40 hover:text-red-400"
+                    aria-label="Cerrar sesión"
+                    title="Cerrar sesión"
+                    className="grid size-9 shrink-0 place-items-center rounded-lg text-tinta-400 transition hover:bg-tinta-800 hover:text-white"
                 >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-
-                        <IconoSalir className="size-[18px]" />
-
-                    </div>
-
-                    <span className={soloAncha}>
-                        Cerrar sesión
-                    </span>
+                    <IconoSalir className="size-[18px]" />
                 </button>
-
-
-                <div
-                    className={[
-                        'rounded-2xl border border-tinta-800 bg-tinta-950/60',
-                        plegada ? 'p-4 md:p-2' : 'p-4',
-                    ].join(' ')}
-                >
-
-                    <div className="flex items-center gap-3">
-
-                        <div
-                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-marca-950 text-marca-400"
-                            title={plegada ? (usuario?.full_name ?? '') : undefined}
-                        >
-
-                            <IconoEscudo className="size-5" />
-
-                        </div>
-
-
-                        <div className={`min-w-0 ${soloAncha}`}>
-
-                            <p className="truncate text-sm font-semibold text-tinta-100">
-                                {usuario?.full_name
-                                    || 'Superadministrador'}
-                            </p>
-
-                            <p className="mt-0.5 truncate text-xs text-tinta-500">
-                                {usuario?.is_platform_admin
-                                    ? 'Administrador de plataforma'
-                                    : usuario?.organization
-                                    || 'Usuario'}
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div className={`mt-3 flex items-center gap-2 border-t border-tinta-800 pt-3 ${soloAncha}`}>
-
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-
-                        <span className="text-xs font-medium text-emerald-400">
-                            Cuenta activa
-                        </span>
-
-                    </div>
-
-                </div>
-
             </div>
-
         </aside>
     )
 }
@@ -500,7 +469,7 @@ function IconoPlegar({
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-[18px] w-[18px]"
+            className="size-3.5"
             aria-hidden="true"
         >
             {plegada
@@ -662,6 +631,34 @@ function IconoMenu({
         )
     }
 
+
+
+    const trazo = {
+        viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8,
+        strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+        className: 'h-[18px] w-[18px]', 'aria-hidden': true,
+    }
+    if (tipo === 'calendario') return (
+        <svg {...trazo}><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
+    )
+    if (tipo === 'reloj') return (
+        <svg {...trazo}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
+    )
+    if (tipo === 'buscar') return (
+        <svg {...trazo}><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
+    )
+    if (tipo === 'ficha') return (
+        <svg {...trazo}><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-2-2-3 2V4Z" /><path d="M9 9h6M9 13h4" /></svg>
+    )
+    if (tipo === 'estetoscopio') return (
+        <svg {...trazo}><path d="M6 3v6a4 4 0 0 0 8 0V3" /><path d="M10 13v2a5 5 0 0 0 10 0v-1" /><circle cx="20" cy="12" r="2" /></svg>
+    )
+    if (tipo === 'servicio') return (
+        <svg {...trazo}><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" /><path d="M7.5 15h9" /></svg>
+    )
+    if (tipo === 'respaldo') return (
+        <svg {...trazo}><path d="M7 18a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 10.5a3.8 3.8 0 0 1-1 7.5H7Z" /><path d="M12 11v5M9.8 13.8 12 16l2.2-2.2" /></svg>
+    )
 
     return (
         <svg

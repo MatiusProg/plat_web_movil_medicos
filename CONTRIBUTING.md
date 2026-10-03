@@ -80,6 +80,10 @@ Una historia está terminada cuando:
 8. **Una lista que el usuario recorre se muestra paginada**, en la web y en el
    móvil: nunca se trunca a la primera página. Los desplegables traen la lista
    completa. Ver `config/pagination.py`.
+9. **Si toca la web, cumple la guía de diseño**
+   (`docs/frontend/guia-de-diseno.md`): componentes y colores del sistema,
+   nada interno a la vista, y probada con cada rol que la ve, en claro y
+   oscuro, en escritorio y en móvil.
 
 ---
 
