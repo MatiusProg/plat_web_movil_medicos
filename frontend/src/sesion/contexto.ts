@@ -35,6 +35,19 @@ export interface EstadoSesion {
    * `IsPlatformAdmin` y no `has_permission`.
    */
   puede: (permiso: string) => boolean
+  /**
+   * US-05 — Refleja en la sesión lo que cambió en el perfil, sin volver a
+   * entrar: el nombre y el correo que muestra la barra, o el par de tokens
+   * nuevo que devuelve el cambio de contraseña. Guardar el par es obligatorio:
+   * el backend manda a la lista negra todos los refrescos anteriores.
+   */
+  actualizar: (cambios: CambiosSesion) => void
+}
+
+export interface CambiosSesion {
+  usuario?: Partial<Pick<UsuarioSesion, 'full_name' | 'email'>>
+  access?: string
+  refresh?: string
 }
 
 export const ContextoSesion = createContext<EstadoSesion | null>(null)

@@ -18,6 +18,7 @@ import { MisFichas } from '@/paginas/MisFichas'
 import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
+import { Perfil } from '@/paginas/Perfil'
 import { Planes } from '@/paginas/Planes'
 import { RecuperarAcceso } from '@/paginas/RecuperarAcceso'
 import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
@@ -236,6 +237,16 @@ export default function App() {
                             path="/buscar-profesionales"
                             element={
                                 <BuscarProfesionales />
+                            }
+                        />
+
+
+                        {/* US-05: edición de perfil */}
+
+                        <Route
+                            path="/perfil"
+                            element={
+                                <Perfil />
                             }
                         />
 

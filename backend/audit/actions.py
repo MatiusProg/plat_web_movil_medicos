@@ -28,6 +28,11 @@ class Action:
     ROLE_PERMISSIONS_UPDATE = "role.permissions.update"
     ROLE_ASSIGN = "role.assign"
     ROLE_REVOKE = "role.revoke"
+    # US-05: el perfil propio. El cambio de contraseña va aparte del
+    # restablecimiento de US-03 porque no es lo mismo: acá la persona acreditó
+    # la actual, y quien audita quiere poder distinguir una cosa de la otra.
+    PROFILE_UPDATE = "user.profile.update"
+    PASSWORD_CHANGE = "password.change"
 
     # ---------- Usuarios — el backlog los pide por nombre --------------
     USER_CREATE = "user.create"

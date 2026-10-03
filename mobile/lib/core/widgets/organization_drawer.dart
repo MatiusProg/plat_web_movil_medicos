@@ -176,6 +176,15 @@ class OrganizationDrawer extends StatelessWidget {
               context.go('/home');
             },
           ),
+          // US-05: el perfil propio.
+          ListTile(
+            leading: const Icon(Icons.account_circle_outlined),
+            title: const Text('Mi perfil'),
+            onTap: () {
+              Navigator.of(context).pop();
+              context.push('/profile');
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar sesión'),
