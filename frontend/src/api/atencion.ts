@@ -107,3 +107,14 @@ export const verAntecedentes = (pacienteId: string, contexto: Contexto, senal?: 
   pedir<Antecedentes>(`/patients/history/highlights/?patient=${encodeURIComponent(pacienteId)}`, {
     ...contexto, senal,
   })
+
+/** US-25: el historial longitudinal del paciente, todas las sucursales. */
+export interface Historial {
+  patient: PacienteResumen
+  scope: 'own' | 'professional'
+  branches: { name: string; encounters: number }[]
+  encounters: Encuentro[]
+}
+
+export const verHistorial = (pacienteId: string, contexto: Contexto, senal?: AbortSignal) =>
+  pedir<Historial>(`${base}history/${encodeURIComponent(pacienteId)}/`, { ...contexto, senal })

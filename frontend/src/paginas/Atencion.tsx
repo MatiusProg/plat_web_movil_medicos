@@ -45,6 +45,7 @@ export function Atencion() {
   const { token, puede } = useSesion()
   useTitulo('Atención')
   const enmendar = puede('encounters.encounter.amend')
+  const verHistorialPermitido = puede('encounters.history.read')
   const [encuentro, setEncuentro] = useState<Encuentro | null>(null)
   const [borrador, setBorrador] = useState<Borrador | null>(null)
   const [antecedentes, setAntecedentes] = useState<Antecedentes | null>(null)
@@ -115,9 +116,12 @@ export function Atencion() {
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{encuentro.patient.full_name}</h1>
         <p className="mt-1 text-[0.9375rem] text-tinta-500">{[encuentro.patient.document_number && `CI ${encuentro.patient.document_number}`, fechaHora(encuentro.appointment_starts_at), encuentro.branch_name].filter(Boolean).join(' · ')}</p>
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+      {verHistorialPermitido && <Link to={`/historial/${encuentro.patient.id}`} className={SECONDARY}>Ver historial clínico</Link>}
       <span className={`rounded-full px-3 py-1 text-sm font-medium ${firmado ? 'bg-marca-50 text-marca-700 dark:bg-marca-950 dark:text-marca-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'}`}>
         {firmado ? `Firmada por ${encuentro.signed_by_name} · ${fechaHora(encuentro.signed_at!)}` : 'Borrador'}
       </span>
+      </div>
     </div>
     {aviso && <AvisoCatalogo mensaje={aviso} onCerrar={() => setAviso(null)} />}
     {error && <ErrorCatalogo mensaje={error} />}
