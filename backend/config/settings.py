@@ -83,6 +83,9 @@ INSTALLED_APPS = [
     # US-17/US-20: la ficha. Depende de `scheduling` (deriva el turno de una
     # `Schedule`), `catalog` y `patients`.
     "appointments",
+    # US-18: el pago de la ficha. La confirma el webhook firmado de Stripe,
+    # nunca la pantalla del paciente.
+    "payments",
     "encounters",
     # US-06: la bitácora. No trae modelos —lee `accounts.AuditLog`—, pero es
     # una app igual porque tiene su propio prefijo de rutas, su permiso y su
@@ -255,6 +258,34 @@ AVAILABILITY_MAX_HORIZON_DAYS = env.int("AVAILABILITY_MAX_HORIZON_DAYS", default
 # la disponibilidad vuelva a ofrecerlo. Sin esto, un carrito abandonado
 # bloquea un cupo para siempre.
 APPOINTMENT_HOLD_MINUTES = env.int("APPOINTMENT_HOLD_MINUTES", default=15)
+
+# --------------------------------------------------------------------------
+#  US-18 — Pago en línea
+# --------------------------------------------------------------------------
+# Las claves **no se versionan** (regla 11 del Sprint 2): .env y Railway.
+# Siempre las de modo prueba (`sk_test_…`): la demostración se paga con las
+# tarjetas de prueba de Stripe.
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+
+# "auto", "stripe" o "simulated". En "auto" se usa Stripe si hay clave y, si
+# no, el proveedor simulado: una página de pago propia que confirma por el
+# MISMO camino que el webhook (`payments.services.confirm_payment`). Existe
+# para que las pruebas y la demostración no dependan de una cuenta externa;
+# no es un atajo que confirme desde el móvil.
+PAYMENTS_PROVIDER = env("PAYMENTS_PROVIDER", default="auto")
+
+# Arancel de la consulta cuando el catálogo no tiene un servicio de tipo
+# "consulta" con precio para la especialidad del profesional.
+APPOINTMENT_DEFAULT_FEE = env("APPOINTMENT_DEFAULT_FEE", default="100.00")
+APPOINTMENT_FEE_CURRENCY = env("APPOINTMENT_FEE_CURRENCY", default="BOB")
+
+# Dónde se ve la API desde afuera, para los enlaces que salen por correo y no
+# nacen de una petición (US-21: confirmar asistencia). En Railway, el dominio
+# público del backend.
+PUBLIC_API_BASE_URL = env(
+    "PUBLIC_API_BASE_URL", default="http://localhost:8000",
+).rstrip("/")
 
 # US-07 (g): tope de dependientes por titular. Es configurable y no una
 # constante porque el número correcto depende del centro médico —una familia

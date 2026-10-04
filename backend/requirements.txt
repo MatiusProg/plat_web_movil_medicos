@@ -66,6 +66,10 @@ gunicorn==23.0.0
 # tiene un servidor web delante que los sirva.
 whitenoise==6.11.0
 
+# US-18: pago de la ficha. Checkout alojado por Stripe y verificación de la
+# firma del webhook.
+stripe==12.5.1
+
 # ---------- Pruebas ----------
 # RNF-08 y criterio 4 de la Definición de Terminado: las pruebas de
 # aislamiento se conectan como app_user, nunca como postgres.

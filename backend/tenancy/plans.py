@@ -53,7 +53,7 @@ PLAN_RULES = {
     "backup_interval_hours": ("aplicado", "backups/policy.py · frecuencia de copias"),
     "noshow_prediction": ("pendiente", "predicción de inasistencia, US-35 a US-38 (Sprint 4)"),
     "ai_summaries": ("pendiente", "resúmenes por IA, US-39 a US-42 (Sprint 4)"),
-    "online_payment": ("pendiente", "pago en línea, US-18"),
+    "online_payment": ("aplicado", "payments/views.py · checkout del pago en línea (US-18)"),
     "storage_mb": ("no_aplica", "el sistema no guarda archivos de la organización: "
                                 "las copias de seguridad se descargan, no se almacenan"),
 }

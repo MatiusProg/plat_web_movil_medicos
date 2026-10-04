@@ -37,3 +37,9 @@ class CanCancelAppointments(RequiresPermission):
 
 class CanRescheduleAppointments(RequiresPermission):
     code = "appointments.appointment.reschedule"
+
+
+class CanConfirmAttendance(RequiresPermission):
+    """US-21. Se siembra en `payments/migrations/0003_seed_permissions.py`."""
+
+    code = "appointments.appointment.confirm_attendance"

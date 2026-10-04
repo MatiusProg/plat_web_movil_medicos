@@ -143,6 +143,9 @@ class Session extends ChangeNotifier implements AuthContext {
   Map<String, bool> _incluye = const {};
   bool get incluyeAsistente => _incluye['asistente'] ?? true;
   bool get incluyeExportarReportes => _incluye['exportar_reportes'] ?? true;
+  /// US-18: el pago en línea (`online_payment` del plan). Sin él, la ficha se
+  /// paga en ventanilla y el móvil no ofrece el botón de pagar.
+  bool get incluyePagoEnLinea => _incluye['pago_en_linea'] ?? true;
   bool get isSignedIn => _status == SessionStatus.signedIn;
   bool get cargandoUsuario => _cargandoUsuario;
 

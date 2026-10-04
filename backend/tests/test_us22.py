@@ -16,6 +16,7 @@ from accounts.models import (
 )
 from accounts.tokens import tokens_for_user
 from appointments.models import Appointment
+from appointments.receipts import issue_code
 from catalog.models import Branch, Practitioner
 from patients.models import Patient
 from scheduling.models import Schedule
@@ -251,7 +252,7 @@ def test_checkin_por_qr_temporal(
     ).post(
         reverse("appointments:checkin"),
         {
-            "qr_code": str(cita.id),
+            "qr_code": issue_code(cita),
         },
         format="json",
     )
@@ -290,7 +291,7 @@ def test_no_permite_reutilizar_comprobante(
     primera = cliente.post(
         reverse("appointments:checkin"),
         {
-            "qr_code": str(cita.id),
+            "qr_code": issue_code(cita),
         },
         format="json",
     )
@@ -300,7 +301,7 @@ def test_no_permite_reutilizar_comprobante(
     segunda = cliente.post(
         reverse("appointments:checkin"),
         {
-            "qr_code": str(cita.id),
+            "qr_code": issue_code(cita),
         },
         format="json",
     )
@@ -343,7 +344,7 @@ def test_solo_se_hace_checkin_a_ficha_confirmada(
     ).post(
         reverse("appointments:checkin"),
         {
-            "qr_code": str(cita.id),
+            "qr_code": issue_code(cita),
         },
         format="json",
     )
@@ -371,10 +372,12 @@ def test_documento_inexistente_devuelve_404(
     assert respuesta.json()["code"] == "ficha_no_encontrada"
 
 
-def test_qr_invalido_devuelve_404(
+def test_qr_que_no_es_comprobante_se_rechaza_diciendo_por_que(
     api_client,
     recepcionista_a,
 ):
+    # US-19: el QR es el comprobante firmado. Un texto cualquiera —ni
+    # siquiera el id de la ficha, que se puede leer en otro lado— no entra.
     respuesta = autenticar(
         api_client,
         recepcionista_a,
@@ -386,8 +389,8 @@ def test_qr_invalido_devuelve_404(
         format="json",
     )
 
-    assert respuesta.status_code == 404
-    assert respuesta.json()["code"] == "ficha_no_encontrada"
+    assert respuesta.status_code == 400
+    assert respuesta.json()["code"] == "comprobante_invalido"
 
 
 def test_no_permite_enviar_qr_y_documento_juntos(
@@ -459,9 +462,10 @@ def test_no_puede_hacer_checkin_de_otra_organizacion(
     ).post(
         reverse("appointments:checkin"),
         {
-            "qr_code": str(cita_b.id),
+            "qr_code": issue_code(cita_b),
         },
         format="json",
     )
 
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 400
+    assert respuesta.json()["code"] == "comprobante_de_otra_organizacion"

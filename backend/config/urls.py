@@ -23,7 +23,7 @@ sola vez**, al inicio, para incluir las cuatro juntas; ``assistant`` entró así
 para el corte del 16/09. ``appointments`` entra ahora, aparte, porque US-17 es
 la ruta crítica del sprint y no podía esperar a que ``payments`` y
 ``encounters`` existieran (avisar al SM). ``encounters`` entra con US-24;
-``payments`` queda para cuando Alexander la tenga lista.
+``payments`` entra con US-18, por la misma excepción: es una app nueva.
 
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py       (US-43, US-44, US-45)
@@ -31,7 +31,8 @@ la ruta crítica del sprint y no podía esperar a que ``payments`` y
     sucursales, profesionales  catalog/urls.py       (US-11, US-12, US-16)
     agendas y disponibilidad   scheduling/urls.py    (US-13, US-14, US-15)
     pacientes                  patients/urls.py      (US-07 en adelante)
-    fichas                     appointments/urls.py  (US-17, US-20)
+    fichas                     appointments/urls.py  (US-17, US-19 a US-22)
+    pagos                      payments/urls.py      (US-18)
     bitácora                   audit/urls.py         (US-06)
     reportes                   reporting/urls.py     (característica 5)
     copias de seguridad        backups/urls.py       (característica 6)
@@ -79,4 +80,5 @@ urlpatterns = [
     path("api/assistant/", include("assistant.urls")),
     path("api/appointments/", include("appointments.urls")),
     path("api/encounters/", include("encounters.urls")),
+    path("api/payments/", include("payments.urls")),
 ]

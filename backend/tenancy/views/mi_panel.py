@@ -78,6 +78,7 @@ def mi_panel(request):
     datos["incluye"] = {
         "asistente": bool(plan_vigente and plan_vigente.allows("ai_chatbot")),
         "exportar_reportes": bool(plan_vigente and plan_vigente.allows("report_export")),
+        "pago_en_linea": bool(plan_vigente and plan_vigente.allows("online_payment")),
     }
 
     # ---- Administración: el plan y cuánto se usa de él -------------------
@@ -99,6 +100,7 @@ def mi_panel(request):
                 "incluye": {
                     "asistente": plan.allows("ai_chatbot"),
                     "exportar_reportes": plan.allows("report_export"),
+                    "pago_en_linea": plan.allows("online_payment"),
                 },
             }
 

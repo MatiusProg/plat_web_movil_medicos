@@ -19,6 +19,22 @@ class AppointmentSerializer(serializers.ModelSerializer):
         source="practitioner.full_name", read_only=True,
     )
     branch_name = serializers.CharField(source="branch.name", read_only=True)
+    # US-18: cuánto cuesta y en qué quedó el pago. Lo calcula el backend; el
+    # móvil sólo lo muestra (regla 10 del Sprint 2).
+    fee = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+
+    def get_fee(self, obj):
+        from payments.pricing import quote
+
+        amount, currency = quote(obj)
+        return {"amount": str(amount), "currency": currency}
+
+    def get_payment_status(self, obj):
+        # El último intento: un `succeeded` o `refunded` siempre es el último,
+        # porque después de pagar no se abren intentos nuevos.
+        ultimo = obj.payments.order_by("-created_at").first()
+        return ultimo.status if ultimo else None
 
     class Meta:
         model = Appointment
@@ -32,6 +48,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "expires_at",
             "cancelled_at", "cancellation_reason", "refund_eligible",
             "rescheduled_from",
+            "checked_in_at", "attendance_confirmed_at",
+            "fee", "payment_status",
             "created_at", "updated_at",
         ]
         read_only_fields = fields
