@@ -1,3 +1,4 @@
+
 import {
     BrowserRouter,
     Navigate,
@@ -33,6 +34,8 @@ import { Historial } from '@/paginas/Historial'
 import { MiHistoria } from '@/paginas/MiHistoria'
 import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
+import { Pacientes } from '@/paginas/Pacientes'
+import { CheckIn } from '@/paginas/CheckIn'
 import { Usuarios } from '@/paginas/Usuarios'
 import { Sucursales } from '@/paginas/Sucursales'
 import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
@@ -201,6 +204,12 @@ export default function App() {
 
                         {/* US-32: servicios con precio y preparación, para el asistente */}
                         <Route path="/servicios" element={<Servicios />} />
+
+                        {/* US-09 / US-10: consulta y gestión de pacientes */}
+                        <Route path="/pacientes" element={<Pacientes />} />
+
+                        {/* US-22: check-in de pacientes en recepción */}
+                        <Route path="/check-in" element={<CheckIn />} />
 
                         {/* US-24: registro de la atención médica */}
                         <Route path="/atencion" element={<AgendaAtencion />} />

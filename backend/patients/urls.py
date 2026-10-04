@@ -13,6 +13,8 @@ from rest_framework.routers import DefaultRouter
 
 from .dependents import DependentViewSet
 from .history import PatientHistoryViewSet
+from .search import PatientSearchViewSet
+from .admin_ops import PatientAdminViewSet
 
 app_name = "patients"
 
@@ -28,4 +30,16 @@ router.register("dependents", DependentViewSet, basename="dependent")
 # el módulo de atención del Sprint 3 muestra al abrir la consulta.
 router.register("history", PatientHistoryViewSet, basename="history")
 
+# ---------- US-09: búsqueda de pacientes -------------------------------
+router.register(
+    "search",
+    PatientSearchViewSet,
+    basename="patient-search",
+)
+# ---------- US-10: ABM de pacientes -----------------------------------
+router.register(
+    "admin",
+    PatientAdminViewSet,
+    basename="patient-admin",
+)
 urlpatterns = router.urls

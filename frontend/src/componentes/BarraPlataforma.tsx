@@ -1,3 +1,4 @@
+
 /**
  * La navegación de las pantallas con sesión.
  *
@@ -186,6 +187,24 @@ const items: ItemMenu[] = [
         icono: 'servicio',
         requiere: 'catalog.service.read',
     },
+    // US-09 / US-10 — consulta y gestión de pacientes.
+    {
+        etiqueta: 'Pacientes',
+        ruta: '/pacientes',
+        seccion: 'Atención',
+        icono: 'usuarios',
+        requiere: 'patients.patient.read',
+    },
+
+    // US-22 — check-in en recepción.
+    {
+        etiqueta: 'Check-in',
+        ruta: '/check-in',
+        seccion: 'Atención',
+        icono: 'ficha',
+        requiere: 'appointments.appointment.read',
+    },
+
     // US-24 — la agenda del profesional para registrar la atención.
     {
         etiqueta: 'Atención',

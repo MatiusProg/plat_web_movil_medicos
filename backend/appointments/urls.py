@@ -5,13 +5,18 @@ from rest_framework.routers import DefaultRouter
 
 from .booking import AppointmentViewSet
 from .changes import CancelAppointmentView, RescheduleAppointmentView
+from .checkin import CheckInView
 
 app_name = "appointments"
 
 router = DefaultRouter()
 
 # ---------- US-17 — Reserva de ficha ------------------------------------
-router.register("appointments", AppointmentViewSet, basename="appointment")
+router.register(
+    "appointments",
+    AppointmentViewSet,
+    basename="appointment",
+)
 
 urlpatterns = router.urls + [
     # ---------- US-20 — Cancelación y reprogramación --------------------
@@ -24,5 +29,12 @@ urlpatterns = router.urls + [
         "appointments/<uuid:pk>/reschedule/",
         RescheduleAppointmentView.as_view(),
         name="appointment-reschedule",
+    ),
+
+    # ---------- US-22 — Check-in en recepción ---------------------------
+    path(
+        "checkin/",
+        CheckInView.as_view(),
+        name="checkin",
     ),
 ]
