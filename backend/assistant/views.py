@@ -16,6 +16,14 @@ cardiología con un botón de reservar para el jueves.
 misma regla que US-05 aplica al perfil. Un endpoint de IA que acepta el
 inquilino por parámetro es la forma más corta de leer el catálogo de otra
 organización.
+
+**US-32: el mismo endpoint contesta consultas administrativas.** No hay un
+clasificador de intención aparte: la búsqueda ya lo decide. Si el fragmento
+más parecido es de una sede, un servicio o una política, la pregunta era
+administrativa y se contesta con ese dato, sin sugerir especialidad. Si es de
+una especialidad, sigue el camino de siempre. La respuesta lo dice en
+``kind``: ``"orientacion"`` o ``"administrativa"``. Es un campo nuevo, así que
+el cliente que no lo lee sigue funcionando igual.
 """
 
 from rest_framework import status
@@ -24,12 +32,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from audit import services as bitacora
+from tenancy.plans import ai_queries_this_month, check_limit, require_feature
 from audit.actions import Action
 
 from . import generation, triage
 from .embeddings import EmbeddingError, active_model_name
 from .permissions import CanUseAssistant
-from .retrieval import rank_specialties, retrieve
+from .retrieval import is_administrative, rank_specialties, retrieve
 from .serializers import (
     FragmentSerializer,
     SpecialtySuggestionSerializer,
@@ -57,6 +66,15 @@ class SuggestView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # 0. Lo que promete el plan se cumple (tenancy/plans.py). Va antes que
+        # todo, incluso que la barrera de urgencias: un plan sin chatbot no
+        # tiene asistente, y un chat que a veces contesta y a veces no es peor
+        # que una pantalla que dice que el centro no lo tiene.
+        require_feature(organization, "ai_chatbot", "el asistente")
+        check_limit(organization, "max_ai_queries_month",
+                    ai_queries_this_month(organization), "consultas al asistente por mes",
+                    "consulta al asistente por mes")
+
         # 1. Barrera de seguridad, primera capa de US-34: ver triage.py.
         emergency = triage.check(question)
         if emergency.is_emergency:
@@ -73,7 +91,7 @@ class SuggestView(APIView):
             return Response(
                 {
                     "emergency": False,
-                    "answer": "No puedo responderte ahora. Probá en un rato.",
+                    "answer": "No puedo responderte ahora. Intenta de nuevo en un rato.",
                     "generated_by": "regla",
                     "detail": str(error),
                     "specialty": None,
@@ -83,6 +101,13 @@ class SuggestView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
+        # US-32: la pregunta es administrativa si lo más parecido lo es.
+        if fragments and is_administrative(fragments[0]):
+            return self._administrativa(request, question, fragments)
+
+        # Lo administrativo que haya quedado más abajo no respalda una
+        # sugerencia de especialidad: no viaja ni al modelo ni como evidencia.
+        fragments = [f for f in fragments if not is_administrative(f)]
         ranked = rank_specialties(fragments)
         mejor = ranked[0] if ranked else None
 
@@ -101,6 +126,7 @@ class SuggestView(APIView):
         _audit(request, specialty_suggested=mejor is not None)
         return Response({
             "emergency": False,
+            "kind": "orientacion",
             "answer": redactado["text"],
             "generated_by": redactado["generated_by"],
             "specialty": (
@@ -117,6 +143,29 @@ class SuggestView(APIView):
                 many=True,
             ).data,
             # La evidencia. Ver FragmentSerializer: es parte del contrato.
+            "fragments": FragmentSerializer(fragments, many=True).data,
+            "retrieval": {"embedding_model": active_model_name()},
+        })
+
+    def _administrativa(self, request, question, fragments):
+        """US-32 — Dónde, cuándo, cuánto o cómo. Ninguna especialidad."""
+        fragments = [f for f in fragments if is_administrative(f)]
+        redactado = generation.answer_administrative(question, fragments)
+
+        # La segunda capa de US-34 vale también acá: "¿a qué hora abre la
+        # guardia? mi papá no respira" es una pregunta de horario.
+        if redactado["emergency"]:
+            _audit(request, emergency_layer="modelo")
+            return _emergency_response("gemini")
+
+        _audit(request, kind="administrativa")
+        return Response({
+            "emergency": False,
+            "kind": "administrativa",
+            "answer": redactado["text"],
+            "generated_by": redactado["generated_by"],
+            "specialty": None,
+            "alternatives": [],
             "fragments": FragmentSerializer(fragments, many=True).data,
             "retrieval": {"embedding_model": active_model_name()},
         })
@@ -140,7 +189,8 @@ def _emergency_response(generated_by: str) -> Response:
     })
 
 
-def _audit(request, *, emergency_layer: str = "", specialty_suggested=False):
+def _audit(request, *, emergency_layer: str = "", specialty_suggested=False,
+           kind: str = "orientacion"):
     """Asiento de US-06 por cada consulta respondida (US-34).
 
     **Nunca se guarda el texto de la consulta, ni las señales que dispararon.**
@@ -158,5 +208,5 @@ def _audit(request, *, emergency_layer: str = "", specialty_suggested=False):
     else:
         bitacora.record(
             request, Action.ASSISTANT_QUERY, "assistant",
-            detail={"specialty_suggested": specialty_suggested},
+            detail={"specialty_suggested": specialty_suggested, "kind": kind},
         )

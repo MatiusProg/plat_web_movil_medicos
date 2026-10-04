@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/errors.dart';
@@ -75,6 +76,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         firstName: _firstName.text.trim(),
         lastName: _lastName.text.trim(),
       );
+      // La cuenta ya existe: ahora sí se ofrece guardar la contraseña.
+      TextInput.finishAutofillContext();
       // No se navega: el router lo hace cuando la sesión pasa a iniciada.
       return;
     } on ApiError catch (error) {
@@ -101,6 +104,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                    // Igual que en el ingreso, pero el guardado se confirma a
+                    // mano tras crear la cuenta: volver atrás a medio llenar
+                    // no tiene que ofrecer guardar una cuenta que no existe.
+                    child: AutofillGroup(
+                    onDisposeAction: AutofillContextAction.cancel,
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -115,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Registrate como paciente',
+                                'Regístrate como paciente',
                                 style: theme.textTheme.headlineSmall
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
@@ -123,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Creá tu cuenta en tu centro médico.',
+                            'Crea tu cuenta en tu centro médico.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -143,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: const Icon(Icons.apartment_outlined),
                       ),
                       validator: (value) => (value ?? '').trim().isEmpty
-                          ? 'Escribí tu centro médico.'
+                          ? 'Escribe tu centro médico.'
                           : null,
                     ),
                     const SizedBox(height: 16),
@@ -153,6 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _firstName,
+                            autofillHints: const [AutofillHints.givenName],
                             enabled: !_submitting,
                             textCapitalization: TextCapitalization.words,
                             textInputAction: TextInputAction.next,
@@ -169,6 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _lastName,
+                            autofillHints: const [AutofillHints.familyName],
                             enabled: !_submitting,
                             textCapitalization: TextCapitalization.words,
                             textInputAction: TextInputAction.next,
@@ -195,13 +205,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: const Icon(Icons.badge_outlined),
                       ),
                       validator: (value) => (value ?? '').trim().isEmpty
-                          ? 'Escribí tu número de documento.'
+                          ? 'Escribe tu número de documento.'
                           : null,
                     ),
                     const SizedBox(height: 16),
 
                     TextFormField(
                       controller: _email,
+                      autofillHints: const [AutofillHints.username, AutofillHints.email],
                       enabled: !_submitting,
                       autocorrect: false,
                       keyboardType: TextInputType.emailAddress,
@@ -218,6 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     TextFormField(
                       controller: _password,
+                      autofillHints: const [AutofillHints.newPassword],
                       enabled: !_submitting,
                       obscureText: !_showPassword,
                       textInputAction: TextInputAction.next,
@@ -243,7 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       validator: (value) {
                         final password = value ?? '';
-                        if (password.isEmpty) return 'Escribí una contraseña.';
+                        if (password.isEmpty) return 'Escribe una contraseña.';
                         if (password.length < 8) {
                           return 'Tiene que tener al menos 8 caracteres.';
                         }
@@ -254,12 +266,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     TextFormField(
                       controller: _passwordConfirmation,
+                      autofillHints: const [AutofillHints.newPassword],
                       enabled: !_submitting,
                       obscureText: !_showPassword,
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        labelText: 'Confirmá la contraseña',
+                        labelText: 'Confirma la contraseña',
                         errorText: _error?.forField('password_confirmation'),
                         prefixIcon: const Icon(Icons.lock_outline),
                       ),
@@ -286,6 +299,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
                     ),
+                    ),
                   ),
                 ),
               ),
@@ -299,7 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   /// Validación de forma, no de existencia — igual que en el ingreso.
   static String? _validateEmail(String? value) {
     final email = (value ?? '').trim();
-    if (email.isEmpty) return 'Escribí tu correo electrónico.';
+    if (email.isEmpty) return 'Escribe tu correo electrónico.';
     if (!email.contains('@') || !email.contains('.')) {
       return 'Ese correo no parece válido.';
     }

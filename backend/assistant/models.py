@@ -49,6 +49,9 @@ class SourceType(models.TextChoices):
     SPECIALTY = "specialty", "Especialidad"
     BRANCH = "branch", "Sucursal"
     SERVICE = "service", "Servicio o estudio"
+    # US-32: las reglas de la organización que no son de una sede —hoy, el
+    # aviso para cancelar de US-20—. `source_id` es el id de la organización.
+    POLICY = "policy", "Política de la organización"
 
 
 class CatalogFragment(models.Model):

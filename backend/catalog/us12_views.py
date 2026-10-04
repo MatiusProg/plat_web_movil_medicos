@@ -114,6 +114,12 @@ class PractitionerManageListView(OrganizationScopedMixin, ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = PractitionerWriteSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
+        # Lo que promete el plan se cumple (tenancy/plans.py).
+        from tenancy.plans import check_limit
+        check_limit(request.user.organization, "max_practitioners",
+                    Practitioner.objects.filter(organization=request.user.organization,
+                                                is_active=True).count(),
+                    "profesionales activos", "profesional activo")
         obj = save_practitioner(organization=request.user.organization,
                                 data=serializer.validated_data, request=request)
         obj = self.get_queryset().get(pk=obj.pk)

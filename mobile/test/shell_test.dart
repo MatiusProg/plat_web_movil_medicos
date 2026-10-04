@@ -205,7 +205,44 @@ void main() {
       expect(session.isSignedIn, isTrue);
       expect(session.user?.fullName, 'Karen Ortega');
       expect(session.user?.isPatient, isTrue);
-      expect(requests.single.url.path, endsWith('/accounts/me/'));
+      expect(requests.first.url.path, endsWith('/accounts/me/'));
+      // Después pregunta qué incluye el plan, para no ofrecer lo que no hay.
+      expect(requests.last.url.path, endsWith('/platform/my-panel/'));
+    });
+
+    Session conPlan(Object? panel) => Session(
+          storage: MemoryStorage()
+            ..values['refresh'] = tokenQueVence(const Duration(days: 5))
+            ..values['access'] = tokenQueVence(const Duration(minutes: 20)),
+          meClient: ApiClient(
+            httpClient: MockClient((request) async {
+              final cuerpo = request.url.path.endsWith('/platform/my-panel/')
+                  ? panel
+                  : usuario;
+              return http.Response(
+                jsonEncode(cuerpo),
+                200,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }),
+          ),
+        );
+
+    test('un plan sin asistente ni exportación lo deja dicho', () async {
+      final session = conPlan({
+        'incluye': {'asistente': false, 'exportar_reportes': false},
+      });
+      await session.restore();
+      expect(session.incluyeAsistente, isFalse);
+      expect(session.incluyeExportarReportes, isFalse);
+    });
+
+    test('si no se sabe qué incluye el plan, no se esconde nada', () async {
+      // El superadministrador no tiene plan: su panel no trae `incluye`.
+      final session = conPlan({'plataforma': true});
+      await session.restore();
+      expect(session.incluyeAsistente, isTrue);
+      expect(session.incluyeExportarReportes, isTrue);
     });
 
     test('sin red, la sesión sigue abierta pero sin datos del usuario',

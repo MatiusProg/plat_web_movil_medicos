@@ -24,6 +24,7 @@ import 'package:go_router/go_router.dart';
 
 import '../session/session_scope.dart';
 import '../theme/theme.dart';
+import 'theme_selector.dart';
 
 class PlatformDrawer extends StatelessWidget {
   const PlatformDrawer({super.key});
@@ -80,6 +81,17 @@ class PlatformDrawer extends StatelessWidget {
           ),
           const Divider(),
           item(Icons.home_outlined, 'Inicio', '/home'),
+          // US-05: el perfil propio. `push` y no `go`: atrás vuelve al panel.
+          ListTile(
+            leading: const Icon(Icons.account_circle_outlined),
+            title: const Text('Mi perfil'),
+            onTap: () {
+              Navigator.of(context).pop();
+              context.push('/profile');
+            },
+          ),
+          // Acceso rápido al tema; el mismo selector está en el perfil.
+          const ThemeDrawerTile(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar sesión'),

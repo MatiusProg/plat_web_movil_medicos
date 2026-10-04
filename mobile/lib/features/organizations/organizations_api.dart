@@ -5,6 +5,7 @@
 library;
 
 import '../../core/api/client.dart';
+import '../../core/api/paginacion.dart';
 
 class CurrentPlan {
   const CurrentPlan({
@@ -104,13 +105,20 @@ class OrganizationCreated {
       );
 }
 
-Future<List<Organization>> listOrganizations(ApiClient client) async {
-  final data = await client.get('/platform/organizations/');
-  final mapa = data as Map<String, dynamic>;
-  return (mapa['results'] as List? ?? const [])
-      .map((e) => Organization.fromJson(e as Map<String, dynamic>))
-      .toList();
-}
+/// Una página de organizaciones.
+///
+/// Paginada y no completa: es la lista de la plataforma entera, que crece con
+/// cada cliente, y la pantalla sólo la muestra; no alimenta ningún selector.
+Future<Pagina<Organization>> listOrganizations(
+  ApiClient client, {
+  int page = 1,
+}) =>
+    unaPagina(
+      client,
+      '/platform/organizations/',
+      Organization.fromJson,
+      page: page,
+    );
 
 Future<OrganizationCreated> registerOrganization(
   ApiClient client, {

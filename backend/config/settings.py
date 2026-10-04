@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     # US-17/US-20: la ficha. Depende de `scheduling` (deriva el turno de una
     # `Schedule`), `catalog` y `patients`.
     "appointments",
+    "encounters",
     # US-06: la bitácora. No trae modelos —lee `accounts.AuditLog`—, pero es
     # una app igual porque tiene su propio prefijo de rutas, su permiso y su
     # middleware.
@@ -282,7 +283,9 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
     ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    # 25 por página; el cliente puede pedir hasta 100 con ?page_size=.
+    # Ver config/pagination.py.
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.Paginacion",
     "PAGE_SIZE": 25,
 }
 

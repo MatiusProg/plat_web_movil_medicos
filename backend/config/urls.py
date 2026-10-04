@@ -22,8 +22,8 @@ las dos y no una vez por cada una.
 sola vez**, al inicio, para incluir las cuatro juntas; ``assistant`` entró así
 para el corte del 16/09. ``appointments`` entra ahora, aparte, porque US-17 es
 la ruta crítica del sprint y no podía esperar a que ``payments`` y
-``encounters`` existieran (avisar al SM). ``payments`` y ``encounters`` quedan
-para cuando Alexander y el SM las tengan listas.
+``encounters`` existieran (avisar al SM). ``encounters`` entra con US-24;
+``payments`` queda para cuando Alexander la tenga lista.
 
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py       (US-43, US-44, US-45)
@@ -36,6 +36,7 @@ para cuando Alexander y el SM las tengan listas.
     reportes                   reporting/urls.py     (característica 5)
     copias de seguridad        backups/urls.py       (característica 6)
     asistente                  assistant/urls.py     (US-31, US-32, US-34)
+    atención médica            encounters/urls.py    (US-24, US-25)
 """
 
 from django.urls import include, path
@@ -77,4 +78,5 @@ urlpatterns = [
     path("api/backups/", include("backups.urls")),
     path("api/assistant/", include("assistant.urls")),
     path("api/appointments/", include("appointments.urls")),
+    path("api/encounters/", include("encounters.urls")),
 ]

@@ -28,4 +28,9 @@ class SessionScope extends InheritedNotifier<Session> {
     assert(scope != null, 'SessionScope no está sobre este widget.');
     return scope!.notifier!;
   }
+
+  /// Como [of], pero `null` si no hay sesión arriba (pruebas de una sola
+  /// pantalla).
+  static Session? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SessionScope>()?.notifier;
 }

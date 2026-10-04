@@ -1,9 +1,9 @@
 /// US-44 — Listado de planes de suscripción.
 ///
-/// Espejo de `frontend/src/paginas/Planes.tsx`: resumen de conteos arriba,
-/// filtro por estado, una tarjeta por plan con lo que incluye derivado de
-/// sus límites -no hay una lista de "features" separada que traer, los
-/// límites `null` ya dicen "ilimitado" solos-.
+/// Espejo de `frontend/src/paginas/Planes.tsx`: una tarjeta por plan, del
+/// más barato al más caro, con su precio, los topes que hace cumplir
+/// `tenancy/plans.py` y las funciones que incluye o no. El filtro por estado
+/// sólo aparece si hay planes inactivos.
 library;
 
 import 'package:flutter/material.dart';
@@ -14,7 +14,6 @@ import '../../core/api/errors.dart';
 import '../../core/session/session_scope.dart';
 import '../../core/theme/theme.dart';
 import '../../core/widgets/platform_drawer.dart';
-import '../../core/widgets/stat_tile.dart';
 import 'plans_api.dart';
 
 enum _Filtro { todos, activos, inactivos }
@@ -98,9 +97,11 @@ class _PlansScreenState extends State<PlansScreen> {
               ),
             );
           }
-          final planes = snapshot.data ?? const [];
-          final activos = planes.where((p) => p.isActive).length;
-          final inactivos = planes.length - activos;
+          // Del más barato al más caro, como se leen.
+          final planes = [...?snapshot.data]..sort((a, b) =>
+              (double.tryParse(a.monthlyPrice) ?? 0)
+                  .compareTo(double.tryParse(b.monthlyPrice) ?? 0));
+          final inactivos = planes.where((p) => !p.isActive).length;
           final visibles = switch (_filtro) {
             _Filtro.todos => planes,
             _Filtro.activos => planes.where((p) => p.isActive).toList(),
@@ -112,52 +113,33 @@ class _PlansScreenState extends State<PlansScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatTile(
-                        label: 'Disponibles',
-                        value: '${planes.length}',
+                Text(
+                  'Lo que cada plan permite. Los topes se hacen cumplir en '
+                  'todo el sistema: un centro no puede pasarse de ellos.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: StatTile(
-                        label: 'Activos',
-                        value: '$activos',
-                        color: Marca.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: StatTile(label: 'Inactivos', value: '$inactivos'),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: Text('Todos (${planes.length})'),
-                      selected: _filtro == _Filtro.todos,
-                      onSelected: (_) => setState(() => _filtro = _Filtro.todos),
-                    ),
-                    ChoiceChip(
-                      label: Text('Activos ($activos)'),
-                      selected: _filtro == _Filtro.activos,
-                      onSelected: (_) =>
-                          setState(() => _filtro = _Filtro.activos),
-                    ),
-                    ChoiceChip(
-                      label: Text('Inactivos ($inactivos)'),
-                      selected: _filtro == _Filtro.inactivos,
-                      onSelected: (_) =>
-                          setState(() => _filtro = _Filtro.inactivos),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                // El filtro sólo aparece si hay algo que filtrar.
+                if (inactivos > 0) ...[
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final (filtro, etiqueta) in const [
+                        (_Filtro.todos, 'Todos'),
+                        (_Filtro.activos, 'Activos'),
+                        (_Filtro.inactivos, 'Inactivos'),
+                      ])
+                        ChoiceChip(
+                          label: Text(etiqueta),
+                          selected: _filtro == filtro,
+                          onSelected: (_) => setState(() => _filtro = filtro),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 for (final plan in visibles) _PlanCard(
                   plan: plan,
                   onEditar: () => _editarPlan(plan),
@@ -177,79 +159,169 @@ class _PlanCard extends StatelessWidget {
   final Plan plan;
   final VoidCallback onEditar;
 
-  List<String> get _incluye {
-    String linea(int? valor, String singular, String plural) => valor == null
-        ? '$plural ilimitados'
-        : 'Hasta $valor $plural';
-    return [
-      linea(plan.maxUsers, 'usuario', 'usuarios'),
-      linea(plan.maxBranches, 'sucursal', 'sucursales'),
-      linea(plan.maxPractitioners, 'profesional', 'profesionales'),
-      linea(plan.maxAppointmentsMonth, 'cita/mes', 'citas/mes'),
-      linea(plan.maxAiQueriesMonth, 'consulta IA/mes', 'consultas IA/mes'),
-      plan.storageMb == null
-          ? 'Almacenamiento ilimitado'
-          : 'Hasta ${plan.storageMb} MB de almacenamiento',
-    ];
+  /// Las funciones que un plan puede incluir, con las mismas palabras que la
+  /// web (`Planes.tsx`).
+  static const _funciones = [
+    ('ai_chatbot', 'Asistente de orientación'),
+    ('noshow_prediction', 'Predicción de inasistencia'),
+    ('ai_summaries', 'Resúmenes con IA'),
+    ('report_export', 'Exportar reportes'),
+    ('online_payment', 'Pago en línea'),
+  ];
+
+  static String _tope(int? valor) => valor == null ? 'Sin límite' : '$valor';
+
+  static String _sinCeros(double n) =>
+      n == n.roundToDouble() ? n.toStringAsFixed(0) : n.toStringAsFixed(1);
+
+  static String _almacenamiento(int? mb) {
+    if (mb == null) return 'Sin límite';
+    return mb < 1024 ? '$mb MB' : '${_sinCeros(mb / 1024)} GB';
+  }
+
+  String get _precio {
+    final moneda = plan.currency == 'BOB' ? 'Bs' : plan.currency;
+    final monto = double.tryParse(plan.monthlyPrice) ?? 0;
+    final texto = monto == monto.roundToDouble()
+        ? monto.toStringAsFixed(0)
+        : monto.toStringAsFixed(2);
+    return '$moneda $texto';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(plan.name, style: theme.textTheme.titleMedium),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: plan.isActive
-                        ? Marca.surfaceTint
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
+    final suave = theme.colorScheme.onSurfaceVariant;
+    final topes = [
+      ('Personal', _tope(plan.maxUsers)),
+      ('Sucursales', _tope(plan.maxBranches)),
+      ('Profesionales', _tope(plan.maxPractitioners)),
+      ('Fichas al mes', _tope(plan.maxAppointmentsMonth)),
+      (
+        'Consultas al asistente al mes',
+        plan.incluye('ai_chatbot')
+            ? _tope(plan.maxAiQueriesMonth)
+            : 'No incluye',
+      ),
+      ('Almacenamiento', _almacenamiento(plan.storageMb)),
+    ];
+
+    return Opacity(
+      opacity: plan.isActive ? 1 : 0.75,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(plan.name, style: theme.textTheme.titleMedium),
                   ),
-                  child: Text(
-                    plan.isActive ? 'ACTIVO' : 'INACTIVO',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: plan.isActive ? Marca.primary : Marca.ink500,
-                      fontWeight: FontWeight.w700,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      plan.isActive ? 'Activo' : 'Inactivo',
+                      style: theme.textTheme.labelSmall?.copyWith(color: suave),
+                    ),
+                  ),
+                ],
+              ),
+              if (plan.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  plan.description,
+                  style: theme.textTheme.bodySmall?.copyWith(color: suave),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    _precio,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'al mes',
+                    style: theme.textTheme.bodySmall?.copyWith(color: suave),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              for (final (etiqueta, valor) in topes) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          etiqueta,
+                          style:
+                              theme.textTheme.bodySmall?.copyWith(color: suave),
+                        ),
+                      ),
+                      Text(
+                        valor,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: valor == 'No incluye' ? suave : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+              ],
+              const SizedBox(height: 12),
+              for (final (clave, etiqueta) in _funciones)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Semantics(
+                    label: '$etiqueta: '
+                        '${plan.incluye(clave) ? 'incluido' : 'no incluido'}',
+                    excludeSemantics: true,
+                    child: Row(
+                      children: [
+                        Icon(
+                          plan.incluye(clave) ? Icons.check : Icons.close,
+                          size: 18,
+                          color: plan.incluye(clave) ? Marca.primary : suave,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          etiqueta,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: plan.incluye(clave) ? null : suave,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-            if (plan.description.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(plan.description, style: theme.textTheme.bodyMedium),
-            ],
-            const SizedBox(height: 8),
-            Text(
-              '${plan.monthlyPrice} ${plan.currency}/mes',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: Marca.primaryDark),
-            ),
-            const SizedBox(height: 12),
-            Text('Incluye', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 4),
-            for (final linea in _incluye)
-              Text('• $linea', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: onEditar,
-                child: const Text('Editar plan'),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onEditar,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Editar plan'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -18,6 +18,7 @@ import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
 import '../../features/dependents/dependent_form_screen.dart';
 import '../../features/dependents/dependents_screen.dart';
+import '../../features/clinical_record/clinical_record_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/metrics/metrics_screen.dart';
 import '../../features/organizations/organizations_screen.dart';
@@ -25,6 +26,7 @@ import '../../features/organizations/register_organization_screen.dart';
 import '../../features/plans/plan_form_screen.dart';
 import '../../features/plans/plans_api.dart';
 import '../../features/plans/plans_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/search/specialties_screen.dart';
 import '../../features/subscriptions/change_plan_screen.dart';
@@ -48,7 +50,9 @@ import '../session/patient_gate.dart';
 import '../session/session.dart';
 import '../session/session_scope.dart';
 import '../theme/theme.dart';
+import '../theme/theme_controller.dart';
 import '../widgets/organization_drawer.dart';
+import '../widgets/theme_selector.dart';
 
 /// Los nombres se usan con `context.goNamed(Routes.signIn)`, para que cambiar
 /// una ruta no obligue a buscar la cadena por todo el proyecto.
@@ -65,7 +69,9 @@ class Routes {
   static const String dependents = 'dependents';
   static const String dependentForm = 'dependent-form';
   static const String history = 'history';
+  static const String clinicalRecord = 'clinical-record';
   static const String assistant = 'assistant';
+  static const String profile = 'profile';
   static const String platformDashboard = 'platform-dashboard';
   static const String platformOrganizations = 'platform-organizations';
   static const String platformOrganizationForm = 'platform-organization-form';
@@ -317,6 +323,16 @@ GoRouter buildRouter(Session session) {
         ),
       ),
 
+      // ---------- US-25 (SM): la historia clínica, vista por el paciente --
+      GoRoute(
+        path: '/clinical-record',
+        name: Routes.clinicalRecord,
+        builder: (context, state) => const SoloPacientes(
+          titulo: 'Mi historia clínica',
+          child: ClinicalRecordScreen(),
+        ),
+      ),
+
       // ---------- US-31 (Karen): asistente de orientación ---------------
       // Armazón de la pantalla para el corte del 16/09 (Alexander).
       GoRoute(
@@ -326,6 +342,14 @@ GoRouter buildRouter(Session session) {
           titulo: 'Asistente de orientación',
           child: AssistantScreen(),
         ),
+      ),
+
+      // ---------- US-05 (Karen): edición de perfil -----------------------
+      // Para todos, no sólo pacientes: todo el que entra tiene un perfil.
+      GoRoute(
+        path: '/profile',
+        name: Routes.profile,
+        builder: (context, state) => const ProfileScreen(),
       ),
 
       // ---------- US-15 (Alexander): disponibilidad consolidada ---------
@@ -474,6 +498,24 @@ class _HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Centro médico'),
         actions: [
+          // El paciente no tiene menú lateral: el acceso rápido al tema va
+          // acá, junto al perfil. Se esconde si no hay `ThemeScope` arriba.
+          if (ThemeScope.maybeOf(context) case final tema?)
+            IconButton(
+              tooltip: 'Tema: ${etiquetaDeTema(tema.value)}',
+              onPressed: () => mostrarSelectorDeTema(context, tema),
+              icon: Icon(iconoDeTema(tema.value)),
+            ),
+          // US-05: el cierre de sesión vive en el perfil. Hasta que la
+          // historia se entregó, acá había un botón provisional de salir.
+          IconButton(
+            tooltip: 'Mi perfil',
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.account_circle_outlined),
+          ),
+          // Salir a mano, sin pasar por el perfil: el paciente no tiene menú
+          // lateral, y bajar hasta el fondo del perfil para cerrar sesión era
+          // un rodeo. Sigue también en el perfil y en los menús del personal.
           IconButton(
             tooltip: 'Cerrar sesión',
             onPressed: session.signOut,
@@ -533,7 +575,10 @@ class _HomeScreen extends StatelessWidget {
                     : esPaciente
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: _accesosDePaciente(context),
+                            children: _accesosDePaciente(
+                              context,
+                              conAsistente: session.incluyeAsistente,
+                            ),
                           )
                         : esSuperadmin
                             // ------ US-45 (Luis Miguel): panel del superadmin
@@ -568,7 +613,11 @@ class _HomeScreen extends StatelessWidget {
   /// Los accesos de auto-servicio del paciente, como tarjetas con
   /// ícono en vez de botones en columna -más jerarquía visual, menos "es un
   /// formulario más".
-  List<Widget> _accesosDePaciente(BuildContext context) => [
+  List<Widget> _accesosDePaciente(
+    BuildContext context, {
+    required bool conAsistente,
+  }) =>
+      [
         _accesoTarjeta(
           context,
           icono: Icons.search,
@@ -577,6 +626,15 @@ class _HomeScreen extends StatelessWidget {
           // `push`, no `go`: así el botón atrás del teléfono vuelve acá en
           // lugar de cerrar la aplicación.
           onTap: () => context.push('/specialties'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-25 (SM): lo que escribieron los médicos -----------
+        _accesoTarjeta(
+          context,
+          icono: Icons.history_edu_outlined,
+          titulo: 'Mi historia clínica',
+          subtitulo: 'Tus consultas firmadas, de todas las sucursales',
+          onTap: () => context.push('/clinical-record'),
         ),
         const SizedBox(height: 12),
         // ---------- US-07 (SM): personas a cargo -----------------------
@@ -596,15 +654,18 @@ class _HomeScreen extends StatelessWidget {
           subtitulo: 'Alergias, condiciones y medicación declaradas',
           onTap: () => context.push('/history'),
         ),
-        const SizedBox(height: 12),
         // ---------- US-31 (Karen): asistente de orientación --------------
-        _accesoTarjeta(
-          context,
-          icono: Icons.forum_outlined,
-          titulo: 'Asistente de orientación',
-          subtitulo: 'Contá tus síntomas y te sugiere una especialidad',
-          onTap: () => context.push('/assistant'),
-        ),
+        // Sólo si el plan del centro lo incluye (el Básico no).
+        if (conAsistente) ...[
+          const SizedBox(height: 12),
+          _accesoTarjeta(
+            context,
+            icono: Icons.forum_outlined,
+            titulo: 'Asistente de orientación',
+            subtitulo: 'Cuenta tus síntomas y te sugiere una especialidad',
+            onTap: () => context.push('/assistant'),
+          ),
+        ],
       ];
 
   Widget _accesoTarjeta(

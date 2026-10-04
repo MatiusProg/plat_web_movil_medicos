@@ -160,7 +160,7 @@ export function Sucursales() {
   return <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:py-10">
     <div className="surgir flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico · US-11</p>
+        <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Sucursales</h1>
         <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">Administrá las sedes y sus horarios de atención. Los profesionales y agendas utilizan este catálogo.</p>
       </div>
@@ -228,7 +228,7 @@ function Formulario({id,inicial,guardando,error,onGuardar,onCambio,onCerrar}:{
   },[guardando,onCerrar])
   return <div className="fixed inset-0 z-40 overflow-y-auto bg-black/60 p-3 sm:p-6" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!guardando)onCerrar()}}>
     <div role="dialog" aria-modal="true" aria-labelledby="sucursal-form-titulo" className="mx-auto my-4 w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-tinta-950">
-      <div className="flex items-start justify-between gap-4 border-b border-tinta-200 p-5 sm:p-6 dark:border-tinta-800"><div><p className="text-xs font-semibold uppercase tracking-wider text-marca-700 dark:text-marca-400">Catálogo · US-11</p><h2 id="sucursal-form-titulo" className="mt-1 text-xl font-semibold">{id?'Editar sucursal':'Nueva sucursal'}</h2><p className="mt-1 text-sm text-tinta-500">Datos generales y horarios de atención.</p></div><button type="button" disabled={guardando} onClick={onCerrar} aria-label="Cerrar formulario" className="rounded-lg p-2 text-tinta-500 hover:bg-tinta-100 dark:hover:bg-tinta-800"><Icono name="close"/></button></div>
+      <div className="flex items-start justify-between gap-4 border-b border-tinta-200 p-5 sm:p-6 dark:border-tinta-800"><div><p className="text-sm font-medium text-marca-700 dark:text-marca-400">Catálogo</p><h2 id="sucursal-form-titulo" className="mt-1 text-xl font-semibold">{id?'Editar sucursal':'Nueva sucursal'}</h2><p className="mt-1 text-sm text-tinta-500">Datos generales y horarios de atención.</p></div><button type="button" disabled={guardando} onClick={onCerrar} aria-label="Cerrar formulario" className="rounded-lg p-2 text-tinta-500 hover:bg-tinta-100 dark:hover:bg-tinta-800"><Icono name="close"/></button></div>
       <form onSubmit={submit}>
         <div className="max-h-[65vh] space-y-6 overflow-y-auto p-5 sm:p-6">
           {error && <div role="alert" className="rounded-xl border border-alerta-200 bg-alerta-50 p-3 text-sm text-alerta-700 dark:border-alerta-500/40 dark:bg-alerta-500/10 dark:text-alerta-200">{error}</div>}

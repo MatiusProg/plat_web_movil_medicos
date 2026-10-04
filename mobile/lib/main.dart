@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'core/session/session.dart';
+import 'core/theme/theme_controller.dart';
 
 Future<void> main() async {
   // Hace falta antes de tocar el almacenamiento seguro: `restore()` usa un
@@ -30,5 +31,10 @@ Future<void> main() async {
   // negro todo lo que tarde el Keystore del teléfono.
   unawaited(session.restore());
 
-  runApp(CentroMedicoApp(session: session));
+  // Lo mismo con el tema: se abre "como el sistema" y, si había otra
+  // elección guardada, se aplica en cuanto el Keystore responde.
+  final tema = ThemeController();
+  unawaited(tema.restore());
+
+  runApp(CentroMedicoApp(session: session, tema: tema));
 }

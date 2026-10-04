@@ -92,8 +92,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             );
           }
           final suscripciones = snapshot.data ?? const [];
-          final organizaciones =
-              suscripciones.map((s) => s.organization).toSet().length;
           final planMasUsado = _planMasUsado(suscripciones);
 
           final filtro = _busqueda.trim().toLowerCase();
@@ -117,13 +115,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         label: 'Suscripciones activas',
                         value: '${suscripciones.length}',
                         color: Marca.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: StatTile(
-                        label: 'Organizaciones',
-                        value: '$organizaciones',
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -220,13 +211,15 @@ class _SubscriptionCard extends StatelessWidget {
               children: [
                 TextButton(onPressed: onHistorial, child: const Text('Historial')),
                 const SizedBox(width: 8),
-                FilledButton(
+                // Secundario: hay uno por tarjeta, y un primario repetido en
+                // cada fila deja de decir cuál es la acción principal.
+                OutlinedButton(
                   // El tema global fuerza `minimumSize: Size.fromHeight(52)`
                   // -ancho infinito, pensado para el botón único de una
                   // columna a todo el ancho- y eso revienta el layout de un
                   // `Row`, que no puede darle ancho infinito a un hijo sin
                   // `Expanded`. Acá hace falta un tamaño acotado.
-                  style: FilledButton.styleFrom(minimumSize: Size.zero),
+                  style: OutlinedButton.styleFrom(minimumSize: Size.zero),
                   onPressed: onCambiarPlan,
                   child: const Text('Cambiar plan'),
                 ),

@@ -179,7 +179,7 @@ Future<AssistantReply> _respuestaDeEjemplo(String mensaje) async {
     'sangrado',
   ])) {
     return const AssistantReply(
-      answer: 'Lo que describís puede ser una urgencia.',
+      answer: 'Lo que describes puede ser una urgencia.',
       emergency: true,
       isExample: true,
     );
@@ -209,7 +209,7 @@ Future<AssistantReply> _respuestaDeEjemplo(String mensaje) async {
         );
 
   return AssistantReply(
-    answer: 'Por lo que contás, te conviene consultar en $especialidad.',
+    answer: 'Por lo que cuentas, te conviene consultar en $especialidad.',
     specialtyName: especialidad,
     fragments: [AssistantFragment(text: fragmento, source: especialidad)],
     isExample: true,

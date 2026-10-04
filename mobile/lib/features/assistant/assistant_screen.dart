@@ -133,7 +133,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Asistente de orientación')),
+      appBar: AppBar(title: const Text('Asistente')),
       body: Column(
         children: [
           _Aviso(demo: widget.demo),
@@ -177,7 +177,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _enviar(),
                       decoration: const InputDecoration(
-                        hintText: 'Contá qué síntomas tenés…',
+                        hintText: 'Tus síntomas, o un horario o precio…',
                       ),
                     ),
                   ),
@@ -237,8 +237,10 @@ class _Bienvenida extends StatelessWidget {
             Icon(Icons.forum_outlined, size: 48, color: Marca.primary),
             SizedBox(height: 12),
             Text(
-              'Describí tus síntomas y te sugiero con qué especialidad '
-              'consultar.',
+              'Describe tus síntomas y te sugiero con qué especialidad '
+              'consultar.\n\nTambién puedes preguntarme horarios y '
+              'direcciones de las sucursales, precios de consultas y '
+              'estudios, cómo prepararte o cómo cancelar una ficha.',
               textAlign: TextAlign.center,
             ),
           ],
@@ -305,68 +307,81 @@ class _BurbujaAsistente extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // La burbuja es un fondo claro fijo (`ink100`) también en modo oscuro.
+    // Con el tema oscuro, lo que no lleva color propio —el subtítulo de cada
+    // fragmento, la flecha del desplegable, el ícono de la cita— salía en
+    // gris claro sobre gris claro. Se le da el tema claro a todo el contenido.
+    final theme = AppTheme.light;
     final especialidad = respuesta.specialtyName;
 
-    return _Burbuja(
-      color: Marca.ink100,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (respuesta.emergency) const _AlertaEmergencia(),
-          if (respuesta.answer.isNotEmpty)
-            Text(respuesta.answer, style: const TextStyle(color: Marca.ink900)),
-          // Con una urgencia no se ofrece reservar: se deriva (US-34).
-          if (!respuesta.emergency && especialidad != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Especialidad sugerida: $especialidad',
-              style: theme.textTheme.titleSmall?.copyWith(color: Marca.ink900),
-            ),
-            if (respuesta.specialtyId != null)
-              TextButton.icon(
-                onPressed: () =>
-                    context.push('/search?specialty=${respuesta.specialtyId}'),
-                icon: const Icon(Icons.search),
-                label: const Text('Ver profesionales'),
+    return Theme(
+      data: theme,
+      child: _Burbuja(
+        color: Marca.ink100,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (respuesta.emergency) const _AlertaEmergencia(),
+            if (respuesta.answer.isNotEmpty)
+              Text(
+                respuesta.answer,
+                style: const TextStyle(color: Marca.ink900),
+              ),
+            // Con una urgencia no se ofrece reservar: se deriva (US-34).
+            if (!respuesta.emergency && especialidad != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Especialidad sugerida: $especialidad',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: Marca.ink900,
+                ),
+              ),
+              if (respuesta.specialtyId != null)
+                TextButton.icon(
+                  onPressed: () => context.push(
+                    '/search?specialty=${respuesta.specialtyId}',
+                  ),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Ver profesionales'),
+                ),
+            ],
+            if (respuesta.fragments.isNotEmpty)
+              Theme(
+                data: theme.copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: Text(
+                    'En qué se basa (${respuesta.fragments.length})',
+                    style: const TextStyle(fontSize: 13, color: Marca.ink500),
+                  ),
+                  children: [
+                    for (final fragmento in respuesta.fragments)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.format_quote, size: 18),
+                        title: Text(
+                          fragmento.text,
+                          style: const TextStyle(color: Marca.ink800),
+                        ),
+                        subtitle: fragmento.source == null
+                            ? null
+                            : Text(fragmento.source!),
+                      ),
+                  ],
+                ),
+              ),
+            if (respuesta.isExample)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  'Respuesta de ejemplo',
+                  style: TextStyle(fontSize: 11, color: Marca.waiting),
+                ),
               ),
           ],
-          if (respuesta.fragments.isNotEmpty)
-            Theme(
-              data: theme.copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: EdgeInsets.zero,
-                title: Text(
-                  'En qué se basa (${respuesta.fragments.length})',
-                  style: const TextStyle(fontSize: 13, color: Marca.ink500),
-                ),
-                children: [
-                  for (final fragmento in respuesta.fragments)
-                    ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.format_quote, size: 18),
-                      title: Text(
-                        fragmento.text,
-                        style: const TextStyle(color: Marca.ink800),
-                      ),
-                      subtitle: fragmento.source == null
-                          ? null
-                          : Text(fragmento.source!),
-                    ),
-                ],
-              ),
-            ),
-          if (respuesta.isExample)
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
-              child: Text(
-                'Respuesta de ejemplo',
-                style: TextStyle(fontSize: 11, color: Marca.waiting),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -391,8 +406,8 @@ class _AlertaEmergencia extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Esto puede ser una urgencia. No esperes una ficha: acudí ya '
-              'a un servicio de emergencias o llamá a una ambulancia.',
+              'Esto puede ser una urgencia. No esperes una ficha: acude ya '
+              'a un servicio de emergencias o llama a una ambulancia.',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,

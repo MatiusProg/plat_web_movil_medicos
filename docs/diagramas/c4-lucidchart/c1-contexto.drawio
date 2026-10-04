@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" type="device">
+  <diagram id="c1-diagrama" name="C1 - Contexto">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" math="0" shadow="0">
+      <root>
+        <mxCell id="c1-raiz"/>
+        <mxCell id="c1-capa" parent="c1-raiz"/>
+        <mxCell id="c1-sistema" value="Plataforma Médica Multi-inquilino" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#1168BD;strokeColor=#0B4884;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="820" y="600" width="460" height="118" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-superadmin" value="Superadministrador de&#xa;Plataforma" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=46;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="520" y="20" width="380" height="202" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-admin-org" value="Administrador de&#xa;Organización" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=46;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1200" y="20" width="380" height="202" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-paciente" value="Paciente (titular y&#xa;dependientes)" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=54;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="20" y="300" width="380" height="237" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-recepcionista" value="Recepcionista" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=36;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="20" y="620" width="380" height="159" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-medico" value="Médico (profesional)" style="ellipse;shape=cloud;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=36;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="20" y="940" width="380" height="159" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-gemini" value="Google Gemini API" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1720" y="200" width="400" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-correo" value="Servidor de correo" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1720" y="460" width="400" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-stripe" value="Stripe" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1720" y="720" width="400" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-fcm" value="Firebase Cloud Messaging" style="rounded=1;arcSize=6;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=14;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1720" y="980" width="400" height="99" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-supabase" value="Supabase" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=18;fontFamily=Helvetica;html=0;whiteSpace=wrap;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontSize=17;fontStyle=1;verticalAlign=top;align=center;spacingTop=34;spacing=4;" vertex="1" parent="c1-capa">
+          <mxGeometry x="900" y="1060" width="300" height="127" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-sistema-texto" value="[Sistema de software]&#xa;Reserva y pago de fichas, agendas, atención clínica, reportes y&#xa;asistente con IA, aislado por organización" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="834" y="641" width="432" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-superadmin-texto" value="[Persona]&#xa;Administra organizaciones, planes&#xa;y suscripciones" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="596" y="116" width="228" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-admin-org-texto" value="[Persona]&#xa;Gestiona usuarios, catálogo,&#xa;reportes y copias de su centro" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1276" y="116" width="228" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-paciente-texto" value="[Persona]&#xa;Reserva y paga fichas, gestiona&#xa;dependientes y consulta al&#xa;asistente" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="96" y="404" width="228" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-recepcionista-texto" value="[Persona]&#xa;Registra pacientes, valida&#xa;comprobantes y gestiona fichas" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="96" y="684" width="228" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-medico-texto" value="[Persona]&#xa;Consulta su agenda y registra la&#xa;atención clínica" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#1A1A1A;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="96" y="1004" width="228" height="63" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-gemini-texto" value="[Sistema externo]&#xa;Embeddings y redacción del asistente" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1734" y="241" width="372" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-correo-texto" value="[Sistema externo · SMTP]&#xa;Recuperación de contraseña, comprobantes y reportes" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1734" y="501" width="372" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-stripe-texto" value="[Sistema externo]&#xa;Cobro en línea de la ficha y webhook firmado" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1734" y="761" width="372" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-fcm-texto" value="[Sistema externo]&#xa;Notificaciones push al móvil" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="1734" y="1021" width="372" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-supabase-texto" value="[PostgreSQL 16 + pgvector]&#xa;Base de datos gestionada" style="text;fontFamily=Helvetica;html=0;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontColor=#FFFFFF;spacing=0;" vertex="1" parent="c1-capa">
+          <mxGeometry x="918" y="1121" width="264" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-paciente-sistema" value="usa" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-paciente" target="c1-sistema">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-recepcionista-sistema" value="usa" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-recepcionista" target="c1-sistema">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-medico-sistema" value="usa" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-medico" target="c1-sistema">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-admin-org-sistema" value="usa" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-admin-org" target="c1-sistema">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-superadmin-sistema" value="usa" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-superadmin" target="c1-sistema">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-sistema-gemini" value="embeddings y chat&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-sistema" target="c1-gemini">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-sistema-correo" value="envía correos&#xa;[SMTP/TLS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-sistema" target="c1-correo">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-sistema-stripe" value="cobros y webhook firmado&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-sistema" target="c1-stripe">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-sistema-fcm" value="envía notificaciones push&#xa;[HTTPS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-sistema" target="c1-fcm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1-rel-sistema-supabase" value="lee y escribe datos y vectores&#xa;[SQL/TLS]" style="endArrow=none;endFill=0;rounded=0;strokeColor=#555555;strokeWidth=1.5;fontFamily=Helvetica;html=0;whiteSpace=wrap;fontSize=12;fontColor=#222222;labelBackgroundColor=#FFFFFF;" edge="1" parent="c1-capa" source="c1-sistema" target="c1-supabase">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

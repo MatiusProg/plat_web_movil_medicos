@@ -23,17 +23,20 @@ export function Boton({
   disabled,
   ...resto
 }: Props) {
+  // Ancho completo por defecto, salvo que quien lo usa diga otro. No alcanza
+  // con agregar `w-auto` al final: con `w-full` y `w-auto` juntas gana la que
+  // Tailwind declara después en su CSS, que es `w-full`.
+  const ancho = /(^|\s)w-/.test(className) ? '' : 'w-full'
   return (
     <button
       disabled={disabled || cargando}
       aria-busy={cargando || undefined}
       className={[
-        'relative inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5',
-        'text-[0.9375rem] font-semibold text-white',
+        'relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5',
+        ancho,
+        'text-sm font-semibold text-white',
         'bg-marca-600 hover:bg-marca-700 active:bg-marca-800',
-        'shadow-marca-900/20 shadow-lg transition',
-        'hover:shadow-marca-900/30 hover:-translate-y-px hover:shadow-xl',
-        'active:translate-y-0 active:shadow-md',
+        'shadow-sm transition-colors',
         'disabled:pointer-events-none disabled:opacity-60',
         'focus-visible:outline-marca-500 focus-visible:outline-2 focus-visible:outline-offset-2',
         className,
@@ -62,7 +65,9 @@ export function Boton({
           />
         </svg>
       )}
-      <span>{cargando ? textoCargando : children}</span>
+      {/* inline-flex: el ícono y el texto en la misma línea. Con un span
+          común, el ícono (que es un bloque) empujaba el texto abajo. */}
+      <span className="inline-flex items-center gap-2">{cargando ? textoCargando : children}</span>
     </button>
   )
 }

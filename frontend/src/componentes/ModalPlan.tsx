@@ -164,7 +164,7 @@ export function ModalPlan({
 
                     <div>
 
-                        <p className="text-xs font-semibold uppercase tracking-wider text-marca-600 dark:text-marca-400">
+                        <p className="text-sm font-medium text-marca-600 dark:text-marca-400">
                             Plataforma
                         </p>
 
@@ -686,7 +686,7 @@ function Campo({
                 {etiqueta}
 
                 {requerido && (
-                    <span className="ml-1 text-red-600 dark:text-red-400">
+                    <span className="ml-1 text-alerta-600 dark:text-alerta-200">
             *
           </span>
                 )}

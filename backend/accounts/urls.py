@@ -18,6 +18,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views.auth import login, logout, me, refresh
 from .views.password_reset import confirm_reset, request_reset, verify_reset
+from .views.profile import change_password, profile
 from .views.registration import register_patient
 from .views.roles import (
     AssignableUserViewSet,
@@ -70,4 +71,11 @@ urlpatterns = router.urls + [
     path("password-reset/", request_reset, name="password-reset"),
     path("password-reset/verify/", verify_reset, name="password-reset-verify"),
     path("password-reset/confirm/", confirm_reset, name="password-reset-confirm"),
+
+    # ---------- US-05 (Karen): edición de perfil --------------------------
+    # Las vistas van en views/profile.py y los serializers en
+    # serializers/profile.py. Es la ruta `users/me/` que US-04 dejó libre: la
+    # de detalle del router sólo acepta un UUID, así que `me` no la pisa.
+    path("users/me/", profile, name="profile"),
+    path("users/me/password/", change_password, name="profile-password"),
 ]

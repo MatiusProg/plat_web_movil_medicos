@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 
 import '../session/session_scope.dart';
 import '../theme/theme.dart';
+import 'theme_selector.dart';
 
 /// Una sección del menú: qué permiso la habilita y a dónde lleva.
 ///
@@ -176,6 +177,17 @@ class OrganizationDrawer extends StatelessWidget {
               context.go('/home');
             },
           ),
+          // US-05: el perfil propio.
+          ListTile(
+            leading: const Icon(Icons.account_circle_outlined),
+            title: const Text('Mi perfil'),
+            onTap: () {
+              Navigator.of(context).pop();
+              context.push('/profile');
+            },
+          ),
+          // Acceso rápido al tema; el mismo selector está en el perfil.
+          const ThemeDrawerTile(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar sesión'),

@@ -229,7 +229,7 @@ export function AltaOrganizacion() {
                 ))}
               </select>
               {primerError(error, 'plan_code') && (
-                <p className="text-sm text-red-600 dark:text-red-400">
+                <p className="text-sm text-alerta-600 dark:text-alerta-200">
                   {primerError(error, 'plan_code')}
                 </p>
               )}
@@ -351,11 +351,11 @@ function Credenciales({
         </p>
       </div>
 
-      <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 dark:border-amber-800 dark:bg-amber-950/40">
-        <p className="font-semibold text-amber-900 dark:text-amber-200">
+      <div className="rounded-2xl border border-espera-200 bg-espera-50 px-5 py-4 dark:border-espera-600/40 dark:bg-espera-600/10">
+        <p className="font-semibold text-espera-700 dark:text-espera-200">
           Copiá la contraseña ahora
         </p>
-        <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">
+        <p className="mt-1 text-sm text-espera-700 dark:text-espera-200">
           Se muestra una sola vez. No queda guardada en ningún lado y no hay
           forma de volver a consultarla: si se pierde, hay que restablecerla.
         </p>
@@ -369,7 +369,7 @@ function Credenciales({
         <button
           type="button"
           onClick={copiar}
-          className="mt-4 rounded-lg bg-amber-200 px-3 py-1.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-300 dark:bg-amber-900 dark:text-amber-100 dark:hover:bg-amber-800"
+          className="mt-4 rounded-lg bg-espera-200 px-3 py-1.5 text-sm font-semibold text-espera-700 transition hover:bg-espera-200 dark:bg-espera-600/25 dark:text-espera-200 dark:hover:bg-espera-600/25"
         >
           {copiado ? 'Copiado' : 'Copiar los tres datos'}
         </button>
@@ -389,8 +389,8 @@ function Credenciales({
 function Dato({ termino, valor }: { termino: string; valor: string }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2">
-      <dt className="text-amber-800 dark:text-amber-400">{termino}:</dt>
-      <dd className="font-mono font-semibold text-amber-950 dark:text-amber-100">
+      <dt className="text-espera-700 dark:text-espera-200">{termino}:</dt>
+      <dd className="font-mono font-semibold text-espera-700 dark:text-espera-200">
         {valor}
       </dd>
     </div>

@@ -173,19 +173,25 @@ class _SignInScreenState extends State<SignInScreen> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+                    // El administrador de contraseñas del teléfono (Google,
+                    // Samsung…) ofrece guardar el correo y la contraseña al
+                    // entrar, y los rellena la próxima vez. El grupo confirma
+                    // el guardado cuando la pantalla se va, y eso sólo pasa
+                    // si se entró: si falló, la contraseña ya se limpió.
+                    child: AutofillGroup(
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Iniciá sesión',
+                            'Inicia sesión',
                             style: theme.textTheme.headlineSmall
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Ingresá con tus credenciales para acceder según tu rol.',
+                            'Ingresa con tus credenciales para acceder según tu rol.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -201,7 +207,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         labelText: 'Centro médico',
                         hintText: 'kolping',
                         helperText:
-                            'Dejalo vacío sólo si administrás la plataforma.',
+                            'Déjalo vacío solo si administras la plataforma.',
                         errorText: organizationError,
                         prefixIcon: const Icon(Icons.apartment_outlined),
                       ),
@@ -210,6 +216,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                     TextFormField(
                       controller: _email,
+                      autofillHints: const [AutofillHints.username, AutofillHints.email],
                       enabled: !_frozen,
                       autocorrect: false,
                       keyboardType: TextInputType.emailAddress,
@@ -225,6 +232,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                     TextFormField(
                       controller: _password,
+                      autofillHints: const [AutofillHints.password],
                       focusNode: _passwordFocus,
                       enabled: !_frozen,
                       obscureText: !_showPassword,
@@ -250,7 +258,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       validator: (value) => (value ?? '').isEmpty
-                          ? 'Escribí tu contraseña.'
+                          ? 'Escribe tu contraseña.'
                           : null,
                     ),
 
@@ -273,7 +281,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: _frozen ? null : () => context.push('/register'),
-                      child: const Text('¿No tenés cuenta? Registrate'),
+                      child: const Text('¿No tienes cuenta? Regístrate'),
                     ),
 
                     const SizedBox(height: 8),
@@ -287,6 +295,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                         ],
                       ),
+                    ),
                     ),
                   ),
                 ),
@@ -305,7 +314,7 @@ class _SignInScreenState extends State<SignInScreen> {
   /// o con un tipeo evidente.
   static String? _validateEmail(String? value) {
     final email = (value ?? '').trim();
-    if (email.isEmpty) return 'Escribí tu correo electrónico.';
+    if (email.isEmpty) return 'Escribe tu correo electrónico.';
     if (!email.contains('@') || !email.contains('.')) {
       return 'Ese correo no parece válido.';
     }

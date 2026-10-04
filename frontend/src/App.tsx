@@ -1,3 +1,4 @@
+
 import {
     BrowserRouter,
     Navigate,
@@ -8,25 +9,33 @@ import {
 import { ArmazonPlataforma } from '@/componentes/ArmazonPlataforma'
 
 import { Agendas } from '@/paginas/Agendas'
+import { Asistente } from '@/paginas/Asistente'
 import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
 import { Bitacora } from '@/paginas/Bitacora'
 import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
 import { BuscarProfesionales } from '@/paginas/BuscarProfesionales'
-import { CheckIn } from '@/paginas/CheckIn'
 import { Disponibilidad } from '@/paginas/Disponibilidad'
 import { InicioSesion } from '@/paginas/InicioSesion'
 import { MisFichas } from '@/paginas/MisFichas'
 import { Organizaciones } from '@/paginas/Organizaciones'
-import { Pacientes } from '@/paginas/Pacientes'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
+import { Perfil } from '@/paginas/Perfil'
 import { Planes } from '@/paginas/Planes'
 import { RecuperarAcceso } from '@/paginas/RecuperarAcceso'
 import { RestablecerContrasena } from '@/paginas/RestablecerContrasena'
 import { Roles } from '@/paginas/Roles'
 import { Suscripciones } from '@/paginas/Suscripciones'
 import { Especialidades } from '@/paginas/Especialidades'
+import { Servicios } from '@/paginas/Servicios'
+import { AgendaAtencion } from '@/paginas/AgendaAtencion'
+import { Atencion } from '@/paginas/Atencion'
+import { Historial } from '@/paginas/Historial'
+import { MiHistoria } from '@/paginas/MiHistoria'
+import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
+import { Pacientes } from '@/paginas/Pacientes'
+import { CheckIn } from '@/paginas/CheckIn'
 import { Usuarios } from '@/paginas/Usuarios'
 import { Sucursales } from '@/paginas/Sucursales'
 import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
@@ -66,13 +75,10 @@ export default function App() {
                     />
 
 
-                    {/*
-           * US-03: recuperación de contraseña.
-           *
-           * Las dos son públicas a propósito:
-           * quien las usa es justamente alguien
-           * que no puede iniciar sesión.
-           */}
+                    {/* US-03: recuperación de contraseña.
+
+                        Las dos son públicas a propósito: quien las usa es
+                        justamente alguien que no puede iniciar sesión. */}
 
                     <Route
                         path="/recuperar"
@@ -187,44 +193,33 @@ export default function App() {
                         />
 
 
-                        {/* US-09 / US-10: gestión de pacientes */}
-
-                        <Route
-                            path="/pacientes"
-                            element={
-                                <Pacientes />
-                            }
-                        />
-
-
                         {/* US-11: gestión de sucursales */}
-
-                        <Route
-                            path="/sucursales"
-                            element={
-                                <Sucursales />
-                            }
-                        />
-
-
-                        {/* US-12: administración del catálogo médico */}
-
-                        <Route
-                            path="/especialidades"
-                            element={
-                                <Especialidades />
-                            }
-                        />
-
-                        <Route
-                            path="/profesionales"
-                            element={
-                                <Profesionales />
-                            }
-                        />
-
+                        <Route path="/sucursales" element={<Sucursales />} />
 
                         {/* US-13 / US-14: agendas médicas y bloqueos */}
+
+                        {/* US-12: administracion del catalogo medico */}
+                        <Route path="/especialidades" element={<Especialidades />} />
+                        <Route path="/profesionales" element={<Profesionales />} />
+
+                        {/* US-32: servicios con precio y preparación, para el asistente */}
+                        <Route path="/servicios" element={<Servicios />} />
+
+                        {/* US-09 / US-10: consulta y gestión de pacientes */}
+                        <Route path="/pacientes" element={<Pacientes />} />
+
+                        {/* US-22: check-in de pacientes en recepción */}
+                        <Route path="/check-in" element={<CheckIn />} />
+
+                        {/* US-24: registro de la atención médica */}
+                        <Route path="/atencion" element={<AgendaAtencion />} />
+                        <Route path="/atencion/:id" element={<Atencion />} />
+                        {/* US-25: historial clínico longitudinal */}
+                        <Route path="/historial/:pacienteId" element={<Historial />} />
+                        {/* US-25: la misma historia, vista por el paciente */}
+                        <Route path="/mi-historia" element={<MiHistoria />} />
+                        {/* Característica general 6: copias de seguridad por plan */}
+                        <Route path="/respaldos" element={<Respaldos />} />
 
                         <Route
                             path="/agendas"
@@ -251,6 +246,16 @@ export default function App() {
                         />
 
 
+                        {/* US-17 / US-20: reserva, cancelación y reprogramación de fichas */}
+
+                        <Route
+                            path="/mis-fichas"
+                            element={
+                                <MisFichas />
+                            }
+                        />
+
+
                         {/* US-16: búsqueda de profesionales */}
 
                         <Route
@@ -261,22 +266,22 @@ export default function App() {
                         />
 
 
-                        {/* US-17 / US-20: fichas */}
+                        {/* US-31 / US-34: asistente de orientación */}
 
                         <Route
-                            path="/mis-fichas"
+                            path="/asistente"
                             element={
-                                <MisFichas />
+                                <Asistente />
                             }
                         />
 
 
-                        {/* US-22: check-in en recepción */}
+                        {/* US-05: edición de perfil */}
 
                         <Route
-                            path="/check-in"
+                            path="/perfil"
                             element={
-                                <CheckIn />
+                                <Perfil />
                             }
                         />
 

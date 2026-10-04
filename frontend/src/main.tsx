@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 
 import App from './App.tsx'
 import './index.css'
+import { iniciarTema } from './tema/tema'
+
+iniciarTema()
 
 const raiz = document.getElementById('root')
 if (!raiz) throw new Error('Falta el <div id="root"> en index.html.')

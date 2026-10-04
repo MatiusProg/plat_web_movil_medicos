@@ -6,6 +6,7 @@
 library;
 
 import '../../core/api/client.dart';
+import '../../core/api/paginacion.dart';
 
 class Plan {
   const Plan({
@@ -22,6 +23,7 @@ class Plan {
     required this.maxAiQueriesMonth,
     required this.storageMb,
     required this.isActive,
+    this.features = const {},
   });
 
   final String id;
@@ -44,6 +46,12 @@ class Plan {
 
   final bool isActive;
 
+  /// Las funciones que el plan enciende (`ai_chatbot`, `report_export`…).
+  /// Las hace cumplir el backend con `PLAN_RULES`; acá sólo se muestran.
+  final Map<String, bool> features;
+
+  bool incluye(String clave) => features[clave] == true;
+
   factory Plan.fromJson(Map<String, dynamic> json) => Plan(
         id: json['id'] as String? ?? '',
         code: json['code'] as String? ?? '',
@@ -58,16 +66,22 @@ class Plan {
         maxAiQueriesMonth: json['max_ai_queries_month'] as int?,
         storageMb: json['storage_mb'] as int?,
         isActive: json['is_active'] as bool? ?? false,
+        features: {
+          for (final e
+              in (json['features'] as Map<String, dynamic>? ?? const {}).entries)
+            if (e.value is bool) e.key: e.value as bool,
+        },
       );
 }
 
-Future<List<Plan>> listPlans(ApiClient client, {bool? isActive}) async {
+/// Todos los planes, recorriendo las páginas.
+///
+/// Completos porque alimentan los selectores de plan del alta de
+/// organización y del cambio de plan: un plan en la página 2 no se podría
+/// elegir. Son un catálogo chico, así que traerlos todos no cuesta.
+Future<List<Plan>> listPlans(ApiClient client, {bool? isActive}) {
   final query = isActive == null ? '' : '?is_active=$isActive';
-  final data = await client.get('/platform/plans/$query');
-  final mapa = data as Map<String, dynamic>;
-  return (mapa['results'] as List? ?? const [])
-      .map((e) => Plan.fromJson(e as Map<String, dynamic>))
-      .toList();
+  return todasLasPaginas(client, '/platform/plans/$query', Plan.fromJson);
 }
 
 /// Un plan por su id.

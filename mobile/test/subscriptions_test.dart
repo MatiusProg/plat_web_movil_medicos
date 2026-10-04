@@ -102,7 +102,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Centro Demo'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Historial'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Cambiar plan'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Cambiar plan'), findsOneWidget);
     });
 
     testWidgets('el pull-to-refresh no revienta y trae el plan nuevo',

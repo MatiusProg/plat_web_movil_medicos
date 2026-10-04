@@ -28,6 +28,11 @@ class Action:
     ROLE_PERMISSIONS_UPDATE = "role.permissions.update"
     ROLE_ASSIGN = "role.assign"
     ROLE_REVOKE = "role.revoke"
+    # US-05: el perfil propio. El cambio de contraseña va aparte del
+    # restablecimiento de US-03 porque no es lo mismo: acá la persona acreditó
+    # la actual, y quien audita quiere poder distinguir una cosa de la otra.
+    PROFILE_UPDATE = "user.profile.update"
+    PASSWORD_CHANGE = "password.change"
 
     # ---------- Usuarios — el backlog los pide por nombre --------------
     USER_CREATE = "user.create"
@@ -65,6 +70,17 @@ class Action:
     # US-34: la derivación va con código propio y no como un detalle de
     # `ASSISTANT_QUERY`, para que quien audita pueda filtrar sólo ésas.
     ASSISTANT_EMERGENCY = "assistant.emergency"
+    # US-32: el índice se recalculó desde la pantalla de servicios.
+    ASSISTANT_REINDEX = "assistant.catalog.reindex"
+    SERVICE_CREATE = "catalog.service.create"
+    SERVICE_UPDATE = "catalog.service.update"
+    SERVICE_DEACTIVATE = "catalog.service.deactivate"
+
+    # ---------- Historia clínica — US-24 --------------------------------
+    # Como en el asistente: se audita el hecho, nunca el texto clínico.
+    ENCOUNTER_OPEN = "encounter.open"
+    ENCOUNTER_SIGN = "encounter.sign"
+    ENCOUNTER_AMEND = "encounter.amend"
 
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
@@ -74,7 +90,8 @@ class Action:
     # ---------- Sprints siguientes -------------------------------------
     # Declarados acá porque el punto (a) los enumera como acciones sensibles.
     # Los escribe el módulo que los provoque, cuando exista.
-    RECORD_READ = "record.read"              # historia clínica (Sprint 3)
+    # Lo escribe US-24 cada vez que un profesional abre un encuentro clínico.
+    RECORD_READ = "record.read"
     APPOINTMENT_CANCEL = "appointment.cancel"  # anulación de ficha (Sprint 2)
     PAYMENT_MOVEMENT = "payment.movement"      # movimiento de pago (Sprint 2)
 
@@ -88,6 +105,8 @@ LABELS = {
     Action.ROLE_PERMISSIONS_UPDATE: "Permisos de un rol modificados",
     Action.ROLE_ASSIGN: "Rol asignado a un usuario",
     Action.ROLE_REVOKE: "Rol revocado a un usuario",
+    Action.PROFILE_UPDATE: "Perfil propio editado",
+    Action.PASSWORD_CHANGE: "Contraseña cambiada desde el perfil",
     Action.USER_CREATE: "Usuario dado de alta",
     Action.USER_DEACTIVATE: "Usuario dado de baja",
     Action.ORGANIZATION_CREATE: "Organización dada de alta",
@@ -101,6 +120,13 @@ LABELS = {
     Action.REPORT_DELETE: "Reporte eliminado",
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
     Action.ASSISTANT_EMERGENCY: "Derivación a emergencia por el asistente",
+    Action.ASSISTANT_REINDEX: "Catálogo del asistente reindexado",
+    Action.SERVICE_CREATE: "Servicio registrado",
+    Action.SERVICE_UPDATE: "Servicio editado",
+    Action.SERVICE_DEACTIVATE: "Servicio desactivado",
+    Action.ENCOUNTER_OPEN: "Atención iniciada sobre una ficha",
+    Action.ENCOUNTER_SIGN: "Encuentro clínico firmado",
+    Action.ENCOUNTER_AMEND: "Enmienda agregada a un encuentro firmado",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",
