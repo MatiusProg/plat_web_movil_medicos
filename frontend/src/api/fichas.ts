@@ -99,3 +99,51 @@ export function reprogramarFicha(
     },
   })
 }
+
+// =========================================================
+// US-22 — CHECK-IN EN RECEPCIÓN
+// =========================================================
+
+export interface CheckInDatos {
+  qr_code?: string
+  document_number?: string
+}
+
+export interface CheckInResultado {
+  id: string
+  status: 'attended'
+  checked_in_at: string
+
+  patient: {
+    id: string
+    name: string
+    document_number: string
+  }
+
+  branch: {
+    id: string
+    name: string
+  }
+
+  practitioner: {
+    id: string
+    name: string
+  }
+
+  starts_at: string
+  ends_at: string
+}
+
+export function realizarCheckIn(
+    datos: CheckInDatos,
+    contexto: Contexto,
+): Promise<CheckInResultado> {
+  return pedir<CheckInResultado>(
+      '/appointments/checkin/',
+      {
+        ...contexto,
+        metodo: 'POST',
+        cuerpo: datos,
+      },
+  )
+}

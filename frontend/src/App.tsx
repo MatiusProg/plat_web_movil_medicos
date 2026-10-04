@@ -12,10 +12,12 @@ import { AltaOrganizacion } from '@/paginas/AltaOrganizacion'
 import { Bitacora } from '@/paginas/Bitacora'
 import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
 import { BuscarProfesionales } from '@/paginas/BuscarProfesionales'
+import { CheckIn } from '@/paginas/CheckIn'
 import { Disponibilidad } from '@/paginas/Disponibilidad'
 import { InicioSesion } from '@/paginas/InicioSesion'
 import { MisFichas } from '@/paginas/MisFichas'
 import { Organizaciones } from '@/paginas/Organizaciones'
+import { Pacientes } from '@/paginas/Pacientes'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
 import { Panel } from '@/paginas/Panel'
 import { Planes } from '@/paginas/Planes'
@@ -64,10 +66,13 @@ export default function App() {
                     />
 
 
-                    {/* US-03: recuperación de contraseña.
-
-                        Las dos son públicas a propósito: quien las usa es
-                        justamente alguien que no puede iniciar sesión. */}
+                    {/*
+           * US-03: recuperación de contraseña.
+           *
+           * Las dos son públicas a propósito:
+           * quien las usa es justamente alguien
+           * que no puede iniciar sesión.
+           */}
 
                     <Route
                         path="/recuperar"
@@ -182,14 +187,44 @@ export default function App() {
                         />
 
 
+                        {/* US-09 / US-10: gestión de pacientes */}
+
+                        <Route
+                            path="/pacientes"
+                            element={
+                                <Pacientes />
+                            }
+                        />
+
+
                         {/* US-11: gestión de sucursales */}
-                        <Route path="/sucursales" element={<Sucursales />} />
+
+                        <Route
+                            path="/sucursales"
+                            element={
+                                <Sucursales />
+                            }
+                        />
+
+
+                        {/* US-12: administración del catálogo médico */}
+
+                        <Route
+                            path="/especialidades"
+                            element={
+                                <Especialidades />
+                            }
+                        />
+
+                        <Route
+                            path="/profesionales"
+                            element={
+                                <Profesionales />
+                            }
+                        />
+
 
                         {/* US-13 / US-14: agendas médicas y bloqueos */}
-
-                        {/* US-12: administracion del catalogo medico */}
-                        <Route path="/especialidades" element={<Especialidades />} />
-                        <Route path="/profesionales" element={<Profesionales />} />
 
                         <Route
                             path="/agendas"
@@ -216,7 +251,17 @@ export default function App() {
                         />
 
 
-                        {/* US-17 / US-20: reserva, cancelación y reprogramación de fichas */}
+                        {/* US-16: búsqueda de profesionales */}
+
+                        <Route
+                            path="/buscar-profesionales"
+                            element={
+                                <BuscarProfesionales />
+                            }
+                        />
+
+
+                        {/* US-17 / US-20: fichas */}
 
                         <Route
                             path="/mis-fichas"
@@ -226,12 +271,12 @@ export default function App() {
                         />
 
 
-                        {/* US-16: búsqueda de profesionales */}
+                        {/* US-22: check-in en recepción */}
 
                         <Route
-                            path="/buscar-profesionales"
+                            path="/check-in"
                             element={
-                                <BuscarProfesionales />
+                                <CheckIn />
                             }
                         />
 
