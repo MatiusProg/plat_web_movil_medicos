@@ -12,6 +12,7 @@ class SlotDisponible {
     required this.end,
     required this.branchId,
     required this.branchName,
+    this.scheduleId = '',
     required this.capacity,
     required this.reservable,
     this.reason,
@@ -21,6 +22,9 @@ class SlotDisponible {
   final String end;
   final String branchId;
   final String branchName;
+
+  /// US-17: la ficha se reserva contra `(schedule, start)`.
+  final String scheduleId;
   final int capacity;
   final bool reservable;
 
@@ -29,11 +33,13 @@ class SlotDisponible {
 
   factory SlotDisponible.fromJson(Map<String, dynamic> json) {
     final branch = json['branch'] as Map<String, dynamic>? ?? const {};
+    final schedule = json['schedule'] as Map<String, dynamic>? ?? const {};
     return SlotDisponible(
       start: json['start'] as String? ?? '',
       end: json['end'] as String? ?? '',
       branchId: branch['id'] as String? ?? '',
       branchName: branch['name'] as String? ?? '',
+      scheduleId: schedule['id'] as String? ?? '',
       capacity: json['capacity'] as int? ?? 1,
       reservable: json['reservable'] as bool? ?? false,
       reason: json['reason'] as String?,

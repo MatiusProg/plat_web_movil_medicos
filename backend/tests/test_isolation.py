@@ -206,11 +206,15 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     ``create`` y ``amend`` del encuentro clínico, sólo para el rol Médico.
     US-25 suma ``encounters.history.read`` (``encounters/0004``), para el
     Médico y el Paciente.
+
+    US-18 y US-21 suman dos en ``payments/0003_seed_permissions``:
+    ``payments.payment.create`` y
+    ``appointments.appointment.confirm_attendance``, los dos del Paciente.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()

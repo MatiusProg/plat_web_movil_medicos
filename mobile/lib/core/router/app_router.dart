@@ -12,6 +12,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/appointments/appointment_detail_screen.dart';
+import '../../features/appointments/my_appointments_screen.dart';
 import '../../features/assistant/assistant_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
@@ -27,6 +29,7 @@ import '../../features/plans/plan_form_screen.dart';
 import '../../features/plans/plans_api.dart';
 import '../../features/plans/plans_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/receipts/receipt_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/search/specialties_screen.dart';
 import '../../features/subscriptions/change_plan_screen.dart';
@@ -72,6 +75,10 @@ class Routes {
   static const String clinicalRecord = 'clinical-record';
   static const String assistant = 'assistant';
   static const String profile = 'profile';
+  static const String appointments = 'appointments';
+  static const String appointmentDetail = 'appointment-detail';
+  static const String appointmentReceipt = 'appointment-receipt';
+  static const String receipts = 'receipts';
   static const String platformDashboard = 'platform-dashboard';
   static const String platformOrganizations = 'platform-organizations';
   static const String platformOrganizationForm = 'platform-organization-form';
@@ -341,6 +348,52 @@ GoRouter buildRouter(Session session) {
         builder: (context, state) => const SoloPacientes(
           titulo: 'Asistente de orientación',
           child: AssistantScreen(),
+        ),
+      ),
+
+      // ---------- US-17/18/19/21 (Alexander): fichas, pago y comprobante -
+      GoRoute(
+        path: '/appointments',
+        name: Routes.appointments,
+        builder: (context, state) => const SoloPacientes(
+          titulo: 'Mis fichas',
+          child: MyAppointmentsScreen(),
+        ),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: Routes.appointmentDetail,
+            builder: (context, state) => SoloPacientes(
+              titulo: 'Mi ficha',
+              child: AppointmentDetailScreen(
+                appointmentId: state.pathParameters['id']!,
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: 'receipt',
+                name: Routes.appointmentReceipt,
+                builder: (context, state) => SoloPacientes(
+                  titulo: 'Comprobante',
+                  child: ReceiptScreen(
+                    appointmentId: state.pathParameters['id']!,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      // US-19: los comprobantes guardados, que se abren sin red.
+      GoRoute(
+        path: '/receipts',
+        name: Routes.receipts,
+        builder: (context, state) => SoloPacientes(
+          titulo: 'Mis comprobantes',
+          child: SavedReceiptsScreen(
+            onOpen: (context, receipt) =>
+                context.push('/appointments/${receipt.appointmentId}/receipt'),
+          ),
         ),
       ),
 
@@ -626,6 +679,15 @@ class _HomeScreen extends StatelessWidget {
           // `push`, no `go`: así el botón atrás del teléfono vuelve acá en
           // lugar de cerrar la aplicación.
           onTap: () => context.push('/specialties'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-17/18/19/21 (Alexander): fichas y comprobantes ----
+        _accesoTarjeta(
+          context,
+          icono: Icons.event_available_outlined,
+          titulo: 'Mis fichas',
+          subtitulo: 'Pagar, ver el comprobante QR y confirmar asistencia',
+          onTap: () => context.push('/appointments'),
         ),
         const SizedBox(height: 12),
         // ---------- US-25 (SM): lo que escribieron los médicos -----------

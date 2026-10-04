@@ -1,6 +1,9 @@
-"""US-22 — Check-in en recepción."""
+"""US-22 — Check-in en recepción.
 
-import uuid
+El QR es el comprobante firmado de US-19 (`receipts.py`): se verifica la
+firma antes de buscar la ficha, y un código alterado, de otro centro o que no
+es un comprobante se rechaza diciendo por qué.
+"""
 
 from django.db import transaction
 from django.utils import timezone
@@ -11,6 +14,7 @@ from rest_framework.views import APIView
 
 from .models import Appointment
 from .permissions import CanReadAppointments
+from .receipts import ReceiptError, read_code
 
 
 class CheckInSerializer(serializers.Serializer):
@@ -59,10 +63,19 @@ class CheckInView(APIView):
 
         with transaction.atomic():
             if qr_code:
-                appointment = self._find_by_qr(
-                    organization,
-                    qr_code,
-                )
+                try:
+                    appointment = self._find_by_qr(
+                        organization,
+                        qr_code,
+                    )
+                except ReceiptError as error:
+                    return Response(
+                        {
+                            "code": error.code,
+                            "detail": error.detail,
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             else:
                 appointment = self._find_by_document(
                     organization,
@@ -168,22 +181,12 @@ class CheckInView(APIView):
         organization,
         qr_code,
     ):
-        """
-        Compatibilidad temporal con US-19.
+        """El comprobante firmado de US-19. Lanza `ReceiptError`."""
 
-        Mientras US-19 no publique su comprobante/QR en esta rama,
-        usamos el UUID de la ficha como payload.
-
-        Cuando receipts.py llegue, sólo habrá que reemplazar esta
-        función por el verificador real del comprobante.
-        """
-
-        try:
-            appointment_id = uuid.UUID(
-                qr_code.strip(),
-            )
-        except (ValueError, AttributeError):
-            return None
+        appointment_id = read_code(
+            qr_code,
+            organization,
+        )
 
         return (
             Appointment.objects

@@ -5,7 +5,9 @@ from rest_framework.routers import DefaultRouter
 
 from .booking import AppointmentViewSet
 from .changes import CancelAppointmentView, RescheduleAppointmentView
+from .attendance import ConfirmAttendanceView, attendance_link_view
 from .checkin import CheckInView
+from .receipts import ReceiptView
 
 app_name = "appointments"
 
@@ -29,6 +31,26 @@ urlpatterns = router.urls + [
         "appointments/<uuid:pk>/reschedule/",
         RescheduleAppointmentView.as_view(),
         name="appointment-reschedule",
+    ),
+
+    # ---------- US-19 — Comprobante digital con QR ---------------------
+    path(
+        "appointments/<uuid:pk>/receipt/",
+        ReceiptView.as_view(),
+        name="appointment-receipt",
+    ),
+
+    # ---------- US-21 — Confirmación de asistencia ----------------------
+    path(
+        "appointments/<uuid:pk>/confirm-attendance/",
+        ConfirmAttendanceView.as_view(),
+        name="appointment-confirm-attendance",
+    ),
+    # El enlace del correo: sin sesión, autenticado por la firma.
+    path(
+        "attendance/<str:token>/",
+        attendance_link_view,
+        name="attendance-link",
     ),
 
     # ---------- US-22 — Check-in en recepción ---------------------------

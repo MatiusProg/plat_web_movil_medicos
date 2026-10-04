@@ -49,5 +49,16 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- US-18: el pago se abre en el navegador (Stripe Checkout). Desde
+             Android 11, sin declarar esto el sistema no deja ver quién abre
+             un enlace https y el botón de pagar no hace nada. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
     </queries>
 </manifest>

@@ -50,8 +50,8 @@ def _assert_cancellable(appointment: Appointment, now: dt.datetime) -> None:
 def cancel_appointment(appointment: Appointment, *, now=None) -> Appointment:
     """US-20 — Cancela la ficha y decide si corresponde devolución.
 
-    No ejecuta el reembolso: eso lo hace US-18 (pago con Stripe, ajeno a este
-    alcance) leyendo `refund_eligible`. Acá sólo se decide, según la
+    No ejecuta el reembolso: lo hace la vista con
+    `payments.services.refund_for_cancellation`, leyendo `refund_eligible`. Acá sólo se decide, según la
     anticipación, si corresponde.
     """
     now = now or timezone.now()
@@ -165,6 +165,12 @@ class CancelAppointmentView(APIView):
                  "detail": error.messages[0]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # US-18: la política de devolución. Si la cancelación fue a tiempo y
+        # la ficha estaba pagada, se devuelve el pago.
+        from payments.services import refund_for_cancellation
+
+        refund_for_cancellation(appointment, request=request)
 
         record(
             request, Action.APPOINTMENT_CANCEL, "appointment", appointment.id,

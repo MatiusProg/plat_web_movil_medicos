@@ -106,6 +106,13 @@ class Appointment(models.Model):
         blank=True,
     )
 
+    # US-21 — el paciente confirmó que va a asistir. NULL = no confirmó. Es
+    # el desenlace *confirmó / no confirmó* que necesita el Sprint 4.
+    attendance_confirmed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     # Vence la reserva `pending_payment`: pasado este momento, el turno se
     # considera libre aunque la fila siga existiendo con este estado hasta que
     # algo la marque `expired` (lectura perezosa, sin tarea en segundo plano).

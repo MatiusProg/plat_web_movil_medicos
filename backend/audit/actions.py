@@ -94,6 +94,8 @@ class Action:
     RECORD_READ = "record.read"
     APPOINTMENT_CANCEL = "appointment.cancel"  # anulación de ficha (Sprint 2)
     PAYMENT_MOVEMENT = "payment.movement"      # movimiento de pago (Sprint 2)
+    # US-21: el paciente confirmó que va a asistir, desde la app o el correo.
+    APPOINTMENT_ATTENDANCE_CONFIRM = "appointment.attendance.confirm"
 
 
 LABELS = {
@@ -133,6 +135,7 @@ LABELS = {
     Action.RECORD_READ: "Historia clínica consultada",
     Action.APPOINTMENT_CANCEL: "Ficha anulada",
     Action.PAYMENT_MOVEMENT: "Movimiento de pago",
+    Action.APPOINTMENT_ATTENDANCE_CONFIRM: "Asistencia confirmada por el paciente",
 }
 
 

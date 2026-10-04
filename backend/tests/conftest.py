@@ -63,6 +63,9 @@ PERMISOS_PACIENTE = [
     "appointments.appointment.read",
     "appointments.appointment.cancel",
     "appointments.appointment.reschedule",
+    # US-18 y US-21: pagar la ficha y confirmar la asistencia.
+    "payments.payment.create",
+    "appointments.appointment.confirm_attendance",
 ]
 
 
