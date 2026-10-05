@@ -450,3 +450,36 @@ def test_stripe_recibe_la_url_de_regreso_con_la_ficha_y_el_origen(
     assert "origen=app" in llamada["success_url"]
     assert llamada["success_url"].endswith("resultado=pagado")
     assert llamada["cancel_url"].endswith("resultado=cancelado")
+
+
+def test_sin_especialidad_asociada_el_importe_sale_del_servicio_que_la_nombra(
+    api_client, paciente_a, org_a, specialty_a, ficha_pendiente,
+):
+    """Como carga el dataset: "Consulta de <especialidad>" sin `specialty`.
+    Lo que el asistente informa es lo que se cobra."""
+    with tenant_context(org_a.id):
+        Service.objects.create(
+            organization=org_a, name=f"Consulta de {specialty_a.name}",
+            kind=Service.Kind.CONSULTATION, price=Decimal("110.00"),
+        )
+        Service.objects.create(
+            organization=org_a, name="Consulta de especialidad",
+            kind=Service.Kind.CONSULTATION, price=Decimal("150.00"),
+        )
+    assert checkout(api_client, paciente_a, ficha_pendiente).json()["amount"] == "110.00"
+
+
+def test_si_ningun_servicio_nombra_su_especialidad_cobra_la_consulta_generica(
+    api_client, paciente_a, org_a, ficha_pendiente,
+):
+    with tenant_context(org_a.id):
+        Service.objects.create(
+            organization=org_a, name="Consulta de especialidad",
+            kind=Service.Kind.CONSULTATION, price=Decimal("150.00"),
+        )
+        # Un estudio no es una consulta: no cuenta aunque sea más barato.
+        Service.objects.create(
+            organization=org_a, name="Hemograma",
+            kind=Service.Kind.STUDY, price=Decimal("60.00"),
+        )
+    assert checkout(api_client, paciente_a, ficha_pendiente).json()["amount"] == "150.00"
