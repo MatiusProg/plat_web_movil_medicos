@@ -53,6 +53,13 @@ def return_url(request, appointment_id, return_to) -> str:
     return f"{base}?ficha={appointment_id}&origen={return_to}"
 
 
+def _hora_local(appointment):
+    from zoneinfo import ZoneInfo
+
+    zona = ZoneInfo(appointment.branch.timezone or "America/La_Paz")
+    return appointment.starts_at.astimezone(zona)
+
+
 def _cents(amount) -> int:
     return int((amount * 100).to_integral_value())
 
@@ -87,9 +94,11 @@ class StripeProvider:
                         "unit_amount": _cents(payment.amount),
                         "product_data": {
                             "name": f"Ficha médica — {appointment.practitioner.full_name}",
+                            # En la hora de la sucursal: en UTC, una ficha
+                            # de las 09:30 en La Paz se leía "13:30".
                             "description": (
                                 f"{appointment.branch.name} · "
-                                f"{appointment.starts_at:%d/%m/%Y %H:%M} UTC"
+                                f"{_hora_local(appointment):%d/%m/%Y %H:%M}"
                             ),
                         },
                     },
