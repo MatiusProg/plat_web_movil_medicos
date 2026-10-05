@@ -44,6 +44,15 @@ def active_provider() -> str:
     return modo
 
 
+RETURN_TARGETS = ("app", "web")
+
+
+def return_url(request, appointment_id, return_to) -> str:
+    """La página de regreso, con la ficha y el origen. Sin `resultado`."""
+    base = request.build_absolute_uri(reverse("payments:return"))
+    return f"{base}?ficha={appointment_id}&origen={return_to}"
+
+
 def _cents(amount) -> int:
     return int((amount * 100).to_integral_value())
 
@@ -58,7 +67,7 @@ class StripeProvider:
             raise ProviderError("Stripe no está configurado (falta STRIPE_SECRET_KEY).")
         return stripe
 
-    def create_checkout(self, payment, request) -> Checkout:
+    def create_checkout(self, payment, request, return_to="app") -> Checkout:
         stripe = self._stripe()
         appointment = payment.appointment
         metadata = {
@@ -66,7 +75,7 @@ class StripeProvider:
             "organization_id": str(payment.organization_id),
             "appointment_id": str(appointment.id),
         }
-        regreso = request.build_absolute_uri(reverse("payments:return"))
+        regreso = return_url(request, appointment.id, return_to)
         try:
             session = stripe.checkout.Session.create(
                 api_key=settings.STRIPE_SECRET_KEY,
@@ -88,8 +97,8 @@ class StripeProvider:
                 client_reference_id=str(payment.id),
                 metadata=metadata,
                 payment_intent_data={"metadata": metadata},
-                success_url=f"{regreso}?resultado=pagado",
-                cancel_url=f"{regreso}?resultado=cancelado",
+                success_url=f"{regreso}&resultado=pagado",
+                cancel_url=f"{regreso}&resultado=cancelado",
                 # El mínimo que acepta Stripe son 30 minutos.
                 expires_at=int(time.time()) + 31 * 60,
             )
@@ -132,9 +141,10 @@ class StripeProvider:
 class SimulatedProvider:
     name = "simulated"
 
-    def create_checkout(self, payment, request) -> Checkout:
+    def create_checkout(self, payment, request, return_to="app") -> Checkout:
         token = signing.dumps(
-            {"p": str(payment.id), "o": str(payment.organization_id)},
+            {"p": str(payment.id), "o": str(payment.organization_id),
+             "r": return_to},
             salt=SIMULATED_SALT,
         )
         url = request.build_absolute_uri(

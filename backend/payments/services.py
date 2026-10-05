@@ -29,7 +29,8 @@ from .providers import ProviderError, active_provider, provider_for
 logger = logging.getLogger(__name__)
 
 
-def start_checkout(appointment: Appointment, *, user, request) -> Payment:
+def start_checkout(appointment: Appointment, *, user, request,
+                   return_to: str = "app") -> Payment:
     """Crea un intento de cobro y la sesión del proveedor.
 
     Lanza `ValidationError` si la ficha no está esperando pago, y
@@ -57,7 +58,7 @@ def start_checkout(appointment: Appointment, *, user, request) -> Payment:
             currency=currency,
             provider=nombre,
         )
-        checkout = provider_for(nombre).create_checkout(payment, request)
+        checkout = provider_for(nombre).create_checkout(payment, request, return_to)
         payment.provider_session_id = checkout.session_id
         payment.checkout_url = checkout.url
         payment.save(update_fields=["provider_session_id", "checkout_url", "updated_at"])

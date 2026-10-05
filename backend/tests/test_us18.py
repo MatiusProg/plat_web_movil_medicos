@@ -387,3 +387,66 @@ def test_cancelar_sin_anticipacion_no_devuelve(
     )
     with tenant_context(org_a.id):
         assert Payment.objects.get(appointment=ficha).status == "succeeded"
+
+
+# ---------- La vuelta a la app o a la web ------------------------------------
+
+def test_despues_de_pagar_la_pagina_abre_la_app_en_la_ficha(
+    api_client, client, paciente_a, ficha_pendiente,
+):
+    url = checkout(api_client, paciente_a, ficha_pendiente).json()["checkout_url"]
+    respuesta = pagar_simulado(client, url)
+    assert f"ficha={ficha_pendiente.id}" in respuesta["Location"]
+    assert "origen=app" in respuesta["Location"]
+
+    pagina = client.get(respuesta["Location"]).content.decode()
+    assert f"centromedico://app/appointments/{ficha_pendiente.id}" in pagina
+    assert "Volver a la aplicación" in pagina
+
+
+@override_settings(FRONTEND_BASE_URL="https://web.ejemplo.test")
+def test_si_el_pago_se_pidio_desde_la_web_vuelve_a_mis_fichas(
+    api_client, client, paciente_a, ficha_pendiente,
+):
+    url = autenticar(api_client, paciente_a).post(
+        reverse("payments:checkout", args=[ficha_pendiente.id]),
+        {"return_to": "web"}, format="json",
+    ).json()["checkout_url"]
+    respuesta = client.get(pagar_simulado(client, url)["Location"])
+    assert respuesta.status_code == 302
+    assert respuesta["Location"] == (
+        f"https://web.ejemplo.test/mis-fichas?ficha={ficha_pendiente.id}&pago=pagado"
+    )
+
+
+def test_la_pagina_de_regreso_no_redirige_a_donde_diga_la_url(client):
+    """Ni la ficha ni el origen se usan como dirección: un valor ajeno cae en
+    la página genérica, sin enlace a ningún lado."""
+    respuesta = client.get(reverse("payments:return"), {
+        "resultado": "pagado", "origen": "https://sitio-falso.test",
+        "ficha": "javascript:alert(1)",
+    })
+    assert respuesta.status_code == 200
+    contenido = respuesta.content.decode()
+    assert "sitio-falso" not in contenido and "javascript:" not in contenido
+    assert "centromedico://" not in contenido
+
+
+@override_settings(STRIPE_SECRET_KEY="sk_test_prueba")
+def test_stripe_recibe_la_url_de_regreso_con_la_ficha_y_el_origen(
+    api_client, paciente_a, ficha_pendiente, monkeypatch,
+):
+    import stripe
+
+    llamada = {}
+    monkeypatch.setattr(stripe.checkout.Session, "create", lambda **kw: (
+        llamada.update(kw) or SimpleNamespace(id="cs_test_x", url="https://checkout.stripe.com/x")))
+    autenticar(api_client, paciente_a).post(
+        reverse("payments:checkout", args=[ficha_pendiente.id]),
+        {"return_to": "cualquier-cosa"}, format="json",
+    )
+    assert f"ficha={ficha_pendiente.id}" in llamada["success_url"]
+    # Un origen desconocido cae en la app, no se pasa tal cual.
+    assert "origen=app" in llamada["success_url"]
+    assert llamada["success_url"].endswith("resultado=pagado")
+    assert llamada["cancel_url"].endswith("resultado=cancelado")

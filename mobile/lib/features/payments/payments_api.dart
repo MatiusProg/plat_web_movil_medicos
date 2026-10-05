@@ -49,6 +49,10 @@ Future<CheckoutSession> iniciarPago(
 ) async {
   final data = await client.post(
     '/payments/appointments/$appointmentId/checkout/',
+    // Al terminar de pagar, la página de regreso del backend vuelve a abrir
+    // la app en esta ficha con `centromedico://app/appointments/<id>`
+    // (ver el intent-filter de AndroidManifest.xml).
+    body: {'return_to': 'app'},
   );
   return CheckoutSession.fromJson(
     data is Map<String, dynamic> ? data : const <String, dynamic>{},

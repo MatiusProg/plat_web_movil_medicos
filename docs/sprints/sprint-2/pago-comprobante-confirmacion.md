@@ -32,6 +32,23 @@ demostración; deja de cobrar en cuanto se cargan las claves.
 **El webhook no tiene usuario.** El contexto de inquilino se fija con la
 organización que viaja en la metadata del evento, que es parte de lo firmado.
 
+## La vuelta después de pagar
+
+El pedido de pago dice de dónde viene: `{"return_to": "app"}` (lo manda el
+móvil) o `"web"`. Stripe —o la página simulada— vuelve a
+`/api/payments/return/?ficha=<id>&origen=<app|web>&resultado=<pagado|cancelado>`:
+
+- **app** → la página abre `centromedico://app/appointments/<id>`
+  (`MOBILE_DEEP_LINK_BASE`), que la app registra en `AndroidManifest.xml` y
+  go_router resuelve a la ficha. Tiene además un botón "Volver a la
+  aplicación", porque varios navegadores sólo dejan pasar a otra app con un
+  toque del usuario.
+- **web** → redirige a `FRONTEND_BASE_URL/mis-fichas?ficha=<id>&pago=…`.
+
+Los destinos salen de `settings`, nunca de la URL: un `origen` o una `ficha`
+que no sean válidos caen en una página genérica sin enlaces. La página de
+regreso **no confirma nada**; la ficha la sigue confirmando el webhook.
+
 ## Política de devolución (US-18 → US-20)
 
 Definida por el PO:
@@ -77,6 +94,8 @@ modelo de inasistencia del Sprint 4.
 | `PAYMENTS_PROVIDER` | `auto` (por omisión), `stripe` o `simulated` |
 | `APPOINTMENT_DEFAULT_FEE` | Arancel si el catálogo no tiene precio de consulta |
 | `PUBLIC_API_BASE_URL` | Dominio público de la API, para el enlace del correo |
+| `FRONTEND_BASE_URL` | Dominio de la web, adonde vuelve un pago pedido desde la web |
+| `MOBILE_DEEP_LINK_BASE` | `centromedico://app` por omisión; el esquema que registra la app |
 
 Para probar el webhook real en local:
 `stripe listen --forward-to localhost:8000/api/payments/webhooks/stripe/`.
