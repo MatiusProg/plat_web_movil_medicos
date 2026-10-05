@@ -78,12 +78,15 @@ def reschedule_appointment(
     schedule_id,
     starts_at: dt.datetime,
     now=None,
+    request=None,
 ) -> Appointment:
     """US-20 — Reprograma: libera el turno viejo y toma uno nuevo, atómico.
 
     La ficha nueva hereda el estado de pago de la vieja: si ya estaba
     `confirmed`, la nueva nace `confirmed` también —es la misma compra movida
-    de horario, no una reserva nueva—.
+    de horario, no una reserva nueva—, y **el pago se muda con ella**
+    (`payments.services.transfer_payment`): si no, cancelarla a tiempo no
+    tendría nada que devolver.
     """
     now = now or timezone.now()
     _assert_cancellable(appointment, now)
@@ -108,6 +111,10 @@ def reschedule_appointment(
             nueva.status = Appointment.Status.CONFIRMED
             nueva.expires_at = None
             nueva.save(update_fields=["status", "expires_at", "updated_at"])
+
+            from payments.services import transfer_payment
+
+            transfer_payment(appointment, nueva, request=request)
 
         appointment.status = Appointment.Status.RESCHEDULED
         appointment.save(update_fields=["status", "updated_at"])
@@ -207,6 +214,7 @@ class RescheduleAppointmentView(APIView):
                 branch_id=datos["branch"],
                 schedule_id=datos["schedule"],
                 starts_at=datos["starts_at"],
+                request=request,
             )
         except ValidationError as error:
             return Response(
