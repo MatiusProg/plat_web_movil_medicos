@@ -109,6 +109,16 @@ def reschedule_appointment(
             nueva.expires_at = None
             nueva.save(update_fields=["status", "expires_at", "updated_at"])
 
+            # US-18: el pago se muda con la ficha. Si se quedara en la vieja,
+            # cancelar la nueva a tiempo diría "corresponde devolución" y no
+            # devolvería nada, porque `refund_for_cancellation` busca el pago
+            # de la ficha que se cancela. Y la nueva mostraría "sin pago".
+            from payments.models import Payment
+
+            Payment.objects.filter(appointment_id=appointment.id).update(
+                appointment=nueva,
+            )
+
         appointment.status = Appointment.Status.RESCHEDULED
         appointment.save(update_fields=["status", "updated_at"])
         nueva.rescheduled_from = appointment

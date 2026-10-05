@@ -450,3 +450,36 @@ def test_stripe_recibe_la_url_de_regreso_con_la_ficha_y_el_origen(
     assert "origen=app" in llamada["success_url"]
     assert llamada["success_url"].endswith("resultado=pagado")
     assert llamada["cancel_url"].endswith("resultado=cancelado")
+
+
+def test_reprogramar_una_ficha_pagada_muda_el_pago_y_cancelarla_lo_devuelve(
+    api_client, client, paciente_a, org_a, branches_a, agenda_a, ficha_pendiente,
+):
+    """Defecto encontrado probando en un teléfono: el pago se quedaba en la
+    ficha vieja, y cancelar la reprogramada decía "corresponde devolución"
+    sin devolver nada."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    pagar_simulado(client, checkout(api_client, paciente_a, ficha_pendiente).json()["checkout_url"])
+
+    proxima = dt.date.today() + dt.timedelta(days=7)
+    nuevo_turno = dt.datetime.combine(proxima, dt.time(10, 0), tzinfo=ZoneInfo("America/La_Paz"))
+    api = autenticar(api_client, paciente_a)
+    nueva = api.post(
+        reverse("appointments:appointment-reschedule", args=[ficha_pendiente.id]),
+        {"branch": str(branches_a["centro"].id), "schedule": str(agenda_a.id),
+         "starts_at": nuevo_turno.isoformat()},
+        format="json",
+    )
+    assert nueva.status_code == 200, nueva.json()
+    assert nueva.json()["status"] == "confirmed"
+    assert nueva.json()["payment_status"] == "succeeded"
+
+    cancelada = api.post(
+        reverse("appointments:appointment-cancel", args=[nueva.json()["id"]]),
+    )
+    assert cancelada.json()["refund_eligible"] is True
+    assert cancelada.json()["payment_status"] == "refunded"
+    with tenant_context(org_a.id):
+        assert Payment.objects.get().refund_reason == "cancelacion_a_tiempo"
