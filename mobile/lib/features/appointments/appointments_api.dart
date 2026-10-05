@@ -57,6 +57,7 @@ class Appointment {
     required this.id,
     required this.patientId,
     required this.patientName,
+    this.practitionerId = '',
     required this.practitionerName,
     required this.branchName,
     required this.startsAt,
@@ -64,6 +65,7 @@ class Appointment {
     required this.status,
     this.expiresAt,
     this.cancelledAt,
+    this.rescheduledFrom,
     this.refundEligible,
     this.checkedInAt,
     this.attendanceConfirmedAt,
@@ -74,6 +76,7 @@ class Appointment {
   final String id;
   final String patientId;
   final String patientName;
+  final String practitionerId;
   final String practitionerName;
   final String branchName;
   final DateTime startsAt;
@@ -81,6 +84,9 @@ class Appointment {
   final String status;
   final DateTime? expiresAt;
   final DateTime? cancelledAt;
+
+  /// US-20: el id de la ficha que esta reemplazó al reprogramar, si la hay.
+  final String? rescheduledFrom;
   final bool? refundEligible;
   final DateTime? checkedInAt;
   final DateTime? attendanceConfirmedAt;
@@ -98,6 +104,7 @@ class Appointment {
       id: json['id'] as String? ?? '',
       patientId: json['patient'] as String? ?? '',
       patientName: json['patient_name'] as String? ?? '',
+      practitionerId: json['practitioner'] as String? ?? '',
       practitionerName: json['practitioner_name'] as String? ?? '',
       branchName: json['branch_name'] as String? ?? '',
       startsAt:
@@ -106,6 +113,7 @@ class Appointment {
       status: json['status'] as String? ?? '',
       expiresAt: _fecha(json['expires_at']),
       cancelledAt: _fecha(json['cancelled_at']),
+      rescheduledFrom: json['rescheduled_from'] as String?,
       refundEligible: json['refund_eligible'] as bool?,
       checkedInAt: _fecha(json['checked_in_at']),
       attendanceConfirmedAt: _fecha(json['attendance_confirmed_at']),
@@ -193,3 +201,20 @@ Future<Appointment> confirmarAsistencia(ApiClient client, String id) async =>
 /// US-20 — Cancela. Si corresponde devolución lo decide el backend.
 Future<Appointment> cancelarFicha(ApiClient client, String id) async =>
     _ficha(await client.post('/appointments/appointments/$id/cancel/'));
+
+/// US-20 — Mueve la ficha a otro horario. El backend libera el turno viejo y
+/// toma el nuevo en una sola transacción y devuelve la ficha **nueva**: la
+/// vieja queda `rescheduled`. Si el turno ya lo ocupó otro, responde
+/// `turno_ocupado` y la ficha original no se toca.
+Future<Appointment> reprogramarFicha(
+  ApiClient client,
+  String id, {
+  required String branchId,
+  required String scheduleId,
+  required String startsAt,
+}) async => _ficha(
+  await client.post(
+    '/appointments/appointments/$id/reschedule/',
+    body: {'branch': branchId, 'schedule': scheduleId, 'starts_at': startsAt},
+  ),
+);

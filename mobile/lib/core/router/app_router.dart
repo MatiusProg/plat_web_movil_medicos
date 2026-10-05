@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/appointments/appointment_detail_screen.dart';
 import '../../features/appointments/my_appointments_screen.dart';
+import '../../features/appointments/reschedule_screen.dart';
 import '../../features/assistant/assistant_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
@@ -78,6 +79,7 @@ class Routes {
   static const String appointments = 'appointments';
   static const String appointmentDetail = 'appointment-detail';
   static const String appointmentReceipt = 'appointment-receipt';
+  static const String appointmentReschedule = 'appointment-reschedule';
   static const String receipts = 'receipts';
   static const String platformDashboard = 'platform-dashboard';
   static const String platformOrganizations = 'platform-organizations';
@@ -370,6 +372,17 @@ GoRouter buildRouter(Session session) {
               ),
             ),
             routes: [
+              // US-20: elegir el nuevo horario. Se cierra con la ficha nueva.
+              GoRoute(
+                path: 'reschedule',
+                name: Routes.appointmentReschedule,
+                builder: (context, state) => SoloPacientes(
+                  titulo: 'Reprogramar ficha',
+                  child: RescheduleScreen(
+                    appointmentId: state.pathParameters['id']!,
+                  ),
+                ),
+              ),
               GoRoute(
                 path: 'receipt',
                 name: Routes.appointmentReceipt,
