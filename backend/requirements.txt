@@ -70,6 +70,10 @@ whitenoise==6.11.0
 # firma del webhook.
 stripe==12.5.1
 
+# Correo transaccional por la API HTTPS de Brevo: Railway bloquea SMTP en los
+# planes que no son Pro. Ver EMAIL_BACKEND en config/settings.py.
+django-anymail==15.2
+
 # ---------- Pruebas ----------
 # RNF-08 y criterio 4 de la Definición de Terminado: las pruebas de
 # aislamiento se conectan como app_user, nunca como postgres.
