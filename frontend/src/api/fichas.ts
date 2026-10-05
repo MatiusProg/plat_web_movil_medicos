@@ -1,11 +1,12 @@
 /**
- * US-17 y US-20 — Reserva, cancelación y reprogramación de fichas.
+ * US-17 a US-21 — Reserva, pago, comprobante, confirmación de asistencia,
+ * cancelación y reprogramación de fichas.
  *
  * `/appointments/appointments/` sigue el mismo contrato para web y móvil.
- * La ficha nace `pending_payment`: sólo la confirma el pago en línea (US-18,
- * ajeno a este alcance). Cancelar y reprogramar respetan la política de
- * anticipación de la organización, que decide el backend — acá sólo se
- * muestra lo que devuelve.
+ * La ficha nace `pending_payment` y **sólo la confirma el webhook de Stripe**
+ * (US-18): la web abre el checkout y después vuelve a pedir la ficha, nunca
+ * la da por pagada. Importes, estados y la política de anticipación los
+ * decide el backend — acá sólo se muestra lo que devuelve.
  */
 
 import { pedir, type Contexto } from './cliente'
@@ -35,6 +36,12 @@ export interface Ficha {
   cancellation_reason: string
   refund_eligible: boolean | null
   rescheduled_from: string | null
+  checked_in_at: string | null
+  // US-21: con fecha = el paciente confirmó que va a asistir.
+  attendance_confirmed_at: string | null
+  // US-18: lo que cuesta y en qué quedó el último intento de pago.
+  fee: { amount: string; currency: string }
+  payment_status: 'pending' | 'succeeded' | 'failed' | 'expired' | 'refunded' | null
   created_at: string
   updated_at: string
 }
@@ -97,6 +104,55 @@ export function reprogramarFicha(
       schedule: datos.schedule,
       starts_at: datos.startsAt,
     },
+  })
+}
+
+// =========================================================
+// US-18 — PAGO EN LÍNEA · US-19 — COMPROBANTE · US-21 — ASISTENCIA
+// =========================================================
+
+export interface SesionDePago {
+  payment_id: string
+  provider: 'stripe' | 'simulated'
+  checkout_url: string
+  amount: string
+  currency: string
+  status: string
+}
+
+/** Abre el cobro. Stripe vuelve después a "Mis fichas" (`return_to: web`). */
+export function iniciarPago(id: string, contexto: Contexto): Promise<SesionDePago> {
+  return pedir<SesionDePago>(`/payments/appointments/${id}/checkout/`, {
+    ...contexto,
+    metodo: 'POST',
+    cuerpo: { return_to: 'web' },
+  })
+}
+
+export interface Comprobante {
+  appointment_id: string
+  // Lo que va dentro del QR: `MC1.<firma>`. Lo verifica el check-in (US-22).
+  code: string
+  issued_at: string
+  organization_name: string
+  patient_name: string
+  document_number: string
+  practitioner_name: string
+  branch_name: string
+  branch_address: string
+  starts_at: string
+  ends_at: string
+  status: EstadoFicha
+}
+
+export function comprobante(id: string, contexto: Contexto): Promise<Comprobante> {
+  return pedir<Comprobante>(`/appointments/appointments/${id}/receipt/`, contexto)
+}
+
+export function confirmarAsistencia(id: string, contexto: Contexto): Promise<Ficha> {
+  return pedir<Ficha>(`/appointments/appointments/${id}/confirm-attendance/`, {
+    ...contexto,
+    metodo: 'POST',
   })
 }
 

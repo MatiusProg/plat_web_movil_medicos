@@ -1,19 +1,25 @@
 /**
- * US-20 — Mis fichas: cancelar o reprogramar.
+ * Mis fichas: pagar (US-18), ver el comprobante (US-19), confirmar la
+ * asistencia (US-21), cancelar o reprogramar (US-20).
  *
- * Dentro de la política de anticipación de la organización, que decide el
- * backend: acá sólo se muestra si la cancelación da derecho a devolución
- * (`refund_eligible`), nunca se calcula en el cliente (regla 10 del Sprint 2).
+ * **La web nunca da una ficha por pagada.** "Pagar" abre el checkout de Stripe
+ * y, al volver (`?ficha=…&pago=pagado`), la pantalla vuelve a pedir las fichas
+ * hasta que el backend diga `confirmed`: quien confirma es el webhook firmado
+ * de Stripe (regla 10 del Sprint 2). Lo mismo con la devolución: sólo se
+ * muestra `refund_eligible`, nunca se calcula acá.
  */
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import type { Espacio } from '@/api/disponibilidad'
 import {
-  cancelarFicha, misFichas, reprogramarFicha, type Ficha,
+  cancelarFicha, confirmarAsistencia, iniciarPago, misFichas, reprogramarFicha,
+  type Ficha,
 } from '@/api/fichas'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
+import { ModalComprobante } from '@/componentes/ModalComprobante'
 import { ModalReprogramarFicha } from '@/componentes/ModalReprogramarFicha'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -40,6 +46,16 @@ const COLOR_ESTADO: Record<Ficha['status'], string> = {
 
 const ACCIONABLES: Ficha['status'][] = ['pending_payment', 'confirmed']
 
+// Al volver de Stripe, cada cuánto y hasta cuándo se vuelve a pedir la ficha
+// esperando el webhook. En general llega en unos segundos.
+const ESPERA_PAGO_MS = 3000
+const ESPERA_PAGO_INTENTOS = 20
+
+function importe(ficha: Ficha): string {
+  const moneda = ficha.fee.currency === 'BOB' ? 'Bs' : ficha.fee.currency
+  return `${moneda} ${Number(ficha.fee.amount).toFixed(2)}`
+}
+
 function fechaYHora(iso: string): string {
   return new Date(iso).toLocaleString('es-BO', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -59,6 +75,14 @@ export function MisFichas() {
   const [cancelandoId, setCancelandoId] = useState<string | null>(null)
   const [avisoCancelacion, setAvisoCancelacion] = useState<string | null>(null)
 
+  const [parametros, setParametros] = useSearchParams()
+  const fichaPagada = parametros.get('pago') === 'pagado' ? parametros.get('ficha') : null
+  const [esperandoPago, setEsperandoPago] = useState(fichaPagada !== null)
+  const [intentos, setIntentos] = useState(0)
+  const [pagandoId, setPagandoId] = useState<string | null>(null)
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null)
+  const [comprobanteId, setComprobanteId] = useState<string | null>(null)
+
   const [fichaAReprogramar, setFichaAReprogramar] = useState<Ficha | null>(null)
   const [reprogramando, setReprogramando] = useState(false)
   const [errorReprogramar, setErrorReprogramar] = useState<ErrorApi | null>(null)
@@ -77,18 +101,87 @@ export function MisFichas() {
     return () => control.abort()
   }, [token, recargaClave])
 
+  // Vuelta de Stripe: un aviso para el pago cancelado, y para el pagado, una
+  // espera hasta que el webhook confirme la ficha.
+  useEffect(() => {
+    if (parametros.get('pago') === 'cancelado') {
+      setAvisoCancelacion('Pago cancelado: no se cobró nada. Podés intentarlo de nuevo.')
+      setParametros({}, { replace: true })
+    }
+  }, [parametros, setParametros])
+
+  useEffect(() => {
+    if (!esperandoPago || !fichaPagada || cargando) return
+    const ficha = fichas.find((f) => f.id === fichaPagada)
+    if (ficha && ficha.status !== 'pending_payment') {
+      setEsperandoPago(false)
+      setAvisoCancelacion(
+        ficha.status === 'confirmed'
+          ? 'Pago confirmado. Tu ficha está confirmada: ya podés ver el comprobante.'
+          : 'El pago llegó, pero la ficha ya no estaba disponible: se devolvió el importe.',
+      )
+      setParametros({}, { replace: true })
+      return
+    }
+    if (intentos >= ESPERA_PAGO_INTENTOS) {
+      setEsperandoPago(false)
+      setAvisoCancelacion(
+        'Todavía no recibimos la confirmación del pago. Actualizá la página en unos minutos.',
+      )
+      return
+    }
+    const espera = window.setTimeout(() => {
+      setIntentos((n) => n + 1)
+      setRecargaClave((clave) => clave + 1)
+    }, ESPERA_PAGO_MS)
+    return () => window.clearTimeout(espera)
+  }, [esperandoPago, fichaPagada, fichas, cargando, intentos, setParametros])
+
+  const pagar = async (ficha: Ficha) => {
+    setPagandoId(ficha.id)
+    setError(null)
+    try {
+      const sesion = await iniciarPago(ficha.id, { token })
+      // Se sale de la web hacia Stripe; Stripe vuelve a esta misma pantalla.
+      window.location.assign(sesion.checkout_url)
+    } catch (fallo: unknown) {
+      setError(fallo instanceof ErrorApi ? fallo : null)
+      setPagandoId(null)
+    }
+  }
+
+  const confirmar = async (ficha: Ficha) => {
+    setConfirmandoId(ficha.id)
+    setError(null)
+    try {
+      await confirmarAsistencia(ficha.id, { token })
+      setAvisoCancelacion('Asistencia confirmada. ¡Te esperamos!')
+      setRecargaClave((clave) => clave + 1)
+    } catch (fallo: unknown) {
+      setError(fallo instanceof ErrorApi ? fallo : null)
+    } finally {
+      setConfirmandoId(null)
+    }
+  }
+
   const cancelar = async (ficha: Ficha) => {
+    const pagada = ficha.payment_status === 'succeeded'
     if (!window.confirm(
-      `¿Cancelar la ficha del ${fechaYHora(ficha.starts_at)}?`,
+      `¿Cancelar la ficha del ${fechaYHora(ficha.starts_at)}?`
+      + (pagada
+        ? '\n\nSi cancelás dentro del plazo de anticipación se te devuelve el pago; fuera de plazo, no.'
+        : ''),
     )) return
     setCancelandoId(ficha.id)
     setError(null)
     try {
       const actualizada = await cancelarFicha(ficha.id, { token })
       setAvisoCancelacion(
-        actualizada.refund_eligible
-          ? 'Ficha cancelada. Corresponde devolución.'
-          : 'Ficha cancelada. Fuera del plazo de anticipación: no corresponde devolución.',
+        actualizada.payment_status === 'refunded'
+          ? 'Ficha cancelada. Se devolvió el pago.'
+          : actualizada.refund_eligible
+            ? 'Ficha cancelada. Corresponde devolución.'
+            : 'Ficha cancelada. Fuera del plazo de anticipación: no corresponde devolución.',
       )
       setRecargaClave((clave) => clave + 1)
     } catch (fallo: unknown) {
@@ -128,12 +221,22 @@ export function MisFichas() {
           Reservas
         </h1>
         <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
-          Cancelá o reprogramá dentro del plazo de anticipación de tu centro
-          médico. Fuera de plazo, la cancelación no da derecho a devolución.
+          Pagá tu reserva para confirmarla, mostrá el comprobante en recepción y
+          confirmá que vas a asistir. Cancelá o reprogramá dentro del plazo de
+          anticipación de tu centro médico: fuera de plazo, la cancelación no da
+          derecho a devolución.
         </p>
       </div>
 
       {error && <Aviso codigo={error.codigo} mensaje={error.message} />}
+      {esperandoPago && (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          Pago recibido. Esperando la confirmación del procesador de pagos…
+        </div>
+      )}
       {avisoCancelacion && (
         <div
           role="status"
@@ -152,8 +255,13 @@ export function MisFichas() {
       ) : (
         <div className="space-y-3">
           {fichas.map((ficha) => {
-            const accionable = ACCIONABLES.includes(ficha.status)
-              && new Date(ficha.starts_at).getTime() > Date.now()
+            const futura = new Date(ficha.starts_at).getTime() > Date.now()
+            const accionable = ACCIONABLES.includes(ficha.status) && futura
+            const pendiente = ficha.status === 'pending_payment' && futura
+              && (!ficha.expires_at || new Date(ficha.expires_at).getTime() > Date.now())
+            const conComprobante = ficha.status === 'confirmed' || ficha.status === 'attended'
+            const puedeConfirmar = ficha.status === 'confirmed' && futura
+              && !ficha.attendance_confirmed_at
             return (
               <div
                 key={ficha.id}
@@ -178,8 +286,56 @@ export function MisFichas() {
                   </span>
                 </div>
 
-                {accionable && (
-                  <div className="mt-3 flex gap-2">
+                {pendiente && (
+                  <p className="text-tinta-500 mt-2 text-xs">
+                    Pagá {importe(ficha)} para confirmarla
+                    {ficha.expires_at && (
+                      <> antes de las {new Date(ficha.expires_at).toLocaleTimeString('es-BO', {
+                        hour: '2-digit', minute: '2-digit',
+                      })}</>
+                    )}
+                    : pasado ese momento el turno se libera.
+                  </p>
+                )}
+                {ficha.attendance_confirmed_at && ficha.status === 'confirmed' && (
+                  <p className="text-marca-700 dark:text-marca-400 mt-2 text-xs font-medium">
+                    ✓ Confirmaste tu asistencia
+                  </p>
+                )}
+
+                {(accionable || conComprobante) && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {pendiente && (
+                      <button
+                        type="button"
+                        onClick={() => pagar(ficha)}
+                        disabled={pagandoId === ficha.id}
+                        className="bg-marca-600 hover:bg-marca-700 rounded-xl px-3 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50"
+                      >
+                        {pagandoId === ficha.id ? 'Abriendo el pago…' : `Pagar ${importe(ficha)}`}
+                      </button>
+                    )}
+                    {conComprobante && (
+                      <button
+                        type="button"
+                        onClick={() => setComprobanteId(ficha.id)}
+                        className="border-marca-300 text-marca-700 dark:border-marca-800 dark:text-marca-300 hover:bg-marca-50 dark:hover:bg-marca-950/40 rounded-xl border px-3 py-1.5 text-sm font-semibold transition"
+                      >
+                        Ver comprobante
+                      </button>
+                    )}
+                    {puedeConfirmar && (
+                      <button
+                        type="button"
+                        onClick={() => confirmar(ficha)}
+                        disabled={confirmandoId === ficha.id}
+                        className="border-marca-300 text-marca-700 dark:border-marca-800 dark:text-marca-300 hover:bg-marca-50 dark:hover:bg-marca-950/40 rounded-xl border px-3 py-1.5 text-sm font-semibold transition disabled:opacity-50"
+                      >
+                        {confirmandoId === ficha.id ? 'Confirmando…' : 'Confirmar asistencia'}
+                      </button>
+                    )}
+                    {accionable && (
+                      <>
                     <button
                       type="button"
                       onClick={() => setFichaAReprogramar(ficha)}
@@ -195,6 +351,8 @@ export function MisFichas() {
                     >
                       {cancelandoId === ficha.id ? 'Cancelando…' : 'Cancelar'}
                     </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -202,6 +360,11 @@ export function MisFichas() {
           })}
         </div>
       )}
+
+      <ModalComprobante
+        fichaId={comprobanteId}
+        onCerrar={() => setComprobanteId(null)}
+      />
 
       <ModalReprogramarFicha
         abierto={fichaAReprogramar !== null}
