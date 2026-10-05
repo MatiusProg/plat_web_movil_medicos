@@ -167,6 +167,38 @@ def refund_for_cancellation(appointment: Appointment, *, request=None) -> Paymen
         return payment
 
 
+def transfer_payment(origen: Appointment, destino: Appointment, *,
+                     request=None) -> Payment | None:
+    """US-20 → US-18: el pago acompaña a la ficha cuando se reprograma.
+
+    Reprogramar crea una ficha **nueva** y deja la vieja `rescheduled`; es la
+    misma compra movida de horario. El `Payment` se enlaza por ficha, así que
+    si se quedara en la vieja, la nueva figuraría pagada sin pago: no mostraría
+    `payment_status` y, al cancelarla a tiempo, `refund_for_cancellation` no
+    encontraría qué devolver.
+
+    Mueve el pago `succeeded` de [origen] a [destino]; si no hay —la ficha no
+    estaba pagada— no hace nada. `uq_payment_one_success` no estorba: la ficha
+    nueva todavía no tiene ningún pago. Los intentos abandonados (`pending`)
+    quedan en la vieja: si alguien los paga después, `confirm_payment` los
+    devuelve solo, porque esa ficha ya no espera pago.
+
+    Debe llamarse dentro de la transacción de la reprogramación: bloquea la
+    fila del pago, y si algo falla después, el pago vuelve a la ficha original.
+    """
+    payment = (
+        Payment.objects.select_for_update()
+        .filter(appointment_id=origen.id, status=Payment.Status.SUCCEEDED)
+        .first()
+    )
+    if payment is None:
+        return None
+    payment.appointment = destino
+    payment.save(update_fields=["appointment", "updated_at"])
+    _asentar(request, payment, "reprogramado", ficha_origen=str(origen.id))
+    return payment
+
+
 def _asentar(request, payment, evento, **extra):
     if request is None:
         return
