@@ -6,7 +6,8 @@
 ///   confirma el webhook de Stripe.
 /// - `confirmed` → ver el comprobante con QR (US-19) y confirmar asistencia
 ///   (US-21).
-/// - activa → cancelar (US-20), con la política de devolución a la vista.
+/// - activa → reprogramar o cancelar (US-20); al cancelar, la política de
+///   devolución queda a la vista.
 library;
 
 import 'dart:async';
@@ -217,6 +218,16 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
     } finally {
       if (mounted) setState(() => _ocupado = false);
     }
+  }
+
+  /// US-20 — Abre la pantalla de horarios. Si se reprogramó, la ficha de
+  /// esta pantalla ya no es la vigente: se pasa a la nueva.
+  Future<void> _reprogramar() async {
+    final nueva = await context.push<Appointment>(
+      '/appointments/${widget.appointmentId}/reschedule',
+    );
+    if (nueva == null || !mounted) return;
+    context.pushReplacement('/appointments/${nueva.id}');
   }
 
   Future<void> _cancelar() async {
@@ -457,6 +468,12 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
 
     if (ficha.isActive && !ficha.isPast(ahora)) {
       acciones.addAll([
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _ocupado ? null : _reprogramar,
+          icon: const Icon(Icons.edit_calendar),
+          label: const Text('Reprogramar ficha'),
+        ),
         const SizedBox(height: 8),
         TextButton.icon(
           onPressed: _ocupado ? null : _cancelar,
