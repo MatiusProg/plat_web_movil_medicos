@@ -361,8 +361,21 @@ CORS_ALLOW_HEADERS = (*default_headers, "x-organization")
 #
 #  Las pruebas no usan nada de esto: Django reemplaza el backend por uno en
 #  memoria y `mail.outbox` deja ver lo que se habría mandado.
+#
+#  **En producción el correo sale por la API HTTPS de Brevo, no por SMTP.**
+#  Railway bloquea los puertos SMTP salientes (465/587) en los planes Free,
+#  Trial y Hobby, así que un SMTP de Gmail ahí no conecta nunca. Con
+#  `BREVO_API_KEY` cargada, el backend pasa solo a Brevo (django-anymail); sin
+#  ella, sigue la consola. `DEFAULT_FROM_EMAIL` tiene que ser un remitente
+#  verificado en Brevo, o Brevo rechaza el envío.
+BREVO_API_KEY = env("BREVO_API_KEY", default="")
+ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 EMAIL_BACKEND = env(
-    "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend",
+    "EMAIL_BACKEND",
+    default=(
+        "anymail.backends.brevo.EmailBackend" if BREVO_API_KEY
+        else "django.core.mail.backends.console.EmailBackend"
+    ),
 )
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
