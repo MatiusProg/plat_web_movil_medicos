@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect
@@ -32,6 +33,7 @@ from tenancy.plans import require_feature
 from .models import Payment
 from .permissions import CanCreatePayments
 from .providers import (
+    RETURN_TARGETS,
     ProviderError,
     SimulatedProvider,
     StripeProvider,
@@ -71,8 +73,15 @@ class CheckoutView(APIView):
         require_feature(request.user.organization, "online_payment",
                         "el pago en línea")
 
+        # De dónde se pidió el pago: decide adónde vuelve el paciente. Un
+        # valor desconocido cae en "app", el único cliente que paga hoy.
+        return_to = request.data.get("return_to", "app")
+        if return_to not in RETURN_TARGETS:
+            return_to = "app"
+
         try:
-            payment = start_checkout(appointment, user=request.user, request=request)
+            payment = start_checkout(appointment, user=request.user,
+                                     request=request, return_to=return_to)
         except ValidationError as error:
             return Response({"code": error.code, "detail": error.messages[0]},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -167,24 +176,70 @@ def _pagina(titulo, cuerpo):
     )
 
 
-def _volver(resultado):
-    return redirect(f"{reverse('payments:return')}?resultado={resultado}")
+def _volver(resultado, ficha="", origen="app"):
+    return redirect(
+        f"{reverse('payments:return')}?resultado={resultado}"
+        f"&ficha={ficha}&origen={origen}",
+    )
 
 
 def return_page(request):
-    """Adonde vuelve el navegador. Sólo informa: la ficha la confirma el webhook."""
-    if request.GET.get("resultado") == "pagado":
-        cuerpo = format_html(
-            "<h1>Pago recibido</h1><p>Volvé a la aplicación: tu ficha aparece "
-            "confirmada en cuanto el procesador de pagos lo notifique, en general "
-            "en unos segundos.</p>",
-        )
+    """Adonde vuelve el navegador después de pagar o de cancelar.
+
+    **No confirma nada**: la ficha la confirma el webhook. Sólo lleva al
+    paciente de vuelta a donde estaba:
+
+    - `origen=web` → redirige a "Mis fichas" de la web.
+    - `origen=app` → abre la app en la ficha (`MOBILE_DEEP_LINK_BASE`), con un
+      botón por si el navegador no deja abrirla sola: varios exigen un toque
+      del usuario para pasar a otra aplicación.
+
+    La ficha se valida como UUID y los destinos salen de `settings`: nada de
+    lo que viene en la URL se usa como dirección.
+    """
+    pagado = request.GET.get("resultado") == "pagado"
+    origen = request.GET.get("origen", "")
+    try:
+        ficha = str(uuid.UUID(request.GET.get("ficha", "")))
+    except ValueError:
+        ficha = ""
+
+    if origen == "web":
+        destino = f"{settings.FRONTEND_BASE_URL}/mis-fichas"
+        if ficha:
+            destino += f"?ficha={ficha}&pago={'pagado' if pagado else 'cancelado'}"
+        return redirect(destino)
+
+    if pagado:
+        titulo, texto = "Pago recibido", (
+            "Tu ficha aparece confirmada en la aplicación en cuanto el "
+            "procesador de pagos lo notifique, en general en unos segundos.")
     else:
-        cuerpo = format_html(
-            "<h1>Pago cancelado</h1><p>No se cobró nada. Podés volver a la "
-            "aplicación e intentarlo de nuevo mientras la reserva siga vigente.</p>",
-        )
+        titulo, texto = "Pago cancelado", (
+            "No se cobró nada. Podés intentarlo de nuevo desde la aplicación "
+            "mientras la reserva siga vigente.")
+
+    if origen != "app" or not ficha:
+        return HttpResponse(_pagina("Pago de la ficha", format_html(
+            "<h1>{}</h1><p>{}</p>", titulo, texto)))
+
+    enlace = f"{settings.MOBILE_DEEP_LINK_BASE}/appointments/{ficha}"
+    cuerpo = format_html(
+        """<h1>{}</h1><p>{}</p>
+<a href="{}"><button class="pagar" type="button">Volver a la aplicación</button></a>
+<script>setTimeout(function(){{ window.location.href = {}; }}, 600);</script>""",
+        titulo, texto, enlace, _js_string(enlace),
+    )
     return HttpResponse(_pagina("Pago de la ficha", cuerpo))
+
+
+def _js_string(valor):
+    """Cadena JS segura dentro de <script>: JSON y sin `<`."""
+    import json
+
+    from django.utils.safestring import mark_safe
+
+    return mark_safe(json.dumps(valor).replace("<", "\\u003c"))
 
 
 @csrf_exempt
@@ -202,6 +257,7 @@ def simulated_checkout(request, token):
         datos = SimulatedProvider.read_token(token)
         organization_id = uuid.UUID(datos["o"])
         payment_id = uuid.UUID(datos["p"])
+        origen = datos.get("r", "app")
     except (ProviderError, KeyError, ValueError):
         return HttpResponse(_pagina("Enlace inválido", format_html(
             "<h1>Enlace inválido</h1><p>El enlace de pago no es válido o venció.</p>")),
@@ -222,11 +278,11 @@ def simulated_checkout(request, token):
             if request.POST.get("accion") == "pagar":
                 confirm_payment(payment, provider_payment_id=f"sim_pi_{uuid.uuid4().hex}",
                                 request=request)
-                return _volver("pagado")
+                return _volver("pagado", payment.appointment_id, origen)
             if payment.status == Payment.Status.PENDING:
                 payment.status = Payment.Status.FAILED
                 payment.save(update_fields=["status", "updated_at"])
-            return _volver("cancelado")
+            return _volver("cancelado", payment.appointment_id, origen)
 
         if payment.status != Payment.Status.PENDING:
             return HttpResponse(_pagina("Pago ya procesado", format_html(

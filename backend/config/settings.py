@@ -287,6 +287,15 @@ PUBLIC_API_BASE_URL = env(
     "PUBLIC_API_BASE_URL", default="http://localhost:8000",
 ).rstrip("/")
 
+# US-18: adónde vuelve el paciente después de pagar. La app móvil registra
+# este esquema (AndroidManifest.xml) y abre la ficha; la web vuelve a
+# `FRONTEND_BASE_URL`. Son destinos fijos: el cliente sólo elige "app" o
+# "web", nunca una URL —si no, la página de regreso serviría para mandar a
+# cualquiera a un sitio falso—.
+MOBILE_DEEP_LINK_BASE = env(
+    "MOBILE_DEEP_LINK_BASE", default="centromedico://app",
+).rstrip("/")
+
 # US-07 (g): tope de dependientes por titular. Es configurable y no una
 # constante porque el número correcto depende del centro médico —una familia
 # numerosa es normal, cien dependientes es alguien inflando el padrón—, y
