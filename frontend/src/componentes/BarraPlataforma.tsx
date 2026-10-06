@@ -59,6 +59,7 @@ type ItemMenu = {
         | 'estetoscopio'
         | 'servicio'
         | 'respaldo'
+        | 'reportes'
         | 'historia'
     /**
      * Quién ve la entrada.
@@ -145,6 +146,14 @@ const items: ItemMenu[] = [
         seccion: 'Organización',
         icono: 'bitacora',
         requiere: 'audit.log.read',
+    },
+    // Característica general 5 — el constructor de reportes, también por voz.
+    {
+        etiqueta: 'Reportes',
+        ruta: '/reportes',
+        seccion: 'Organización',
+        icono: 'reportes',
+        requiere: 'reporting.report.run',
     },
     // Característica general 6 — la frecuencia depende del plan.
     {
@@ -774,6 +783,10 @@ function IconoMenu({
     if (tipo === 'historia') return (
         <svg {...trazo}><path d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z" /><path d="M9 3h6v3H9zM9 11h6M9 15h4" /></svg>
     )
+    if (tipo === 'reportes') return (
+        <svg {...trazo}><path d="M4 19V5a1 1 0 0 1 1-1h9l6 6v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" /><path d="M14 4v6h6" /><path d="M8 17v-3M12 17v-5M16 17v-2" /></svg>
+    )
+
     if (tipo === 'respaldo') return (
         <svg {...trazo}><path d="M7 18a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 10.5a3.8 3.8 0 0 1-1 7.5H7Z" /><path d="M12 11v5M9.8 13.8 12 16l2.2-2.2" /></svg>
     )

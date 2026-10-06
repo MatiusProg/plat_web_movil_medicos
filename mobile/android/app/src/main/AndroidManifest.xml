@@ -7,6 +7,19 @@
          `profile`, que es con los que se venía probando. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Característica general 5: pedir un reporte hablando. El micrófono lo
+         usa el reconocedor del sistema; nosotros no grabamos ni subimos audio.
+         `<queries>` es obligatorio desde Android 11: sin declarar el servicio
+         de reconocimiento, la aplicación no lo ve y el dictado aparece como
+         "no disponible" en el teléfono aunque esté instalado. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+    </queries>
+
     <application
         android:label="Centro Médico"
         android:name="${applicationName}"

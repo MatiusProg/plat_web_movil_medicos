@@ -14,7 +14,7 @@ y la prueba que la respaldan. Lo que no está hecho figura como no hecho.
 | 2 | Gestión de usuarios y privilegios | 🟡 **Parcial** | `accounts/` — falta granularidad de componente |
 | 3 | Log / Bitácora | 🟡 **Parcial** | `audit/` — falta la confidencialidad por llave |
 | 4 | Facilidad de uso y asistencia en línea | ✅ Cumplida | `assistant/` (US-31, US-32, US-34) |
-| 5 | Reportes personalizables | ✅ Cumplida | `reporting/` |
+| 5 | Reportes personalizables | ✅ Cumplida | `reporting/`, web, móvil y **por voz** |
 | 6 | Backup / Restore | ✅ Cumplida | `backups/` |
 | 7 | Web / Móvil | ✅ Cumplida | `frontend/`, `mobile/` |
 | 8 | Modelo SaaS en la nube | ✅ Cumplida | `tenancy/`, Railway + Supabase |
@@ -230,9 +230,60 @@ caso normal: el mismo reporte, otro período.
    dinámico es no filtrar nada en silencio: el reporte sale con la tabla entera y
    quien lo lee concluye que ése es el dato.
 
+### Pedir el reporte hablando
+
+El constructor está en la **web** (`frontend/src/paginas/Reportes.tsx`) y en el
+**móvil** (`mobile/lib/features/reporting/`), y en los dos se puede dictar el
+pedido en vez de llenar el formulario:
+
+> «pacientes mujeres dadas de alta en septiembre, con nombre y teléfono, en Excel»
+
+El camino es el mismo en los dos clientes:
+
+```
+hablás → el dispositivo transcribe → el texto va a POST /api/reporting/interpret/ →
+el modelo lo traduce a una definición → se valida contra el catálogo y tus
+permisos → el formulario queda lleno → confirmás → POST /api/reporting/run/
+```
+
+**Cuatro decisiones, y las cuatro son la misma idea: la voz llena el
+formulario, no genera nada.**
+
+1. **La transcripción ocurre en el dispositivo** —la Web Speech API en Chrome y
+   Edge, el reconocedor de Android en el teléfono—. No grabamos, no guardamos y
+   no subimos audio: al servidor viaja texto. Donde no hay reconocimiento
+   —Firefox, un teléfono sin el servicio— el botón no aparece y se explica por
+   qué, en vez de ofrecer algo que no funciona.
+2. **La propuesta se confirma antes de generar.** Es lo que pide el enunciado
+   —una interfaz previa para filtrar— y además es lo que evita que una frase mal
+   entendida exporte datos sin que nadie los mire.
+3. **El modelo elige de una lista cerrada**, y esa lista es el catálogo **ya
+   filtrado por los permisos de quien habla**: lo que la persona no puede ver en
+   pantalla no entra en el prompt. Lo que el modelo devuelva igual se valida
+   contra el catálogo, y lo que no exista se descarta **nombrándolo**
+   (`unresolved`), nunca en silencio.
+4. **Sin proveedor se degrada y no se improvisa.** Sin clave, sin cuota o ante
+   cualquier error, se adivina el conjunto por el nombre que se dijo y se dejan
+   las columnas por omisión, con `generated_by: "plantilla"` para que la
+   pantalla lo diga. **Nunca se inventa un criterio de selección**: un filtro
+   inventado devuelve un subconjunto que nadie pidió y que se lee como si fuera
+   el dato.
+
+El resumen de lo entendido («Pacientes: Nombre, Teléfono · Sexo es Femenino») lo
+arma el backend **sobre la definición ya saneada**, no el modelo de lenguaje: si
+lo redactara el modelo, un resumen amable podría describir algo distinto de lo
+que se va a ejecutar.
+
+La bitácora asienta el pedido por voz (`report.voice`) con el conjunto
+interpretado, **sin la frase dictada**: puede nombrar a un paciente, y es el
+mismo criterio que usa el asistente con los síntomas. Los filtros que terminen
+ejecutándose ya quedan en `report.run`.
+
 **Cómo se comprueba:** `backend/tests/test_caracteristica_5_reportes.py` —
 31 pruebas, incluidas las que abren el Excel generado y comprueban que trae los
-datos filtrados.
+datos filtrados— y `backend/tests/test_caracteristica_5_voz.py` — 13 pruebas de
+la interpretación, con el proveedor simulado. En el móvil,
+`mobile/test/reporting_voz_test.dart`.
 
 ---
 

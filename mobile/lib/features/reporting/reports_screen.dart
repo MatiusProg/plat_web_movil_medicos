@@ -26,6 +26,7 @@ import '../../core/api/errors.dart';
 import '../../core/session/session_scope.dart';
 import '../../core/widgets/organization_drawer.dart';
 import 'reporting_api.dart';
+import 'voice_input.dart';
 
 /// Cómo se lee cada operador. Los códigos son los del backend
 /// (`reporting/datasets.py`, `OPERATORS`).
@@ -43,10 +44,15 @@ const _operadores = <String, String>{
 String _operador(String code) => _operadores[code] ?? code;
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key, this.client});
+  const ReportsScreen({super.key, this.client, this.dictado});
 
   @visibleForTesting
   final ApiClient? client;
+
+  /// El dictado se inyecta para poder probar la pantalla sin micrófono: en el
+  /// entorno de pruebas no hay reconocedor de voz.
+  @visibleForTesting
+  final DictadoDeVoz? dictado;
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
@@ -67,10 +73,103 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _ejecutando = false;
   String? _error;
 
+  // ---------- Pedirlo hablando -----------------------------------------
+  late final DictadoDeVoz _dictado = widget.dictado ?? DictadoDelSistema();
+  bool _puedeDictar = false;
+  bool _escuchando = false;
+  String _loQueOigo = '';
+  InterpretacionDeVoz? _interpretacion;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_catalogo == null && _error == null) _cargarCatalogo();
+    if (_catalogo == null && _error == null) {
+      _cargarCatalogo();
+      _prepararDictado();
+    }
+  }
+
+  @override
+  void dispose() {
+    _dictado.soltar();
+    super.dispose();
+  }
+
+  Future<void> _prepararDictado() async {
+    final puede = await _dictado.preparar();
+    if (!mounted) return;
+    setState(() => _puedeDictar = puede);
+  }
+
+  Future<void> _hablar() async {
+    if (_escuchando) {
+      await _dictado.terminar();
+      if (mounted) setState(() => _escuchando = false);
+      return;
+    }
+    setState(() {
+      _escuchando = true;
+      _loQueOigo = '';
+      _interpretacion = null;
+      _error = null;
+    });
+    await _dictado.empezar(
+      alCambiar: (texto) {
+        if (mounted) setState(() => _loQueOigo = texto);
+      },
+      alTerminar: (texto) {
+        if (!mounted) return;
+        setState(() {
+          _escuchando = false;
+          _loQueOigo = texto;
+        });
+        _interpretar(texto);
+      },
+    );
+  }
+
+  /// Manda lo dictado y **marca la propuesta en el formulario**. No ejecuta: la
+  /// persona ve lo que se entendió y toca "Ver resultado" si está bien.
+  Future<void> _interpretar(String texto) async {
+    setState(() => _ejecutando = true);
+    try {
+      final propuesta = await interpretarPorVoz(
+        client,
+        texto,
+        dataset: _conjunto?.code ?? '',
+      );
+      if (!mounted) return;
+      setState(() {
+        _interpretacion = propuesta;
+        _aplicar(propuesta);
+      });
+    } on ApiError catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _ejecutando = false);
+    }
+  }
+
+  void _aplicar(InterpretacionDeVoz propuesta) {
+    final catalogo = _catalogo;
+    if (!propuesta.understood || catalogo == null) return;
+    ConjuntoDeDatos? elegido;
+    for (final conjunto in catalogo.datasets) {
+      if (conjunto.code == propuesta.dataset) elegido = conjunto;
+    }
+    if (elegido == null) return;
+
+    _elegirConjunto(elegido);
+    if (propuesta.columns.isNotEmpty) {
+      _columnas
+        ..clear()
+        ..addAll(propuesta.columns);
+    }
+    _criterios
+      ..clear()
+      ..addAll(propuesta.conEtiquetas(elegido));
+    _resultado = null;
   }
 
   Future<void> _cargarCatalogo() async {
@@ -223,11 +322,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
               children: [
                 Text(
                   'Armá el reporte con las columnas y los criterios que '
-                  'necesites. La vista previa muestra las primeras filas; el '
-                  'archivo completo se manda por correo.',
+                  'necesites, o pedilo hablando. La vista previa muestra las '
+                  'primeras filas; el archivo completo se manda por correo.',
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
+
+                // ---------- Pedirlo hablando ---------------------------
+                if (_puedeDictar) ...[
+                  _Dictado(
+                    escuchando: _escuchando,
+                    loQueOigo: _loQueOigo,
+                    interpretacion: _interpretacion,
+                    ocupado: _ejecutando,
+                    onHablar: _hablar,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 if (_error != null) ...[
                   _Aviso(mensaje: _error!, onReintentar: _cargarCatalogo),
@@ -380,6 +491,96 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ],
             ),
+    );
+  }
+}
+
+/// El bloque de voz: el botón, lo que se va oyendo y lo que se entendió.
+///
+/// Muestra la propuesta y **no genera nada**: el reporte se ejecuta recién
+/// cuando la persona toca "Ver resultado", igual que si lo hubiera armado a
+/// mano. Ver el encabezado de `voice_input.dart`.
+class _Dictado extends StatelessWidget {
+  const _Dictado({
+    required this.escuchando,
+    required this.loQueOigo,
+    required this.interpretacion,
+    required this.ocupado,
+    required this.onHablar,
+  });
+
+  final bool escuchando;
+  final String loQueOigo;
+  final InterpretacionDeVoz? interpretacion;
+  final bool ocupado;
+  final VoidCallback onHablar;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final propuesta = interpretacion;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    escuchando
+                        ? 'Escuchando…'
+                        : 'Pedilo hablando: «pacientes mujeres con nombre y '
+                              'teléfono»',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  // El tema de la aplicación da a los botones ancho completo
+                  // (`Size.fromHeight(52)`, que es ancho infinito). Dentro de
+                  // una fila eso pide un ancho sin límite y **revienta el
+                  // layout de toda la pantalla**, que queda en blanco. Por eso
+                  // este botón declara su propio tamaño mínimo.
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                  onPressed: ocupado ? null : onHablar,
+                  icon: Icon(escuchando ? Icons.stop : Icons.mic),
+                  label: Text(escuchando ? 'Listo' : 'Hablar'),
+                ),
+              ],
+            ),
+            if (loQueOigo.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('"$loQueOigo"', style: theme.textTheme.bodySmall),
+            ],
+            if (propuesta != null && !escuchando) ...[
+              const SizedBox(height: 12),
+              Text(
+                propuesta.understood
+                    ? 'Entendí: ${propuesta.resumen}'
+                    : propuesta.resumen,
+                style: theme.textTheme.bodyMedium,
+              ),
+              for (final pendiente in propuesta.sinResolver)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('· $pendiente', style: theme.textTheme.bodySmall),
+                ),
+              if (propuesta.porPlantilla) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'No pude interpretar la frase completa: revisá las columnas '
+                  'y los criterios antes de generar.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

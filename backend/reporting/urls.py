@@ -5,6 +5,7 @@ es la única excepción que ese archivo admite según su propio encabezado.
 
     GET    /api/reporting/datasets/          el catálogo para el constructor
     POST   /api/reporting/run/               ejecutar una definición suelta
+    POST   /api/reporting/interpret/         traducir un pedido dictado
     GET    /api/reporting/reports/           los guardados que puedo ver
     POST   /api/reporting/reports/           guardar uno
     GET    /api/reporting/reports/{id}/
@@ -16,7 +17,12 @@ es la única excepción que ese archivo admite según su propio encabezado.
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import DatasetListView, RunReportView, SavedReportViewSet
+from .views import (
+    DatasetListView,
+    InterpretVoiceView,
+    RunReportView,
+    SavedReportViewSet,
+)
 
 app_name = "reporting"
 
@@ -26,5 +32,6 @@ router.register("reports", SavedReportViewSet, basename="saved_report")
 urlpatterns = [
     path("datasets/", DatasetListView.as_view(), name="datasets"),
     path("run/", RunReportView.as_view(), name="run"),
+    path("interpret/", InterpretVoiceView.as_view(), name="interpret"),
     *router.urls,
 ]

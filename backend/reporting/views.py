@@ -2,6 +2,7 @@
 
     GET    /api/reporting/datasets/          qué se puede reportar y con qué filtros
     POST   /api/reporting/run/               ejecutar una definición suelta
+    POST   /api/reporting/interpret/         traducir un pedido dictado
     GET    /api/reporting/reports/           los reportes guardados que puedo ver
     POST   /api/reporting/reports/           guardar uno
     GET    /api/reporting/reports/{id}/      uno
@@ -35,11 +36,12 @@ from rest_framework.views import APIView
 from audit import services as bitacora
 from audit.actions import Action
 
-from . import datasets, delivery, exporters, query
+from . import datasets, delivery, exporters, query, voice
 from .models import SavedReport
 from .permissions import CanRunReports, CanSaveReports, CanShareReports
 from .serializers import (
     DatasetSerializer,
+    InterpretSerializer,
     RunSerializer,
     SavedReportSerializer,
 )
@@ -74,6 +76,43 @@ class RunReportView(APIView):
         serializer = RunSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return _run(request, serializer.validated_data)
+
+
+class InterpretVoiceView(APIView):
+    """Traduce un pedido dictado a una definición, **sin ejecutarla**.
+
+    Los mismos permisos que ejecutar y ninguno más: la voz es otra forma de
+    llenar el formulario, no una puerta nueva. El control del plan vive donde
+    siempre, en ``_run``, porque lo que cuesta no es interpretar sino llevarse
+    el archivo.
+
+    La respuesta vuelve siempre con 200, incluso cuando no entendió: «no te
+    entendí» es una respuesta válida de esta pantalla y no un error de la
+    petición. Lo que pasó se lee en ``understood``.
+    """
+
+    permission_classes = [IsAuthenticated, CanRunReports]
+
+    def post(self, request):
+        serializer = InterpretSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        propuesta = voice.interpret(
+            serializer.validated_data["text"],
+            request.user,
+            dataset_code=serializer.validated_data.get("dataset", ""),
+        )
+
+        definicion = propuesta.get("definition") or {}
+        bitacora.record(
+            request, Action.REPORT_VOICE, "reporting",
+            definicion.get("dataset", ""),
+            {"understood": propuesta["understood"],
+             "dataset": definicion.get("dataset", ""),
+             "filters": len(definicion.get("filters") or []),
+             "generated_by": propuesta["generated_by"]},
+        )
+        return Response(propuesta)
 
 
 class SavedReportViewSet(viewsets.ModelViewSet):
