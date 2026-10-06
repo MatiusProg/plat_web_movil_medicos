@@ -463,3 +463,35 @@ def test_editar_las_funciones_de_un_plan_no_borra_las_de_respaldo(
     assert plan.features["ai_chatbot"] is True
     assert plan.features["backup_interval_hours"] == 168
     assert plan.features["backup_retention"] == 4
+
+
+def test_quien_restaura_no_se_queda_afuera_aunque_sea_posterior_a_la_copia(
+    org_a,
+):
+    """Visto probando en la web el 06/10/26: un administrador creado después
+    de la copia restauraba, su cuenta se desactivaba y le borraba los roles,
+    y quedaba afuera a mitad de la sesión («User is inactive»)."""
+    from accounts.models import User
+
+    automatic.run_due()
+    (record,) = automaticas(org_a)
+    with tenant_context(org_a.id):
+        nuevo = User.objects.create_user(
+            email="nueva-admin@kolping.test", password="clave-de-prueba-1",
+            organization=org_a, first_name="Nueva", last_name="Admin",
+            document_number="9500",
+        )
+    dar_rol(nuevo, org_a, "admin-nueva", "Administración nueva", PERMISOS)
+
+    api = cliente(nuevo)
+    respuesta = api.post(reverse("backups:restore"),
+                         {"record": str(record.pk), "confirm": True},
+                         format="json")
+    assert respuesta.status_code == 200
+
+    with tenant_context(org_a.id):
+        nuevo.refresh_from_db()
+        assert nuevo.is_active is True
+        assert nuevo.has_permission("backups.backup.restore")
+    # Y la sesión sigue: la pantalla vuelve a cargar sin error.
+    assert api.get(reverse("backups:policy")).status_code == 200

@@ -206,7 +206,7 @@ def inspect(documento) -> dict:
     }
 
 
-def restore(documento, organization) -> dict:
+def restore(documento, organization, keep_user=None) -> dict:
     """Reemplaza los datos de ``organization`` con los del archivo.
 
     Todo o nada: una sola transacción. Si algo falla a mitad, la organización
@@ -216,6 +216,11 @@ def restore(documento, organization) -> dict:
     **Los usuarios se desactivan, no se borran**: la bitácora es inalterable,
     así que borrar un usuario que dejó un asiento es imposible en esta base.
     Se repone lo que el archivo trae y se da de baja lógica lo que no menciona.
+
+    **Quien restaura no se queda afuera** (``keep_user``). Si su cuenta es
+    posterior a la copia, desactivarla —y borrarle los roles— lo echaría a
+    mitad de la operación, sin nadie que pueda volver a entrar para
+    arreglarlo. Su cuenta y sus roles asignados se conservan.
 
     **La historia clínica y los pagos sólo se agregan** (``APPEND``), y lo que
     ellos apuntan se conserva en vez de borrarse (``_pinned``). El porqué de
@@ -255,7 +260,8 @@ def restore(documento, organization) -> dict:
                 with connection.constraint_checks_disabled():
                     # Lo que no se puede borrar porque lo apunta algo que
                     # sobrevive: la historia clínica, los pagos, los usuarios.
-                    fijadas = _pinned(organization)
+                    acceso = _acceso_de(keep_user)
+                    fijadas = _pinned(organization, acceso)
 
                     # Se limpia de abajo hacia arriba: primero lo que apunta.
                     for table in reversed(manifest.RESTORABLE):
@@ -277,13 +283,19 @@ def restore(documento, organization) -> dict:
                         if table.strategy == manifest.DEACTIVATE:
                             desactivadas[table.key] = _deactivate_absent(
                                 table, filas, organization,
+                                conservar=getattr(keep_user, "pk", None),
                             )
                         elif fijadas.get(table.key):
                             ausentes = _absent_pinned(filas, fijadas[table.key])
                             if ausentes:
                                 conservadas[table.key] = len(ausentes)
-                                cantidad = _deactivate(table, ausentes,
-                                                       organization)
+                                # El rol de quien restaura no se desactiva:
+                                # sin rol activo no tiene permisos.
+                                cantidad = _deactivate(
+                                    table,
+                                    ausentes - _role_ids(table, acceso),
+                                    organization,
+                                )
                                 if cantidad:
                                     desactivadas[table.key] = cantidad
 
@@ -326,7 +338,40 @@ def _motivo(error) -> str:
         return type(error).__name__
 
 
-def _pinned(organization) -> dict[str, set]:
+def _acceso_de(user) -> dict[str, set]:
+    """Los roles asignados de quien restaura y los permisos de esos roles.
+
+    Los permisos también: si el rol es posterior a la copia, el archivo no los
+    trae, y conservar el rol vacío lo dejaría adentro pero sin poder hacer
+    nada.
+    """
+    if user is None:
+        return {}
+    UserRole = apps.get_model("accounts", "UserRole")
+    RolePermission = apps.get_model("accounts", "RolePermission")
+    asignaciones = UserRole.objects.filter(user=user)
+    return {
+        "accounts.UserRole": set(asignaciones.values_list("pk", flat=True)),
+        "accounts.RolePermission": set(
+            RolePermission.objects
+            .filter(role_id__in=asignaciones.values("role_id"))
+            .values_list("pk", flat=True)
+        ),
+    }
+
+
+def _role_ids(table, acceso) -> set:
+    """Los roles de quien restaura, si ``table`` es la de roles."""
+    if table.key != "accounts.Role" or not acceso.get("accounts.UserRole"):
+        return set()
+    UserRole = apps.get_model("accounts", "UserRole")
+    return set(
+        UserRole.objects.filter(pk__in=acceso["accounts.UserRole"])
+        .values_list("role_id", flat=True)
+    )
+
+
+def _pinned(organization, semillas=None) -> dict[str, set]:
     """Las filas de cada tabla PURGE que no se pueden borrar, por clave.
 
     Una fila queda fijada si la apunta otra que sobrevive a la restauración:
@@ -340,6 +385,11 @@ def _pinned(organization) -> dict[str, set]:
         apps.get_model(t.app, t.model): t.key for t in manifest.TABLES
     }
     fijadas: dict[str, set] = {t.key: set() for t in purgables}
+    # Lo que se fija de entrada: el acceso de quien restaura. El bucle después
+    # fija lo que eso apunta, su rol.
+    for clave, pks in (semillas or {}).items():
+        if clave in fijadas:
+            fijadas[clave] |= set(pks)
 
     cambio = True
     while cambio:
@@ -393,7 +443,7 @@ def _deactivate(table, pks, organization) -> int:
     )
 
 
-def _deactivate_absent(table, filas, organization) -> int:
+def _deactivate_absent(table, filas, organization, conservar=None) -> int:
     """Desactiva las filas que el archivo no menciona. Ver ``manifest``.
 
     Devuelve cuántas. Una cuenta creada después del respaldo queda sin poder
@@ -402,6 +452,8 @@ def _deactivate_absent(table, filas, organization) -> int:
     """
     model = apps.get_model(table.app, table.model)
     presentes = {fila.get("pk") for fila in filas}
+    if conservar is not None:
+        presentes.add(conservar)
     return (
         model.objects
         .filter(organization=organization, is_active=True)

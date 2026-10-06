@@ -246,7 +246,8 @@ class RestoreBackupView(APIView):
         nombre = _nombre_del_origen(request)
 
         try:
-            resultado = services.restore(documento, organization)
+            resultado = services.restore(documento, organization,
+                                         keep_user=request.user)
         except services.BackupError as error:
             return Response({"code": error.code, "detail": error.detail},
                             status=status.HTTP_400_BAD_REQUEST)
