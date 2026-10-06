@@ -339,6 +339,52 @@ el intervalo, responde **429** con la fecha de la próxima.
 - **El intervalo es de la organización, no de cada administrador**: si no, dos
   administradores duplicarían la cuota.
 - **Sin plan vigente no se respalda**: no hay contrato que diga cuánto le toca.
+- **Las copias automáticas no cuentan** para este límite (ver abajo).
+
+### Copias automáticas (06/10/26)
+
+Hasta el 06/10 no existían: `backup_organization --all` decía servir «para una
+tarea nocturna», pero nada lo corría y el archivo quedaba en el disco del
+contenedor, que Railway borra en cada despliegue.
+
+| Plan | Frecuencia | Conserva |
+|---|---|---|
+| Básico | una por semana | las últimas 4 |
+| Pro | una por día | las últimas 7 |
+| Premium | una por día | las últimas 30 |
+
+- **Quién las corre:** `manage.py run_automatic_backups --loop`, que
+  `scripts/start.sh` lanza en segundo plano junto a gunicorn. Da una vuelta por
+  hora y respalda a quien le toca. Es idempotente y toma un candado de
+  PostgreSQL por organización, así que el contenedor viejo y el nuevo durante
+  un despliegue no duplican copias. `AUTOMATIC_BACKUPS=off` lo apaga.
+- **Dónde quedan:** en `backup_files`, **comprimidas y cifradas** con Fernet
+  (`backups/vault.py`), con RLS por inquilino. La clave es
+  `BACKUP_ENCRYPTION_KEY`; si falta, se deriva de `SECRET_KEY`, y cambiar
+  `SECRET_KEY` deja ilegibles las copias ya guardadas.
+- **Retención:** `features["backup_retention"]` (`tenancy/0006`). Al vencer se
+  borra el archivo y el registro queda en el historial («ya no se conserva»).
+- **Desde la plataforma:** web y móvil, en **Copias de seguridad**. Las
+  automáticas se descargan (`GET /api/backups/records/<id>/download/`, queda en
+  la bitácora) o se restauran sin subir nada (`inspect/` y `restore/` con
+  `{"record": id}`).
+
+### Qué entra en la copia, y la historia clínica
+
+Desde el 06/10 la copia lleva también **servicios, fichas, pagos, atenciones y
+enmiendas**: el manifiesto era del Sprint 1 y no las tenía. Además, restaurar
+una organización con una sola ficha fallaba con un 500. La prueba
+`test_toda_tabla_del_inquilino_esta_en_la_copia_o_explicada` impide que vuelva
+a pasar: toda tabla con `organization` tiene que estar en `manifest.TABLES` o
+explicada en `manifest.EXCLUDED`.
+
+**Pagos y atenciones son hechos, no estado** (estrategia `APPEND`): la
+restauración agrega los que falten y nunca los borra ni los modifica. La
+historia clínica es inalterable (US-24, con trigger en la base) y un pago es
+dinero cobrado en Stripe. Lo que esas filas apuntan —ficha, paciente,
+profesional, sucursal— se **conserva**: vuelve a los datos del archivo si el
+archivo lo trae y, si es posterior a la copia, se desactiva en vez de borrarse.
+La respuesta lo informa en `kept`.
 
 `tenancy/plans.py` es además el primer punto del código que consulta el plan
 de una organización. Hasta acá los límites y funciones de los planes

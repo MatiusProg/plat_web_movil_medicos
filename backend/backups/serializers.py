@@ -15,17 +15,26 @@ class BackupRecordSerializer(serializers.ModelSerializer):
         source="performed_by.email", read_only=True, default=None,
     )
     kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    trigger_label = serializers.CharField(source="get_trigger_display",
+                                          read_only=True)
     total_rows = serializers.IntegerField(read_only=True)
+    # Si la copia se puede bajar o restaurar desde el historial: sólo las
+    # automáticas que todavía conserva la retención del plan.
+    downloadable = serializers.SerializerMethodField()
     detail = serializers.SerializerMethodField()
 
     class Meta:
         model = BackupRecord
         fields = [
-            "id", "kind", "kind_label", "filename", "size_bytes",
+            "id", "kind", "kind_label", "trigger", "trigger_label",
+            "downloadable", "filename", "size_bytes",
             "total_rows", "detail", "checksum", "ip_address",
             "performed_by_email", "created_at",
         ]
         read_only_fields = fields
+
+    def get_downloadable(self, record):
+        return hasattr(record, "stored")
 
     def get_detail(self, record):
         """Las filas por tabla, con el nombre legible y sin las vacías.

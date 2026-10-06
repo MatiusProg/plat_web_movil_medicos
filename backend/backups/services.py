@@ -43,7 +43,7 @@ import logging
 
 from django.apps import apps
 from django.core import serializers
-from django.db import IntegrityError, connection, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.utils import timezone
 
 from tenancy.context import tenant_context
@@ -213,11 +213,13 @@ def restore(documento, organization) -> dict:
     queda como estaba — que es el único comportamiento aceptable para algo que
     empieza borrando.
 
-    **Los usuarios se desactivan, no se borran.** Es la única tabla con
-    tratamiento propio y el porqué está en ``manifest``: la bitácora es
-    inalterable, así que borrar un usuario que dejó un asiento es imposible en
-    esta base. Se repone lo que el archivo trae y se da de baja lógica lo que
-    no menciona.
+    **Los usuarios se desactivan, no se borran**: la bitácora es inalterable,
+    así que borrar un usuario que dejó un asiento es imposible en esta base.
+    Se repone lo que el archivo trae y se da de baja lógica lo que no menciona.
+
+    **La historia clínica y los pagos sólo se agregan** (``APPEND``), y lo que
+    ellos apuntan se conserva en vez de borrarse (``_pinned``). El porqué de
+    las dos cosas está en ``manifest``.
 
     **El archivo tiene que ser de esta organización.** Restaurar el respaldo de
     otra dentro de la propia importaría el padrón de pacientes de un centro
@@ -240,6 +242,7 @@ def restore(documento, organization) -> dict:
     borradas: dict[str, int] = {}
     desactivadas: dict[str, int] = {}
     escritas: dict[str, int] = {}
+    conservadas: dict[str, int] = {}
 
     try:
         with tenant_context(organization.id):
@@ -250,6 +253,10 @@ def restore(documento, organization) -> dict:
                 # de la misma tabla no se puede garantizar, y el hecho de que
                 # `users` se repone antes que `branches`, a la que apunta.
                 with connection.constraint_checks_disabled():
+                    # Lo que no se puede borrar porque lo apunta algo que
+                    # sobrevive: la historia clínica, los pagos, los usuarios.
+                    fijadas = _pinned(organization)
+
                     # Se limpia de abajo hacia arriba: primero lo que apunta.
                     for table in reversed(manifest.RESTORABLE):
                         if table.strategy != manifest.PURGE:
@@ -258,6 +265,7 @@ def restore(documento, organization) -> dict:
                         cantidad, _ = (
                             model.objects
                             .filter(organization=organization)
+                            .exclude(pk__in=fijadas.get(table.key, ()))
                             .delete()
                         )
                         borradas[table.key] = cantidad
@@ -270,20 +278,28 @@ def restore(documento, organization) -> dict:
                             desactivadas[table.key] = _deactivate_absent(
                                 table, filas, organization,
                             )
+                        elif fijadas.get(table.key):
+                            ausentes = _absent_pinned(filas, fijadas[table.key])
+                            if ausentes:
+                                conservadas[table.key] = len(ausentes)
+                                cantidad = _deactivate(table, ausentes,
+                                                       organization)
+                                if cantidad:
+                                    desactivadas[table.key] = cantidad
 
                 # Fuera del bloque pero dentro de la transacción: acá PostgreSQL
                 # comprueba lo que se dejó pendiente. Si el archivo tenía una
                 # referencia rota, salta ahora y la transacción entera se
                 # deshace.
                 connection.check_constraints()
-    except IntegrityError as error:
+    except (IntegrityError, DatabaseError) as error:
         # Un archivo con una referencia rota es un archivo malo, no una falla
         # del servidor: 400 con el motivo y no un 500 sin explicación. La
         # transacción ya se deshizo, así que la organización quedó como estaba.
         raise BackupError(
             "referencia_rota",
             "El respaldo tiene referencias que no cierran y no se pudo "
-            f"restaurar. No se modificó nada. Detalle: {error}",
+            f"restaurar. No se modificó nada. Detalle: {_motivo(error)}",
         ) from error
 
     return {
@@ -292,8 +308,89 @@ def restore(documento, organization) -> dict:
         "deleted": borradas,
         "deactivated": desactivadas,
         "written": escritas,
+        "kept": conservadas,
         "skipped": resumen["skipped"],
     }
+
+
+def _motivo(error) -> str:
+    """El texto del error, sin que armarlo pueda fallar.
+
+    ``ProtectedError`` arma su mensaje con el ``str()`` de las filas que
+    protegen, y el ``__str__`` de una ficha consulta otras tablas: dentro de
+    una transacción ya rota eso vuelve a fallar, y lo que llegaba era un 500.
+    """
+    try:
+        return str(error.args[0] if error.args else error)[:300]
+    except Exception:  # noqa: BLE001 - el mensaje no puede tumbar la respuesta
+        return type(error).__name__
+
+
+def _pinned(organization) -> dict[str, set]:
+    """Las filas de cada tabla PURGE que no se pueden borrar, por clave.
+
+    Una fila queda fijada si la apunta otra que sobrevive a la restauración:
+    una atención o un pago (``APPEND``), un usuario (``DEACTIVATE``), una
+    tabla que no se restaura o que no está en la copia, o una fila que a su
+    vez quedó fijada —la ficha de una atención fija a su paciente, y el
+    paciente, a su titular—. Por eso se repite hasta que nada cambia.
+    """
+    purgables = [t for t in manifest.RESTORABLE if t.strategy == manifest.PURGE]
+    clave_de = {
+        apps.get_model(t.app, t.model): t.key for t in manifest.TABLES
+    }
+    fijadas: dict[str, set] = {t.key: set() for t in purgables}
+
+    cambio = True
+    while cambio:
+        cambio = False
+        for table in purgables:
+            model = apps.get_model(table.app, table.model)
+            for rel in model._meta.related_objects:
+                if not (rel.one_to_many or rel.one_to_one):
+                    continue
+                referente = rel.related_model
+                campo = rel.field
+                consulta = referente._base_manager.filter(
+                    **{f"{campo.name}__isnull": False},
+                )
+                if any(f.name == "organization"
+                       for f in referente._meta.fields):
+                    consulta = consulta.filter(organization=organization)
+                clave_referente = clave_de.get(referente)
+                if clave_referente in fijadas:
+                    # Una tabla que se purga: sólo cuentan sus filas fijadas.
+                    consulta = consulta.filter(pk__in=fijadas[clave_referente])
+                valores = set(consulta.values_list(campo.attname, flat=True))
+                nuevas = valores - fijadas[table.key]
+                if nuevas:
+                    fijadas[table.key] |= nuevas
+                    cambio = True
+    return fijadas
+
+
+def _absent_pinned(filas, fijadas) -> set:
+    """Las fijadas que el archivo no trae: son posteriores al respaldo."""
+    presentes = {str(fila.get("pk")) for fila in filas}
+    return {pk for pk in fijadas if str(pk) not in presentes}
+
+
+def _deactivate(table, pks, organization) -> int:
+    """Da de baja lógica las filas indicadas, si la tabla tiene ``is_active``.
+
+    Un paciente o un profesional creado después del respaldo que ya tiene
+    historia clínica no se puede borrar; desactivarlo es lo más cerca de
+    «volver a ese momento» que la ley deja. Si la tabla no tiene baja lógica
+    —una ficha— queda como está.
+    """
+    model = apps.get_model(table.app, table.model)
+    if not any(f.name == "is_active" for f in model._meta.concrete_fields):
+        return 0
+    return (
+        model.objects
+        .filter(organization=organization, pk__in=pks, is_active=True)
+        .update(is_active=False)
+    )
 
 
 def _deactivate_absent(table, filas, organization) -> int:
@@ -325,10 +422,29 @@ def _write(table, filas, organization) -> int:
     if not filas:
         return 0
 
+    agregar = table.strategy == manifest.APPEND
+    if agregar:
+        # Sólo lo que falta: lo que ya está no se toca, ni para igualarlo.
+        model = apps.get_model(table.app, table.model)
+        existentes = {
+            str(pk) for pk in
+            model.objects.filter(organization=organization,
+                                 pk__in=[f.get("pk") for f in filas])
+            .values_list("pk", flat=True)
+        }
+        filas = [f for f in filas if str(f.get("pk")) not in existentes]
+        if not filas:
+            return 0
+
     escritas = 0
     for objeto in serializers.deserialize("json", json.dumps(filas),
                                           ignorenonexistent=True):
         objeto.object.organization_id = organization.id
+        if agregar:
+            objeto.object.save_base(raw=True, using="default",
+                                    force_insert=True)
+            escritas += 1
+            continue
         # `save_base` con `raw=True`: escribe la fila tal cual, sin disparar
         # `save()` del modelo. Hace falta porque varios modelos recalculan
         # campos al guardar —`Practitioner.search_name`, por ejemplo— y una

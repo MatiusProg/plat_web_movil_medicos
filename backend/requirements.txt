@@ -74,6 +74,10 @@ stripe==12.5.1
 # planes que no son Pro. Ver EMAIL_BACKEND en config/settings.py.
 django-anymail==15.2
 
+# Característica general 6: las copias automáticas se guardan cifradas con
+# Fernet. Ya venía como dependencia de otra; se fija porque ahora se usa.
+cryptography==50.0.1
+
 # ---------- Pruebas ----------
 # RNF-08 y criterio 4 de la Definición de Terminado: las pruebas de
 # aislamiento se conectan como app_user, nunca como postgres.

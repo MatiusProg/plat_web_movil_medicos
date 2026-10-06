@@ -40,6 +40,19 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def update(self, instance, validated_data):
+        # `features` se fusiona, no se reemplaza. Los formularios de planes
+        # (web y móvil) sólo conocen las funciones que se encienden y apagan;
+        # si reemplazaran, editar el precio borraría `backup_interval_hours` y
+        # `backup_retention`, y el Básico pasaría a respaldar sin límite. Para
+        # quitar una función se manda en false o null.
+        if "features" in validated_data:
+            validated_data["features"] = {
+                **(instance.features or {}),
+                **(validated_data["features"] or {}),
+            }
+        return super().update(instance, validated_data)
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(

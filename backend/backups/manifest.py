@@ -56,8 +56,23 @@ from dataclasses import dataclass
 #  creada después del respaldo queda sin poder entrar, que es lo que
 #  «volver a ese momento» significa en términos de acceso, y la cadena de
 #  auditoría no se rompe.
+#
+#  `APPEND` no borra ni modifica nada: sólo agrega las filas del archivo que
+#  no están. Es para lo que son **hechos**, no estado: una atención clínica
+#  firmada y un pago. La historia clínica es inalterable por ley y la base lo
+#  hace cumplir con un trigger (US-24): no se puede borrar una atención ni
+#  editar una firmada, tampoco para «volver a un momento». Un pago es dinero
+#  que se cobró —o se devolvió— en Stripe: volver su estado atrás en la base
+#  no lo vuelve atrás en el banco.
+#
+#  Que esas filas sobrevivan tiene una consecuencia: lo que ellas apuntan
+#  —la ficha, el paciente, el profesional, la sucursal— tampoco se puede
+#  borrar. La restauración lo **conserva**: lo actualiza con lo del archivo si
+#  el archivo lo trae, y lo desactiva si es posterior al respaldo (ver
+#  `services._pinned`).
 PURGE = "purge"
 DEACTIVATE = "deactivate"
+APPEND = "append"
 
 
 @dataclass(frozen=True)
@@ -96,6 +111,7 @@ TABLES: tuple[Table, ...] = (
     Table("catalog", "Branch", "Sucursales"),
     Table("catalog", "BranchHours", "Horarios de sucursal"),
     Table("catalog", "Specialty", "Especialidades"),
+    Table("catalog", "Service", "Servicios"),
     Table("catalog", "Practitioner", "Profesionales"),
     Table("catalog", "PractitionerSpecialty", "Especialidad de cada profesional"),
     Table("catalog", "PractitionerBranch", "Sucursal de cada profesional"),
@@ -107,6 +123,13 @@ TABLES: tuple[Table, ...] = (
     # ---------- Pacientes ----------
     Table("patients", "Patient", "Pacientes"),
     Table("patients", "PatientHistoryEntry", "Antecedentes"),
+
+    # ---------- Fichas, pagos e historia clínica (Sprint 2) ----------
+    Table("appointments", "Appointment", "Fichas"),
+    Table("payments", "Payment", "Pagos", strategy=APPEND),
+    Table("encounters", "Encounter", "Atenciones médicas", strategy=APPEND),
+    Table("encounters", "EncounterAmendment", "Enmiendas de atenciones",
+          strategy=APPEND),
 
     # ---------- Reportes ----------
     Table("reporting", "SavedReport", "Reportes guardados"),
@@ -132,5 +155,18 @@ TABLES: tuple[Table, ...] = (
 )
 
 RESTORABLE = tuple(table for table in TABLES if table.restore)
+
+# Tablas del inquilino que, a propósito, no entran en la copia. La prueba
+# `test_toda_tabla_del_inquilino_esta_en_la_copia_o_explicada` falla si
+# aparece una tabla nueva con `organization` que no esté ni en `TABLES` ni acá:
+# así no vuelve a pasar que un sprint agregue datos que el respaldo no lleva.
+EXCLUDED = {
+    # El registro de las copias y las copias automáticas: respaldar los
+    # respaldos multiplica el tamaño y restaurarlos borraría el historial.
+    "backups.BackupRecord": "es el historial de las copias, no un dato del centro",
+    "backups.StoredBackup": "son las propias copias automáticas",
+    # Se regeneran desde el catálogo con «Reindexar» (US-31).
+    "assistant.CatalogFragment": "índice del asistente; se regenera desde el catálogo",
+}
 
 BY_KEY = {table.key: table for table in TABLES}
