@@ -19,6 +19,7 @@ import '../../features/assistant/assistant_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
+import '../../features/backups/backups_screen.dart';
 import '../../features/dependents/dependent_form_screen.dart';
 import '../../features/dependents/dependents_screen.dart';
 import '../../features/clinical_record/clinical_record_screen.dart';
@@ -101,6 +102,7 @@ class Routes {
   static const String orgProfessionals = 'org-professionals';
   static const String orgAudit = 'org-audit';
   static const String orgReports = 'org-reports';
+  static const String orgBackups = 'org-backups';
   static const String orgUsers = 'org-users';
   static const String orgRoles = 'org-roles';
 }
@@ -242,6 +244,17 @@ GoRouter buildRouter(Session session) {
           permiso: 'reporting.report.run',
           titulo: 'Reportes',
           child: ReportsScreen(),
+        ),
+      ),
+
+      // ---------- Característica general 6: copias de seguridad ---------
+      GoRoute(
+        path: '/org/respaldos',
+        name: Routes.orgBackups,
+        builder: (context, state) => const ConPermiso(
+          permiso: 'backups.backup.create',
+          titulo: 'Copias de seguridad',
+          child: BackupsScreen(),
         ),
       ),
 
@@ -772,7 +785,7 @@ class _HomeScreen extends StatelessWidget {
   /// organización, profesional-: ninguno de los accesos de arriba tiene
   /// sentido para ellos hoy. Mensaje de paso, igual que la web todavía no
   /// tiene una pantalla propia por rol (eso es US-45, aparte).
-  /// Si sus permisos le abren al menos una de las nueve secciones.
+  /// Si sus permisos le abren al menos una de las secciones del centro.
   ///
   /// Se pregunta por permisos y no por rol a propósito: los roles los arma
   /// cada organización (US-04), y un rol nuevo con permiso de agendas tiene

@@ -18,10 +18,12 @@ repetida por un reintento del navegador— reemplace la organización.
 """
 
 import json
+import uuid
 
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -30,7 +32,7 @@ from rest_framework.views import APIView
 from audit import services as bitacora
 from audit.actions import Action
 
-from . import manifest, services
+from . import automatic, manifest, services
 from .models import BackupRecord
 from .permissions import CanCreateBackup, CanRestoreBackup
 from .policy import backup_policy
@@ -56,8 +58,34 @@ class BackupRecordViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             BackupRecord.objects
             .filter(organization=organization)
-            .select_related("performed_by")
+            .select_related("performed_by", "stored")
+            .defer("stored__content")
         )
+
+    @action(detail=True, methods=["get"])
+    def download(self, request, pk=None):
+        """Baja una copia automática guardada, descifrada."""
+        record = self.get_object()
+        try:
+            documento = automatic.read(record)
+        except services.BackupError as error:
+            return Response({"code": error.code, "detail": error.detail},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        contenido = services.to_bytes(documento)
+        bitacora.record(
+            request, Action.BACKUP_DOWNLOAD, "backup_records", str(record.pk),
+            {"filename": record.filename, "size_bytes": len(contenido)},
+        )
+        respuesta = HttpResponse(contenido, content_type="application/json")
+        respuesta["Content-Disposition"] = (
+            f'attachment; filename="{record.filename}"'
+        )
+        respuesta["X-Backup-Checksum"] = record.checksum
+        respuesta["Access-Control-Expose-Headers"] = (
+            "Content-Disposition, X-Backup-Checksum"
+        )
+        return respuesta
 
 
 class CreateBackupView(APIView):
@@ -127,11 +155,11 @@ class BackupPolicyView(APIView):
         organization = _organization_or_error(request)
         if isinstance(organization, Response):
             return organization
-        return Response(_politica(backup_policy(organization)))
+        return Response(_politica(backup_policy(organization), organization))
 
 
-def _politica(politica):
-    return {
+def _politica(politica, organization=None):
+    datos = {
         "plan_code": politica.plan_code,
         "plan_name": politica.plan_name,
         "interval_hours": politica.interval_hours,
@@ -140,6 +168,17 @@ def _politica(politica):
         "allowed_now": politica.allowed_now,
         "description": politica.describe(),
     }
+    if organization is not None:
+        auto = automatic.schedule(organization)
+        datos["automatic"] = {
+            "enabled": auto.enabled,
+            "interval_hours": auto.interval_hours,
+            "retention": auto.retention,
+            "last_at": auto.last_at,
+            "next_at": auto.next_at,
+            "description": auto.describe(),
+        }
+    return datos
 
 
 def _limite(politica):
@@ -204,7 +243,7 @@ class RestoreBackupView(APIView):
         if isinstance(documento, Response):
             return documento
 
-        nombre = getattr(request.FILES.get("file"), "name", "") or ""
+        nombre = _nombre_del_origen(request)
 
         try:
             resultado = services.restore(documento, organization)
@@ -231,6 +270,7 @@ class RestoreBackupView(APIView):
              "deleted": resultado["deleted"],
              "deactivated": resultado["deactivated"],
              "written": resultado["written"],
+             "kept": resultado["kept"],
              "skipped": resultado["skipped"]},
         )
 
@@ -265,6 +305,17 @@ def _leer_archivo(request):
     no es JSON válido devuelve 400 con el motivo, y no un 500: subir el archivo
     equivocado es lo más normal del mundo.
     """
+    record_id = request.data.get("record")
+    if record_id:
+        record = _copia_guardada(request, record_id)
+        if isinstance(record, Response):
+            return record
+        try:
+            return automatic.read(record)
+        except services.BackupError as error:
+            return Response({"code": error.code, "detail": error.detail},
+                            status=status.HTTP_404_NOT_FOUND)
+
     archivo = request.FILES.get("file")
     if archivo is not None:
         if archivo.size > MAX_UPLOAD_BYTES:
@@ -291,6 +342,54 @@ def _leer_archivo(request):
 
     return Response(
         {"code": "sin_archivo",
-         "detail": "Falta el respaldo: subilo en «file» o mandalo en «backup»."},
+         "detail": "Falta el respaldo: subilo en «file», mandalo en «backup» "
+                   "o elegí una copia guardada en «record»."},
         status=status.HTTP_400_BAD_REQUEST,
     )
+
+
+def _copia_guardada(request, record_id):
+    """El registro de una copia automática de **la propia** organización.
+
+    El filtro por organización es la segunda cerradura, además de RLS: el id
+    de la copia de otro centro médico tiene que dar 404, igual que uno que no
+    existe, y no revelar que existe.
+    """
+    organization = getattr(request.user, "organization", None)
+    record = (
+        BackupRecord.objects
+        .filter(organization=organization, pk=record_id,
+                kind=BackupRecord.Kind.BACKUP)
+        .first()
+        if organization is not None and _es_uuid(record_id) else None
+    )
+    if record is None:
+        return Response(
+            {"code": "copia_no_encontrada",
+             "detail": "No existe esa copia en tu organización."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return record
+
+
+def _es_uuid(valor) -> bool:
+    try:
+        uuid.UUID(str(valor))
+    except ValueError:
+        return False
+    return True
+
+
+def _nombre_del_origen(request):
+    """El nombre que queda en el registro de la restauración."""
+    archivo = request.FILES.get("file")
+    if archivo is not None:
+        return archivo.name or ""
+    record_id = request.data.get("record")
+    if record_id and _es_uuid(record_id):
+        nombre = (
+            BackupRecord.objects.filter(pk=record_id)
+            .values_list("filename", flat=True).first()
+        )
+        return nombre or ""
+    return ""

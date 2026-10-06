@@ -104,7 +104,7 @@ Future<void> montarPanel(WidgetTester tester, Session session) async {
 }
 
 void main() {
-  testWidgets('con todos los permisos se ven las diez secciones', (
+  testWidgets('con todos los permisos se ven las once secciones', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1200, 3200);
@@ -120,6 +120,7 @@ void main() {
       'catalog.professional.read',
       'audit.log.read',
       'reporting.report.run',
+      'backups.backup.create',
       'users.user.read',
       'users.role.read',
     ]);
@@ -130,6 +131,7 @@ void main() {
     expect(find.text('Sucursales'), findsOneWidget);
     expect(find.text('Bitácora'), findsOneWidget);
     expect(find.text('Reportes'), findsOneWidget);
+    expect(find.text('Copias de seguridad'), findsOneWidget);
     expect(find.text('Roles y permisos'), findsOneWidget);
   });
 

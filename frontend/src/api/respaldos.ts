@@ -19,12 +19,26 @@ export interface PoliticaRespaldo {
   next_available_at: string | null
   allowed_now: boolean
   description: string
+  /** Las que genera el sistema solo. Ver `backups/automatic.py`. */
+  automatic?: {
+    enabled: boolean
+    interval_hours: number | null
+    /** Cuántas conserva el plan. */
+    retention: number
+    last_at: string | null
+    next_at: string | null
+    description: string
+  }
 }
 
 export interface RegistroRespaldo {
   id: string
   kind: 'backup' | 'restore'
   kind_label: string
+  trigger: 'manual' | 'automatic'
+  trigger_label: string
+  /** Una automática que el plan todavía conserva: se baja o se restaura desde acá. */
+  downloadable: boolean
   filename: string
   size_bytes: number
   total_rows: number
@@ -66,19 +80,24 @@ async function errorDe(respuesta: Response): Promise<ErrorApi> {
 }
 
 /** Genera la copia y la baja como archivo. Devuelve el nombre del archivo. */
-export async function generarRespaldo({ token }: Contexto): Promise<string> {
-  const respuesta = await fetch(`${BASE}/backups/create/`, {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` },
-  })
+export const generarRespaldo = ({ token }: Contexto) =>
+  bajar(`${BASE}/backups/create/`, 'POST', token)
+
+/** Baja una copia automática guardada. */
+export const descargarCopia = (id: string, { token }: Contexto) =>
+  bajar(`${BASE}/backups/records/${id}/download/`, 'GET', token)
+
+async function bajar(url: string, method: 'GET' | 'POST', token?: string | null): Promise<string> {
+  const respuesta = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` } })
   if (!respuesta.ok) throw await errorDe(respuesta)
   const disposicion = respuesta.headers.get('Content-Disposition') ?? ''
   const nombre = /filename="([^"]+)"/.exec(disposicion)?.[1] ?? 'respaldo.json'
-  const url = URL.createObjectURL(await respuesta.blob())
-  const enlace = Object.assign(document.createElement('a'), { href: url, download: nombre })
+  const enlaceUrl = URL.createObjectURL(await respuesta.blob())
+  const enlace = Object.assign(document.createElement('a'), { href: enlaceUrl, download: nombre })
   document.body.appendChild(enlace)
   enlace.click()
   enlace.remove()
-  URL.revokeObjectURL(url)
+  URL.revokeObjectURL(enlaceUrl)
   return nombre
 }
 
@@ -97,6 +116,20 @@ async function subir<T>(ruta: string, archivo: File, { token }: Contexto, extra:
 export const inspeccionarRespaldo = (archivo: File, contexto: Contexto) =>
   subir<Inspeccion>('/backups/inspect/', archivo, contexto)
 
+export interface ResultadoRestauracion {
+  written: Record<string, number>
+  /** Lo posterior a la copia que la historia clínica o un pago no dejan borrar. */
+  kept: Record<string, number>
+}
+
 /** Reemplaza los datos de la organización con los del archivo. */
 export const restaurarRespaldo = (archivo: File, contexto: Contexto) =>
-  subir<{ written: Record<string, number> }>('/backups/restore/', archivo, contexto, { confirm: 'true' })
+  subir<ResultadoRestauracion>('/backups/restore/', archivo, contexto, { confirm: 'true' })
+
+/** Qué trae una copia automática del historial. No escribe nada. */
+export const inspeccionarCopia = (id: string, contexto: Contexto) =>
+  pedir<Inspeccion>('/backups/inspect/', { ...contexto, metodo: 'POST', cuerpo: { record: id } })
+
+/** Restaura desde una copia automática del historial, sin subir ningún archivo. */
+export const restaurarCopia = (id: string, contexto: Contexto) =>
+  pedir<ResultadoRestauracion>('/backups/restore/', { ...contexto, metodo: 'POST', cuerpo: { record: id, confirm: true } })

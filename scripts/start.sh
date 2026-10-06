@@ -27,6 +27,14 @@ python manage.py migrate --noinput
 echo "==> Recolectando archivos estáticos"
 python manage.py collectstatic --noinput --clear
 
+# Copias automáticas (característica general 6): un proceso de fondo que da
+# una vuelta por hora y respalda a quien le toca según su plan. Es idempotente
+# y toma un candado por organización, así que el contenedor viejo y el nuevo
+# conviviendo durante un despliegue no duplican copias. Se apaga con
+# AUTOMATIC_BACKUPS=off. Ver backups/automatic.py.
+echo "==> Lanzando las copias automáticas en segundo plano"
+python manage.py run_automatic_backups --loop &
+
 echo "==> Levantando gunicorn en el puerto ${PORT:-8000}"
 # exec: gunicorn reemplaza al script y recibe las señales de la plataforma
 # directamente. Sin exec, un reinicio de Railway mata el shell y deja el

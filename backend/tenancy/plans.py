@@ -50,12 +50,14 @@ PLAN_RULES = {
     "max_ai_queries_month": ("aplicado", "assistant/views.py · consulta al asistente"),
     "ai_chatbot": ("aplicado", "assistant/views.py y reindex_views.py · asistente y reindexado"),
     "report_export": ("aplicado", "reporting/views.py · salidas CSV, Excel, HTML y PDF y envío por correo"),
-    "backup_interval_hours": ("aplicado", "backups/policy.py · frecuencia de copias"),
+    "backup_interval_hours": ("aplicado", "backups/policy.py y automatic.py · frecuencia de copias manuales y automáticas"),
+    "backup_retention": ("aplicado", "backups/automatic.py · cuántas copias automáticas se conservan"),
     "noshow_prediction": ("pendiente", "predicción de inasistencia, US-35 a US-38 (Sprint 4)"),
     "ai_summaries": ("pendiente", "resúmenes por IA, US-39 a US-42 (Sprint 4)"),
     "online_payment": ("aplicado", "payments/views.py · checkout del pago en línea (US-18)"),
     "storage_mb": ("no_aplica", "el sistema no guarda archivos de la organización: "
-                                "las copias de seguridad se descargan, no se almacenan"),
+                                "las copias manuales se descargan, y las automáticas "
+                                "las limita backup_retention, no el espacio"),
 }
 
 # Rol que no cuenta como personal para ``max_users``.

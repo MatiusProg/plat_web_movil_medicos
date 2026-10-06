@@ -40,7 +40,7 @@ class SeccionDeOrganizacion {
   final String permiso;
 }
 
-/// Las nueve secciones, en el mismo orden que la barra lateral de la web.
+/// Las secciones, en el mismo orden que la barra lateral de la web.
 const seccionesDeOrganizacion = <SeccionDeOrganizacion>[
   // US-13 y US-14 — agendas y disponibilidad.
   SeccionDeOrganizacion(
@@ -98,6 +98,14 @@ const seccionesDeOrganizacion = <SeccionDeOrganizacion>[
     etiqueta: 'Reportes',
     ruta: '/org/reportes',
     permiso: 'reporting.report.run',
+  ),
+
+  // Característica general 6 — copias manuales, automáticas y restauración.
+  SeccionDeOrganizacion(
+    icono: Icons.backup_outlined,
+    etiqueta: 'Copias de seguridad',
+    ruta: '/org/respaldos',
+    permiso: 'backups.backup.create',
   ),
 
   // US-04 — usuarios, roles y permisos.

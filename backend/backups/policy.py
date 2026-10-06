@@ -10,13 +10,16 @@ La frecuencia depende del plan, y la declara el plan en sus funciones:
 Lo sembró ``tenancy/0005_backup_por_plan``; el superadministrador lo puede
 cambiar editando el plan.
 
-Tres decisiones:
+Cuatro decisiones:
 
 - **Sólo se limita generar la copia, nunca restaurar.** Recuperarse de un
   desastre no puede depender de cuánto paga el cliente.
 - **Se cuenta desde la última copia de la organización**, sea de quien sea:
   el límite es del centro médico, no de cada administrador. Si no, dos
   administradores duplican la cuota.
+- **Las copias automáticas no cuentan.** Las genera el sistema con su propio
+  calendario (ver ``automatic``); si gastaran la cuota, el Básico no podría
+  generar nunca una a mano, porque la semanal ya se la habría llevado.
 - **Sin plan vigente, no se respalda.** Una organización sin suscripción
   activa no tiene un contrato que diga cuánto le toca.
 """
@@ -69,7 +72,8 @@ def backup_policy(organization) -> BackupPolicy:
     intervalo = (plan.features or {}).get(INTERVAL_KEY)
     ultima = (
         BackupRecord.objects
-        .filter(organization=organization, kind=BackupRecord.Kind.BACKUP)
+        .filter(organization=organization, kind=BackupRecord.Kind.BACKUP,
+                trigger=BackupRecord.Trigger.MANUAL)
         .order_by("-created_at")
         .values_list("created_at", flat=True)
         .first()

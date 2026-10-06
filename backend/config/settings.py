@@ -260,6 +260,18 @@ AVAILABILITY_MAX_HORIZON_DAYS = env.int("AVAILABILITY_MAX_HORIZON_DAYS", default
 APPOINTMENT_HOLD_MINUTES = env.int("APPOINTMENT_HOLD_MINUTES", default=15)
 
 # --------------------------------------------------------------------------
+#  Característica general 6 — Copias automáticas
+# --------------------------------------------------------------------------
+# La clave con que se cifran las copias automáticas guardadas en la base. Una
+# clave de Fernet (`Fernet.generate_key()`). Si falta, se deriva de SECRET_KEY:
+# funciona, pero cambiar SECRET_KEY deja ilegibles las copias ya guardadas.
+# Ver `backups/vault.py`.
+BACKUP_ENCRYPTION_KEY = env("BACKUP_ENCRYPTION_KEY", default="")
+# El programador corre junto a gunicorn (scripts/start.sh). "off" lo apaga,
+# por ejemplo si se pasa a un servicio cron de Railway aparte.
+AUTOMATIC_BACKUPS = env("AUTOMATIC_BACKUPS", default="on")
+
+# --------------------------------------------------------------------------
 #  US-18 — Pago en línea
 # --------------------------------------------------------------------------
 # Las claves **no se versionan** (regla 11 del Sprint 2): .env y Railway.
