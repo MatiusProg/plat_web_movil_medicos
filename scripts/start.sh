@@ -33,7 +33,10 @@ python manage.py collectstatic --noinput --clear
 # conviviendo durante un despliegue no duplican copias. Se apaga con
 # AUTOMATIC_BACKUPS=off. Ver backups/automatic.py.
 echo "==> Lanzando las copias automáticas en segundo plano"
-python manage.py run_automatic_backups --loop &
+# -u: sin búfer. Escribiendo a un log y no a una terminal, Python junta la
+# salida en bloques de 8 KB y las líneas de cada vuelta no aparecían en los
+# logs de Railway: no se veía si las copias se estaban generando ni si fallaban.
+python -u manage.py run_automatic_backups --loop &
 
 echo "==> Levantando gunicorn en el puerto ${PORT:-8000}"
 # exec: gunicorn reemplaza al script y recibe las señales de la plataforma
