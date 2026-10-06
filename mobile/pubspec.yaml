@@ -39,6 +39,9 @@ dependencies:
   go_router: ^18.0.2
   url_launcher: ^6.3.3
   qr_flutter: ^4.1.0
+  # Dictado en el teléfono. Usa el reconocedor del sistema: el audio no sale
+  # del dispositivo y al backend sólo viaja el texto.
+  speech_to_text: ^7.3.0
 
 dev_dependencies:
   flutter_test:

@@ -275,3 +275,130 @@ Future<EnvioDeReporte> enviarReportePorCorreo(
     truncated: mapa['truncated'] == true,
   );
 }
+
+// --------------------------------------------------------------------------
+//  Pedir el reporte hablando
+// --------------------------------------------------------------------------
+//  El reconocimiento lo hace el teléfono y acá sólo viaja el texto. Lo que
+//  vuelve es una **propuesta**: se marca en el formulario y la persona
+//  confirma. Nada se ejecuta por haber hablado.
+
+/// Lo que el backend entendió de un pedido dictado.
+class InterpretacionDeVoz {
+  const InterpretacionDeVoz({
+    required this.understood,
+    required this.dataset,
+    required this.columns,
+    required this.filtros,
+    required this.format,
+    required this.resumen,
+    required this.sinResolver,
+    required this.generadoPor,
+  });
+
+  final bool understood;
+  final String dataset;
+  final List<String> columns;
+
+  /// Los criterios tal como llegaron, **sin etiqueta**: la etiqueta se arma
+  /// con el catálogo en [conEtiquetas], que es quien conoce los conjuntos.
+  final List<Map<String, dynamic>> filtros;
+
+  final String format;
+
+  /// La propuesta en palabras, armada por el backend sobre la definición ya
+  /// validada. Es lo que se le muestra a la persona antes de generar.
+  final String resumen;
+
+  /// Lo que se pidió y no existe en el catálogo.
+  final List<String> sinResolver;
+
+  /// `plantilla` significa que el modelo de lenguaje no participó.
+  final String generadoPor;
+
+  bool get porPlantilla => generadoPor != 'gemini';
+
+  factory InterpretacionDeVoz.fromJson(Map<String, dynamic> json) {
+    final definicion = json['definition'] as Map<String, dynamic>? ?? const {};
+    return InterpretacionDeVoz(
+      understood: json['understood'] == true,
+      dataset: definicion['dataset'] as String? ?? '',
+      columns: (definicion['columns'] as List? ?? const [])
+          .whereType<String>()
+          .toList(),
+      filtros: (definicion['filters'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList(),
+      format: definicion['format'] as String? ?? 'json',
+      resumen: json['spoken_summary'] as String? ?? '',
+      sinResolver: (json['unresolved'] as List? ?? const [])
+          .map((e) => '$e')
+          .toList(),
+      generadoPor: json['generated_by'] as String? ?? 'plantilla',
+    );
+  }
+
+  /// Los criterios con la etiqueta que muestra la lista, armada con el
+  /// catálogo del conjunto. Los que no correspondan a un filtro declarado se
+  /// descartan: el backend ya los validó, y esto cubre el caso de que la
+  /// pantalla tenga un catálogo más viejo que el servidor.
+  List<CriterioDeFiltro> conEtiquetas(ConjuntoDeDatos conjunto) {
+    final criterios = <CriterioDeFiltro>[];
+    for (final filtro in filtros) {
+      final campo = _primero(
+        conjunto.filters,
+        (f) => f.code == filtro['field'],
+      );
+      if (campo == null) continue;
+      final valor = filtro['value'];
+      final opcion = _primero(campo.choices, (o) => o.value == '$valor');
+      final etiquetaValor = opcion?.label ?? '$valor';
+      criterios.add(
+        CriterioDeFiltro(
+          field: campo.code,
+          operator: filtro['operator'] as String? ?? 'eq',
+          value: valor as Object,
+          etiqueta:
+              '${campo.label} ${_leible(filtro['operator'])} '
+              '$etiquetaValor',
+        ),
+      );
+    }
+    return criterios;
+  }
+}
+
+/// El primer elemento que cumple, o `null`. Equivale a `firstOrNull` de
+/// `package:collection`, que no es dependencia del proyecto.
+T? _primero<T>(Iterable<T> items, bool Function(T) cumple) {
+  for (final item in items) {
+    if (cumple(item)) return item;
+  }
+  return null;
+}
+
+String _leible(Object? operador) => switch (operador) {
+  'contains' => 'contiene',
+  'starts' => 'empieza con',
+  'lt' => 'menor que',
+  'lte' => 'menor o igual que',
+  'gt' => 'mayor que',
+  'gte' => 'mayor o igual que',
+  'in' => 'es alguno de',
+  _ => 'es',
+};
+
+/// Manda el texto dictado y devuelve la propuesta. No ejecuta nada.
+Future<InterpretacionDeVoz> interpretarPorVoz(
+  ApiClient client,
+  String texto, {
+  String dataset = '',
+}) async {
+  final data = await client.post(
+    '/reporting/interpret/',
+    body: {'text': texto, 'dataset': dataset},
+  );
+  return InterpretacionDeVoz.fromJson(
+    data as Map<String, dynamic>? ?? const {},
+  );
+}

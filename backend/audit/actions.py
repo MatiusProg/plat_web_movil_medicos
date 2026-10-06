@@ -59,6 +59,12 @@ class Action:
     REPORT_RUN = "report.run"
     REPORT_EMAIL = "report.email"
     REPORT_SAVE = "report.save"
+    # El reporte se pidió hablando. Se asienta el hecho y el conjunto que se
+    # interpretó, **nunca la frase dictada**: por el mismo motivo que el
+    # asistente no copia los síntomas, un pedido hablado puede nombrar a un
+    # paciente. Lo que termine ejecutándose ya queda en `REPORT_RUN` con sus
+    # filtros, que es donde corresponde.
+    REPORT_VOICE = "report.voice"
     REPORT_DELETE = "report.delete"
 
     # ---------- Asistente — US-31, US-32 y US-34 ------------------------
@@ -118,6 +124,7 @@ LABELS = {
     Action.HISTORY_READ: "Antecedentes consultados por un profesional",
     Action.REPORT_RUN: "Reporte generado",
     Action.REPORT_EMAIL: "Reporte enviado por correo",
+    Action.REPORT_VOICE: "Reporte pedido por voz",
     Action.REPORT_SAVE: "Reporte guardado",
     Action.REPORT_DELETE: "Reporte eliminado",
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",

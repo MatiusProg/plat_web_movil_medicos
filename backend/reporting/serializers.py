@@ -177,3 +177,16 @@ class SavedReportSerializer(serializers.ModelSerializer):
         if "definition" in validated_data:
             validated_data["dataset"] = validated_data["definition"]["dataset"]
         return super().update(instance, validated_data)
+
+
+class InterpretSerializer(serializers.Serializer):
+    """Lo que llega del micrófono: texto ya transcrito por el dispositivo.
+
+    ``dataset`` es opcional y sólo da contexto —el conjunto que la pantalla
+    tenía abierto cuando se habló—; no obliga a nada, porque alguien puede
+    dictar algo de otro conjunto sin cambiar de pestaña.
+    """
+
+    text = serializers.CharField(max_length=500, trim_whitespace=True)
+    dataset = serializers.CharField(required=False, allow_blank=True,
+                                    max_length=40)
