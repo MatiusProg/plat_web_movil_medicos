@@ -327,9 +327,12 @@ def test_si_una_organizacion_falla_las_demas_se_respaldan(
 
 
 def test_con_otra_clave_la_copia_no_se_lee(org_a):
-    automatic.run_due()
+    from cryptography.fernet import Fernet
+
+    with override_settings(BACKUP_ENCRYPTION_KEY=Fernet.generate_key().decode()):
+        automatic.run_due()
     (record,) = automaticas(org_a)
-    with override_settings(BACKUP_ENCRYPTION_KEY="x" * 43 + "="):
+    with override_settings(BACKUP_ENCRYPTION_KEY=Fernet.generate_key().decode()):
         with tenant_context(org_a.id), pytest.raises(services.BackupError) as e:
             automatic.read(record)
     assert e.value.code == "copia_ilegible"
@@ -495,3 +498,25 @@ def test_quien_restaura_no_se_queda_afuera_aunque_sea_posterior_a_la_copia(
         assert nuevo.has_permission("backups.backup.restore")
     # Y la sesión sigue: la pantalla vuelve a cargar sin error.
     assert api.get(reverse("backups:policy")).status_code == 200
+
+
+def test_con_la_clave_propia_se_leen_las_cifradas_antes_con_la_derivada(org_a):
+    """Producción, 06/10/26: el despliegue respaldó antes de que se cargara
+    BACKUP_ENCRYPTION_KEY. Esas copias se tienen que poder seguir leyendo."""
+    from cryptography.fernet import Fernet
+
+    with override_settings(BACKUP_ENCRYPTION_KEY=""):
+        automatic.run_due()
+    (vieja,) = automaticas(org_a)
+
+    nueva_clave = Fernet.generate_key().decode()
+    with override_settings(BACKUP_ENCRYPTION_KEY=nueva_clave):
+        with tenant_context(org_a.id):
+            assert automatic.read(vieja)["checksum"] == vieja.checksum
+        # Y lo nuevo se cifra con la clave propia: sin ella no se lee.
+        atrasar_automaticas(org_a, 24 * 7)
+        automatic.run_due()
+    nueva = automaticas(org_a)[-1]
+    with override_settings(BACKUP_ENCRYPTION_KEY=""):
+        with tenant_context(org_a.id), pytest.raises(services.BackupError):
+            automatic.read(nueva)
