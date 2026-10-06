@@ -42,6 +42,7 @@ dependencies:
   # Dictado en el teléfono. Usa el reconocedor del sistema: el audio no sale
   # del dispositivo y al backend sólo viaja el texto.
   speech_to_text: ^7.3.0
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

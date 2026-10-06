@@ -9,10 +9,11 @@
 /// tocar una línea de Dart. Por eso esta pantalla no tiene ninguna lista de
 /// campos escrita a mano.
 ///
-/// **Exportar en un teléfono es mandar un correo.** El backend genera xlsx,
-/// pdf, html y csv, pero bajar un archivo dentro de la aplicación obliga a
-/// pedir permisos de almacenamiento y a elegir dónde guardarlo. `recipients`
-/// existe justo para esto: el archivo se arma en el servidor y llega al correo.
+/// **Exportar es bajar el archivo o mandarlo por correo.** El backend genera
+/// xlsx, pdf, html y csv. [descargarReporte] lo baja tal cual —los bytes que
+/// arma el servidor, sin pasar por JSON— y la pantalla lo guarda en Descargas
+/// y lo abre (`core/files/archivos.dart`). El correo sigue para mandárselo a
+/// otra persona.
 library;
 
 import '../../core/api/client.dart';
@@ -240,9 +241,54 @@ class EnvioDeReporte {
   final bool truncated;
 }
 
-/// Genera el archivo en el servidor y lo manda por correo.
+/// Genera el archivo en el servidor y lo baja.
 ///
-/// **No descarga nada**: ver el encabezado del módulo.
+/// Mismo pedido que la vista previa, con otro `format`: lo que se descarga es
+/// exactamente lo que se vio, pero con todas las filas.
+Future<ArchivoRecibido> descargarReporte(
+  ApiClient client, {
+  required String dataset,
+  required List<String> columns,
+  required String format,
+  List<CriterioDeFiltro> filters = const [],
+  List<String> orderBy = const [],
+}) =>
+    client.download(
+      'POST',
+      '/reporting/run/',
+      body: {
+        'dataset': dataset,
+        'columns': columns,
+        'filters': [for (final f in filters) f.toJson()],
+        'order_by': orderBy,
+        'format': format,
+      },
+    );
+
+/// Con qué nombre se guarda un reporte bajado: el del backend más el momento,
+/// `pacientes-20261006-0112.xlsx`.
+///
+/// El momento porque el backend lo nombra por el conjunto: sin él, el segundo
+/// reporte de pacientes del día se llamaría `pacientes (2).xlsx` y nadie
+/// sabría cuál es cuál.
+String nombreDeReporte(
+  ArchivoRecibido archivo, {
+  required String dataset,
+  required String format,
+  DateTime? ahora,
+}) {
+  final base = archivo.nombre ?? '$dataset.$format';
+  final punto = base.lastIndexOf('.');
+  final nombre = punto > 0 ? base.substring(0, punto) : base;
+  final extension = punto > 0 ? base.substring(punto) : '.$format';
+  final t = ahora ?? DateTime.now();
+  String dos(int n) => n.toString().padLeft(2, '0');
+  final momento =
+      '${t.year}${dos(t.month)}${dos(t.day)}-${dos(t.hour)}${dos(t.minute)}';
+  return '$nombre-$momento$extension';
+}
+
+/// Genera el archivo en el servidor y lo manda por correo.
 Future<EnvioDeReporte> enviarReportePorCorreo(
   ApiClient client, {
   required String dataset,

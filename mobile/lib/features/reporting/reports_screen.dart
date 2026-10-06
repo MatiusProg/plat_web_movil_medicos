@@ -11,18 +11,22 @@
 ///    con `format: json` y se muestran tal como vinieron, ya formateadas. El
 ///    móvil no ordena, no recorta ni convierte fechas: si lo hiciera, la
 ///    pantalla y el Excel dirían cosas distintas sobre los mismos datos.
-/// 2. **Exportar es mandar un correo.** El archivo se arma en el servidor.
-///    Bajarlo dentro de la aplicación obliga a permisos de almacenamiento y a
-///    un selector de carpetas, y no agrega nada: el reporte se comparte.
+/// 2. **Exportar es bajar el archivo, o mandarlo por correo.** El archivo se
+///    arma en el servidor; «Descargar» lo guarda en Descargas, lo lista abajo
+///    como descargado y lo abre con la aplicación que corresponda. «Enviar»
+///    se lo manda a otra persona.
 /// 3. **La tabla scrollea sola en horizontal.** Un reporte de ocho columnas no
 ///    entra en un teléfono, y comprimirlas hasta que entren lo vuelve
 ///    ilegible. Se lee deslizando, como una planilla.
 library;
 
+import 'dart:io' show FileSystemException;
+
 import 'package:flutter/material.dart';
 
 import '../../core/api/client.dart';
 import '../../core/api/errors.dart';
+import '../../core/files/archivos.dart';
 import '../../core/session/session_scope.dart';
 import '../../core/widgets/organization_drawer.dart';
 import 'reporting_api.dart';
@@ -43,8 +47,57 @@ const _operadores = <String, String>{
 
 String _operador(String code) => _operadores[code] ?? code;
 
+/// Un reporte ya bajado al teléfono.
+class ReporteDescargado {
+  const ReporteDescargado({
+    required this.nombre,
+    required this.ruta,
+    required this.formato,
+    required this.conjunto,
+  });
+
+  final String nombre;
+  final String ruta;
+  final String formato;
+  final String conjunto;
+}
+
+/// Los descargados de esta sesión de la aplicación. Fuera del estado de la
+/// pantalla para que salir de Reportes y volver no los pierda; los archivos
+/// en sí quedan en Descargas aunque se cierre la aplicación.
+final List<ReporteDescargado> _descargadosDeLaSesion = [];
+
+IconData _iconoDeFormato(String formato) => switch (formato) {
+  'xlsx' => Icons.table_chart_outlined,
+  'pdf' => Icons.picture_as_pdf_outlined,
+  'html' => Icons.language,
+  'csv' => Icons.grid_on,
+  _ => Icons.insert_drive_file_outlined,
+};
+
+String _nombreDeFormato(String formato) => switch (formato) {
+  'xlsx' => 'Excel',
+  'pdf' => 'PDF',
+  'html' => 'HTML',
+  'csv' => 'CSV',
+  _ => formato.toUpperCase(),
+};
+
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key, this.client, this.dictado});
+  const ReportsScreen({
+    super.key,
+    this.client,
+    this.dictado,
+    this.guardado,
+    this.abridor,
+  });
+
+  /// Dónde se guarda lo que se descarga y con qué se abre. Se inyectan para
+  /// probar sin tocar el disco ni lanzar otra aplicación.
+  @visibleForTesting
+  final GuardadoDeArchivos? guardado;
+  @visibleForTesting
+  final AbridorDeArchivos? abridor;
 
   @visibleForTesting
   final ApiClient? client;
@@ -69,6 +122,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   final List<CriterioDeFiltro> _criterios = [];
 
   ResultadoDeReporte? _resultado;
+  late final GuardadoDeArchivos _guardado =
+      widget.guardado ?? const GuardadoEnDescargas();
+  late final AbridorDeArchivos _abridor =
+      widget.abridor ?? const AbridorDelSistema();
   bool _cargando = false;
   bool _ejecutando = false;
   String? _error;
@@ -264,6 +321,75 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool get _conExportar =>
       SessionScope.maybeOf(context)?.incluyeExportarReportes ?? true;
 
+  /// Baja el reporte completo en el formato elegido, lo guarda en Descargas,
+  /// lo suma a «Descargados» y ofrece abrirlo.
+  Future<void> _descargar() async {
+    final conjunto = _conjunto;
+    final catalogo = _catalogo;
+    if (conjunto == null || catalogo == null || _columnas.isEmpty) return;
+
+    final formato = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => _ElegirFormato(formatos: catalogo.formats),
+    );
+    if (formato == null || !mounted) return;
+
+    setState(() {
+      _ejecutando = true;
+      _error = null;
+    });
+    try {
+      final archivo = await descargarReporte(
+        client,
+        dataset: conjunto.code,
+        columns: _columnasEnOrden(conjunto),
+        filters: _criterios,
+        format: formato,
+      );
+      final nombre = nombreDeReporte(
+        archivo,
+        dataset: conjunto.code,
+        format: formato,
+      );
+      final ruta = await _guardado.guardar(nombre, archivo.bytes);
+      final descargado = ReporteDescargado(
+        nombre: ruta.split('/').last,
+        ruta: ruta,
+        formato: formato,
+        conjunto: conjunto.label,
+      );
+      if (!mounted) return;
+      setState(() => _descargadosDeLaSesion.insert(0, descargado));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Descargado en Descargas: ${descargado.nombre}'),
+          action: SnackBarAction(
+            label: 'Abrir',
+            onPressed: () => _abrir(descargado),
+          ),
+        ),
+      );
+    } on ApiError catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } on FileSystemException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _ejecutando = false);
+    }
+  }
+
+  Future<void> _abrir(ReporteDescargado descargado) async {
+    final problema = await _abridor.abrir(descargado.ruta);
+    if (problema == null || !mounted) return;
+    // Reemplaza al aviso de «Descargado», si sigue a la vista: si no, el
+    // motivo esperaría en cola a que ése se vaya.
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(problema)));
+  }
+
   Future<void> _enviarPorCorreo() async {
     final conjunto = _conjunto;
     final catalogo = _catalogo;
@@ -323,7 +449,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Text(
                   'Armá el reporte con las columnas y los criterios que '
                   'necesites, o pedilo hablando. La vista previa muestra las '
-                  'primeras filas; el archivo completo se manda por correo.',
+                  'primeras filas; el archivo completo se descarga o se manda '
+                  'por correo.',
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
@@ -443,19 +570,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   const SizedBox(height: 24),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _columnas.isEmpty || _ejecutando
-                              ? null
-                              : _ejecutar,
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Ejecutar'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed:
+                          _columnas.isEmpty || _ejecutando ? null : _ejecutar,
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Ejecutar'),
+                    ),
+                  ),
+                  // Descargar y enviar son exportar: sólo si el plan lo incluye.
+                  if (_conExportar) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _columnas.isEmpty || _ejecutando
+                                ? null
+                                : _descargar,
+                            icon: const Icon(Icons.download),
+                            label: const Text('Descargar'),
+                          ),
                         ),
-                      ),
-                      // Enviar es exportar: sólo si el plan lo incluye.
-                      if (_conExportar) ...[
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
@@ -467,12 +604,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           ),
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+                  ],
                   if (!_conExportar) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Tu plan no incluye exportar reportes: puedes verlos acá, pero no enviarlos.',
+                      'Tu plan no incluye exportar reportes: puedes verlos acá, pero no descargarlos ni enviarlos.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -489,8 +626,73 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     maxRows: catalogo?.maxRows ?? 0,
                   ),
                 ],
+
+                if (_descargadosDeLaSesion.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _Titulo('Descargados (${_descargadosDeLaSesion.length})'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Quedan en la carpeta Descargas del teléfono.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final d in _descargadosDeLaSesion)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: Icon(_iconoDeFormato(d.formato)),
+                        title: Text(
+                          d.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${d.conjunto} · ${_nombreDeFormato(d.formato)} · '
+                          'Descargado',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () => _abrir(d),
+                          child: const Text('Abrir'),
+                        ),
+                        onTap: () => _abrir(d),
+                      ),
+                    ),
+                ],
               ],
             ),
+    );
+  }
+}
+
+/// Elegir en qué formato bajar el reporte. Los formatos vienen del catálogo.
+class _ElegirFormato extends StatelessWidget {
+  const _ElegirFormato({required this.formatos});
+
+  final List<String> formatos;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Descargar el reporte',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          for (final formato in formatos)
+            ListTile(
+              leading: Icon(_iconoDeFormato(formato)),
+              title: Text(_nombreDeFormato(formato)),
+              onTap: () => Navigator.of(context).pop(formato),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }

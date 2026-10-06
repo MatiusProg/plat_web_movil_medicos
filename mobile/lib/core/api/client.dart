@@ -33,6 +33,19 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 import 'errors.dart';
 
+/// Un archivo bajado del backend: un reporte exportado, por ejemplo.
+class ArchivoRecibido {
+  const ArchivoRecibido({required this.bytes, this.nombre, this.tipo});
+
+  final List<int> bytes;
+
+  /// El de `Content-Disposition`, o `null` si el backend no lo mandó.
+  final String? nombre;
+
+  /// El `Content-Type`.
+  final String? tipo;
+}
+
 /// Lo que el cliente necesita saber de la sesión, sin depender de ella.
 ///
 /// La implementa `Session`. Está declarada acá y no allá para romper el ciclo:
@@ -88,10 +101,66 @@ class ApiClient {
     String path, {
     Object? body,
     bool authenticated = true,
+  }) async {
+    final response = await _exchange(method, path,
+        body: body, authenticated: authenticated);
+
+    if (response.statusCode == 204 || response.body.isEmpty) {
+      if (response.statusCode >= 400) {
+        throw ApiError.fromResponse(response.statusCode, null);
+      }
+      return null;
+    }
+
+    final decoded = _decode(response);
+
+    if (response.statusCode >= 400) {
+      throw ApiError.fromResponse(response.statusCode, decoded);
+    }
+
+    return decoded;
+  }
+
+  /// Pide un archivo y lo devuelve tal como vino: los bytes exactos y el
+  /// nombre de `Content-Disposition`.
+  ///
+  /// Aparte de [send] porque un Excel o un PDF no son JSON: decodificarlos y
+  /// volver a armarlos los rompería. Los errores sí llegan en JSON y se
+  /// traducen igual que en [send].
+  Future<ArchivoRecibido> download(
+    String method,
+    String path, {
+    Object? body,
+  }) async {
+    final response = await _exchange(method, path,
+        body: body, accept: '*/*');
+
+    if (response.statusCode >= 400) {
+      throw ApiError.fromResponse(response.statusCode, _decode(response));
+    }
+
+    final disposicion = response.headers['content-disposition'] ?? '';
+    final nombre =
+        RegExp(r'filename="?([^";]+)"?').firstMatch(disposicion)?.group(1);
+    return ArchivoRecibido(
+      bytes: response.bodyBytes,
+      nombre: nombre,
+      tipo: response.headers['content-type'],
+    );
+  }
+
+  /// Arma la petición con los encabezados de sesión y organización, la manda
+  /// y reintenta una vez ante un 401.
+  Future<http.Response> _exchange(
+    String method,
+    String path, {
+    Object? body,
+    bool authenticated = true,
+    String accept = 'application/json',
     bool retrying = false,
   }) async {
     final request = http.Request(method, Uri.parse('${Config.apiBaseUrl}$path'))
-      ..headers['Accept'] = 'application/json';
+      ..headers['Accept'] = accept;
 
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
@@ -128,31 +197,18 @@ class ApiClient {
     // UNA vez; si vuelve a fallar, la sesión se terminó de verdad.
     if (response.statusCode == 401 && authenticated && auth != null) {
       if (!retrying) {
-        return send(
+        return _exchange(
           method,
           path,
           body: body,
           authenticated: authenticated,
+          accept: accept,
           retrying: true,
         );
       }
       await auth!.onSessionExpired();
     }
-
-    if (response.statusCode == 204 || response.body.isEmpty) {
-      if (response.statusCode >= 400) {
-        throw ApiError.fromResponse(response.statusCode, null);
-      }
-      return null;
-    }
-
-    final decoded = _decode(response);
-
-    if (response.statusCode >= 400) {
-      throw ApiError.fromResponse(response.statusCode, decoded);
-    }
-
-    return decoded;
+    return response;
   }
 
   Object? _decode(http.Response response) {

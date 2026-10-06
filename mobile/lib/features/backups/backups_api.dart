@@ -15,10 +15,12 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import '../../core/api/client.dart';
 import '../../core/api/paginacion.dart';
+
+// El guardado en Descargas vive en core/files: lo comparten los reportes.
+export '../../core/files/archivos.dart' show GuardadoDeArchivos, GuardadoEnDescargas;
 
 DateTime? _fecha(Object? valor) =>
     valor is String ? DateTime.tryParse(valor)?.toLocal() : null;
@@ -288,47 +290,4 @@ String nombreDeCopia(Map<String, dynamic> documento) {
       ? 'copia'
       : '${m[1]}${m[2]}${m[3]}-${m[4]}${m[5]}';
   return 'respaldo-$slug-$momento.json';
-}
-
-// --------------------------------------------------------------------------
-//  Guardar el archivo en el teléfono
-// --------------------------------------------------------------------------
-
-/// Dónde termina una copia bajada. Se inyecta para probar sin disco.
-abstract class GuardadoDeArchivos {
-  /// Guarda y devuelve la ruta donde quedó.
-  Future<String> guardar(String nombre, List<int> bytes);
-}
-
-/// La carpeta pública de Descargas, donde la persona la encuentra con el
-/// administrador de archivos y la puede mandar a donde quiera.
-///
-/// Sin dependencias ni permisos: desde Android 11 una aplicación puede crear
-/// sus propios archivos en `Download/` sin pedir nada. Si el nombre ya existe
-/// —una copia del mismo minuto, o de una instalación anterior— se agrega un
-/// número en vez de pisarla.
-class GuardadoEnDescargas implements GuardadoDeArchivos {
-  const GuardadoEnDescargas({this.carpeta = '/storage/emulated/0/Download'});
-
-  final String carpeta;
-
-  @override
-  Future<String> guardar(String nombre, List<int> bytes) async {
-    final base = nombre.endsWith('.json')
-        ? nombre.substring(0, nombre.length - 5)
-        : nombre;
-    var archivo = File('$carpeta/$base.json');
-    for (var n = 2; await archivo.exists(); n++) {
-      archivo = File('$carpeta/$base ($n).json');
-    }
-    try {
-      await archivo.writeAsBytes(bytes, flush: true);
-    } on FileSystemException {
-      throw const FileSystemException(
-        'El teléfono no dejó guardar la copia en Descargas. Bajala desde la '
-        'plataforma web.',
-      );
-    }
-    return archivo.path;
-  }
 }
