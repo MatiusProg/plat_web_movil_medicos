@@ -26,7 +26,7 @@ function conservado(resultado: ResultadoRestauracion, inspeccion: Inspeccion) {
   const partes = Object.entries(resultado.kept ?? {}).filter(([, n]) => n > 0)
     .map(([t, n]) => `${n} ${(inspeccion.labels[t] ?? t).toLowerCase()}`)
   return partes.length
-    ? ` Se conservaron ${partes.join(', ')} posteriores a la copia porque tienen historia clínica o pagos, que no se borran; los que tienen baja lógica quedaron inactivos.`
+    ? ` Se conservaron ${partes.join(', ')} posteriores a la copia, porque no se pueden borrar: la historia clínica, los pagos o tu propio acceso dependen de ellos. Los que tienen baja lógica quedaron inactivos.`
     : ''
 }
 
