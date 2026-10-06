@@ -1,6 +1,6 @@
 ﻿param(
     [string[]]$Caso = @(),
-    # Borra el diagrama de tiempo del caso de uso y lo vuelve a generar.
+    # Rehace el paquete entero: todos los diagramas de tiempo.
     [switch]$Rehacer,
     [string]$Modelo = (Join-Path $PSScriptRoot '..\docs\diagramas\PlataformaMedica.eapx')
 )
@@ -21,8 +21,8 @@
 #   - Partitions = las franjas del eje Y; StateTransitions = los escalones.
 #     Ninguna de las dos tiene Update(): se guardan con el del elemento.
 #   - AddNew persiste solo y Partitions.Count se relee en 0: correr dos veces
-#     sobre el mismo elemento DUPLICA las franjas. Por eso el subpaquete del
-#     diagrama se rehace entero.
+#     sobre el mismo elemento DUPLICA las franjas. Por eso nunca se escribe
+#     sobre una linea de vida que ya existe.
 #   - La regla va de 0 a 100 estirada al ancho: 1400 px (~14 px por unidad),
 #     rotulos cortos, la ultima marca en 84 como mucho.
 #   - La restriccion va SIN llaves: las pone EA.
@@ -33,15 +33,19 @@ trap { Salir-ConError $_ }
 
 $X = 40; $ANCHO = 1400; $Y0 = -60; $FRANJA = 34; $CABEZA = 40; $SEPARACION = 50
 
-# Siempre se rehace el paquete entero: las franjas (Partitions) no se pueden
-# deduplicar, y correr dos veces sobre la misma linea de vida las duplica.
-$sub = Get-PaqueteTipo 'Sprint 2 - 2.1.4.4 Tiempo' $true
+# Las franjas (Partitions) no se pueden deduplicar: correr dos veces sobre la
+# misma linea de vida las duplica. Por eso un diagrama que ya existe no se
+# toca (asi se conservan los retoques a mano) y cada diagrama nuevo crea sus
+# propias lineas de vida. Para regenerar uno, borrarlo antes con sus
+# elementos, o rehacer el paquete entero con -Rehacer.
+$sub = Get-PaqueteTipo 'Sprint 2 - 2.1.4.4 Tiempo' $Rehacer
 
 
 foreach ($clave in (Claves-Casos $Caso)) {
     $c = $CASOS_SPRINT2[$clave]
     if (-not $c.tiempo) { Write-Output "  $($c.cu): no es transaccional, no lleva diagrama de tiempo"; continue }
     $nomDia = "2.1.4.4 Tiempo - $($c.cu) $($c.nombre)"
+    if (Get-Diagrama $sub $nomDia) { Write-Output "  $nomDia ya existe, no se toca"; continue }
     $dia = $sub.Diagrams.AddNew($nomDia, 'Timing')
     [void]$dia.Update(); $sub.Diagrams.Refresh()
 
