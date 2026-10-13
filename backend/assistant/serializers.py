@@ -38,3 +38,32 @@ class SpecialtySuggestionSerializer(serializers.Serializer):
     id = serializers.CharField()
     name = serializers.CharField()
     similarity = serializers.FloatField()
+
+
+class SlotsRequestSerializer(serializers.Serializer):
+    """Entrada de ``POST /api/assistant/slots/`` (US-33).
+
+    ``preference`` es lo que el paciente dijo del horario, tal cual: "el
+    jueves por la tarde". Lo interpreta ``preferences.parse``, con reglas.
+    """
+
+    specialty = serializers.UUIDField()
+    preference = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, trim_whitespace=True,
+        default="",
+    )
+    branch = serializers.UUIDField(required=False, allow_null=True, default=None)
+
+
+class BookFromAssistantSerializer(serializers.Serializer):
+    """Entrada de ``POST /api/assistant/book/`` (US-33).
+
+    Los mismos campos que la reserva de US-17. ``patient`` es opcional: sin
+    él, la ficha es del titular de la cuenta.
+    """
+
+    patient = serializers.UUIDField(required=False, allow_null=True, default=None)
+    practitioner = serializers.UUIDField()
+    branch = serializers.UUIDField()
+    schedule = serializers.UUIDField()
+    starts_at = serializers.DateTimeField()
