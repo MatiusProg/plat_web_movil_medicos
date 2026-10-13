@@ -19,7 +19,9 @@ import { useSesion } from '@/sesion/useSesion'
 
 interface Props {
   abierto: boolean
-  slot: Espacio | null
+  /** Sólo hace falta cuándo y dónde: sirve un espacio de la grilla o un
+   * turno ofrecido por el asistente (US-33). */
+  slot: Pick<Espacio, 'start' | 'branch'> | null
   practitionerName: string
   reservando?: boolean
   /** El error de la última confirmación (turno ocupado, política, etc.). */

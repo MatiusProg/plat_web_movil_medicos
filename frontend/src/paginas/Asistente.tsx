@@ -18,18 +18,35 @@
  * sedes, precios, preparación—. Esa respuesta llega con `kind:
  * "administrativa"` y sin especialidad, así que no hay botón de reservar.
  *
+ * **US-33 — Reservar sin salir de la conversación.** Cuando hay especialidad
+ * (sugerida, o la del servicio por el que se preguntó), el asistente ofrece
+ * turnos reales de `assistant/slots/`; si la pregunta ya pedía reservar ("quiero
+ * una ficha el jueves") los pide solo. El paciente elige uno, confirma en el
+ * mismo modal de la pantalla de reserva y la ficha nace pendiente de pago. El
+ * modelo no elige turnos ni reserva: los turnos salen de la disponibilidad y
+ * la reserva sólo existe detrás de *Confirmar reserva*.
+ *
  * La conversación vive sólo en memoria y a propósito: quien le cuenta sus
  * síntomas a un chatbot está escribiendo información de salud, y dejarla en
  * `localStorage` la expone a cualquiera que use la misma computadora —que en
  * un centro médico es lo normal—.
  */
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 
-import { consultarAsistente, type RespuestaAsistente } from '@/api/asistente'
+import {
+  consultarAsistente,
+  pedirTurnos,
+  reservarDesdeAsistente,
+  type RespuestaAsistente,
+  type RespuestaTurnos,
+  type TurnoOfrecido,
+} from '@/api/asistente'
+import type { Ficha } from '@/api/fichas'
 import { ErrorApi } from '@/api/tipos'
 import { IconoAlerta } from '@/componentes/iconos'
+import { ModalReservarFicha } from '@/componentes/ModalReservarFicha'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 
@@ -43,11 +60,36 @@ const EJEMPLOS = [
   '¿Tengo que ir en ayunas al análisis de sangre?',
 ]
 
+/** Atajos para pedir otro horario sin escribir. Los entiende `preferences.py`. */
+const PREFERENCIAS_RAPIDAS = ['Mañana', 'Por la mañana', 'Por la tarde', 'La semana que viene']
+
+interface Especialidad {
+  id: string
+  name: string
+}
+
+/** Lo que hace falta para volver a pedir los mismos turnos. */
+interface PedidoDeTurnos {
+  especialidad: Especialidad
+  preferencia: string
+}
+
+type OfertaDeTurnos = Extract<RespuestaTurnos, { emergency: false }>
+
 type Turno =
   | { tipo: 'paciente'; texto: string }
   | { tipo: 'asistente'; respuesta: RespuestaAsistente }
-  /** `texto` es la pregunta que hay que reintentar. */
-  | { tipo: 'error'; motivo: string; texto: string }
+  | { tipo: 'turnos'; pedido: PedidoDeTurnos; respuesta: OfertaDeTurnos }
+  | { tipo: 'reservada'; ficha: Ficha }
+  | { tipo: 'aviso'; texto: string }
+  /** `texto` es la pregunta que hay que reintentar; `pedido`, los turnos. */
+  | { tipo: 'error'; motivo: string; texto: string; pedido?: PedidoDeTurnos }
+
+/** El turno que el paciente tocó, mientras decide en el modal. */
+interface Eleccion {
+  turno: TurnoOfrecido
+  pedido: PedidoDeTurnos
+}
 
 export function Asistente() {
   const { token } = useSesion()
@@ -56,6 +98,11 @@ export function Asistente() {
   const [turnos, setTurnos] = useState<Turno[]>([])
   const [entrada, setEntrada] = useState('')
   const [esperando, setEsperando] = useState(false)
+
+  // US-33: el turno elegido y el estado de su confirmación.
+  const [eleccion, setEleccion] = useState<Eleccion | null>(null)
+  const [reservando, setReservando] = useState(false)
+  const [errorReserva, setErrorReserva] = useState<ErrorApi | null>(null)
 
   const fondo = useRef<HTMLDivElement | null>(null)
   const casilla = useRef<HTMLTextAreaElement | null>(null)
@@ -94,8 +141,97 @@ export function Asistente() {
     }
 
     setTurnos((previos) => [...previos, turno])
+
+    // US-33: la pregunta ya pedía reservar. Los turnos se piden solos, con la
+    // misma pregunta como preferencia: "…el jueves por la tarde" ya filtra.
+    const pista = turno.tipo === 'asistente' ? turno.respuesta.booking : undefined
+    if (pista?.available && pista.booking_intent && pista.specialty) {
+      await buscarTurnos({ especialidad: pista.specialty, preferencia: pregunta }, control)
+      return
+    }
+
     setEsperando(false)
     casilla.current?.focus()
+  }
+
+  /**
+   * US-33 — Pide turnos de una especialidad. `textoPaciente` es lo que tocó
+   * o escribió el paciente ("Por la tarde"), y se muestra como su mensaje.
+   */
+  const buscarTurnos = async (
+    pedido: PedidoDeTurnos,
+    controlHeredado?: AbortController,
+    textoPaciente?: string,
+  ) => {
+    let control = controlHeredado
+    if (!control) {
+      aborto.current?.abort()
+      control = new AbortController()
+      aborto.current = control
+      if (textoPaciente) {
+        setTurnos((previos) => [...previos, { tipo: 'paciente', texto: textoPaciente }])
+      }
+    }
+    setEsperando(true)
+
+    let turno: Turno
+    try {
+      const respuesta = await pedirTurnos(
+        pedido.especialidad.id, pedido.preferencia, { token }, control.signal,
+      )
+      turno = respuesta.emergency
+        ? { tipo: 'asistente', respuesta: derivacion(respuesta.answer) }
+        : { tipo: 'turnos', pedido, respuesta }
+    } catch (fallo: unknown) {
+      if (fallo instanceof DOMException && fallo.name === 'AbortError') return
+      turno = { tipo: 'error', motivo: motivoDelFallo(fallo), texto: '', pedido }
+    }
+
+    setTurnos((previos) => [...previos, turno])
+    setEsperando(false)
+    casilla.current?.focus()
+  }
+
+  const reintentarTurnos = (pedido: PedidoDeTurnos) => {
+    setTurnos((previos) => previos.filter((t) => !(t.tipo === 'error' && t.pedido === pedido)))
+    void buscarTurnos(pedido)
+  }
+
+  const cerrarModal = () => {
+    if (reservando) return
+    setEleccion(null)
+    setErrorReserva(null)
+  }
+
+  const confirmarReserva = async ({ patientId }: { patientId: string }) => {
+    if (!eleccion) return
+    setReservando(true)
+    setErrorReserva(null)
+    try {
+      const ficha = await reservarDesdeAsistente(
+        { patient: patientId, turno: eleccion.turno },
+        { token },
+      )
+      setEleccion(null)
+      setTurnos((previos) => [...previos, { tipo: 'reservada', ficha }])
+    } catch (fallo: unknown) {
+      const error = fallo instanceof ErrorApi ? fallo : null
+      // El turno se ocupó entre que se ofreció y que se confirmó: se avisa y
+      // se vuelven a pedir los turnos con la misma preferencia.
+      if (error?.codigo === 'turno_ocupado') {
+        const { pedido } = eleccion
+        setEleccion(null)
+        setTurnos((previos) => [
+          ...previos,
+          { tipo: 'aviso', texto: 'Ese horario se acaba de ocupar. Estos son los que quedan.' },
+        ])
+        void buscarTurnos(pedido)
+        return
+      }
+      setErrorReserva(error)
+    } finally {
+      setReservando(false)
+    }
   }
 
   const alEnviar = (evento: FormEvent) => {
@@ -143,15 +279,72 @@ export function Asistente() {
               return <BurbujaPaciente key={i} texto={turno.texto} />
             }
             if (turno.tipo === 'error') {
+              const { pedido } = turno
               return (
                 <BurbujaError
                   key={i}
                   motivo={turno.motivo}
-                  alReintentar={esperando ? undefined : () => void enviar(turno.texto)}
+                  alReintentar={
+                    esperando
+                      ? undefined
+                      : pedido
+                        ? () => reintentarTurnos(pedido)
+                        : () => void enviar(turno.texto)
+                  }
                 />
               )
             }
-            return <BurbujaAsistente key={i} respuesta={turno.respuesta} />
+            if (turno.tipo === 'turnos') {
+              return (
+                <BurbujaTurnos
+                  key={i}
+                  respuesta={turno.respuesta}
+                  ocupado={esperando}
+                  alElegir={(elegido) => {
+                    setErrorReserva(null)
+                    setEleccion({ turno: elegido, pedido: turno.pedido })
+                  }}
+                  alPedirOtro={(preferencia) =>
+                    void buscarTurnos(
+                      { especialidad: turno.pedido.especialidad, preferencia },
+                      undefined,
+                      preferencia,
+                    )
+                  }
+                />
+              )
+            }
+            if (turno.tipo === 'reservada') {
+              return <BurbujaReservada key={i} ficha={turno.ficha} />
+            }
+            if (turno.tipo === 'aviso') {
+              return (
+                <Burbuja key={i}>
+                  <p className="text-espera-700 dark:text-espera-200 text-sm">{turno.texto}</p>
+                </Burbuja>
+              )
+            }
+            const especialidadReservable = turno.respuesta.booking?.available
+              && !turno.respuesta.booking.booking_intent
+              ? turno.respuesta.booking.specialty
+              : null
+            return (
+              <BurbujaAsistente
+                key={i}
+                respuesta={turno.respuesta}
+                ocupado={esperando}
+                alVerHorarios={
+                  especialidadReservable
+                    ? () =>
+                        void buscarTurnos(
+                          { especialidad: especialidadReservable, preferencia: '' },
+                          undefined,
+                          `Ver horarios de ${especialidadReservable.name}`,
+                        )
+                    : undefined
+                }
+              />
+            )
           })}
 
           {esperando && <Pensando />}
@@ -196,8 +389,30 @@ export function Asistente() {
           </p>
         )}
       </form>
+
+      <ModalReservarFicha
+        abierto={eleccion !== null}
+        slot={eleccion?.turno ?? null}
+        practitionerName={eleccion?.turno.practitioner.full_name ?? ''}
+        reservando={reservando}
+        errorReserva={errorReserva}
+        onCerrar={cerrarModal}
+        onConfirmar={confirmarReserva}
+      />
     </div>
   )
+}
+
+/** Una derivación que llegó por `slots/`, con la forma de la de `suggest/`. */
+function derivacion(mensaje: string): RespuestaAsistente {
+  return {
+    emergency: true,
+    answer: mensaje,
+    generated_by: 'regla',
+    specialty: null,
+    alternatives: [],
+    fragments: [],
+  }
 }
 
 function motivoDelFallo(fallo: unknown): string {
@@ -270,7 +485,16 @@ function Burbuja({ children }: { children: React.ReactNode }) {
   )
 }
 
-function BurbujaAsistente({ respuesta }: { respuesta: RespuestaAsistente }) {
+function BurbujaAsistente({
+  respuesta,
+  alVerHorarios,
+  ocupado,
+}: {
+  respuesta: RespuestaAsistente
+  /** US-33: sólo cuando se puede reservar y la pregunta no lo pidió ya. */
+  alVerHorarios?: () => void
+  ocupado: boolean
+}) {
   const { puede } = useSesion()
 
   if (respuesta.emergency) return <AlertaEmergencia mensaje={respuesta.answer} />
@@ -295,15 +519,44 @@ function BurbujaAsistente({ respuesta }: { respuesta: RespuestaAsistente }) {
               {especialidad.name}
             </p>
           </div>
-          {puede('catalog.professional.read') && (
-            <Link
-              to={`/buscar-profesionales?especialidad=${encodeURIComponent(especialidad.id)}`}
-              className="bg-marca-600 hover:bg-marca-700 rounded-lg px-3 py-1.5 text-sm font-semibold text-white transition"
-            >
-              Ver profesionales
-            </Link>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {alVerHorarios && (
+              <button
+                type="button"
+                onClick={alVerHorarios}
+                disabled={ocupado}
+                className="bg-marca-600 hover:bg-marca-700 rounded-lg px-3 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50"
+              >
+                Ver horarios
+              </button>
+            )}
+            {puede('catalog.professional.read') && (
+              <Link
+                to={`/buscar-profesionales?especialidad=${encodeURIComponent(especialidad.id)}`}
+                className={
+                  alVerHorarios
+                    ? 'border-marca-300 text-marca-700 hover:bg-marca-100 dark:border-marca-800 dark:text-marca-300 dark:hover:bg-marca-950 rounded-lg border px-3 py-1.5 text-sm font-semibold transition'
+                    : 'bg-marca-600 hover:bg-marca-700 rounded-lg px-3 py-1.5 text-sm font-semibold text-white transition'
+                }
+              >
+                Ver profesionales
+              </Link>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* US-33: consulta administrativa que pedía reservar ("quiero un turno
+          de cardiología"): no hay tarjeta de especialidad, pero sí horarios. */}
+      {!especialidad && alVerHorarios && (
+        <button
+          type="button"
+          onClick={alVerHorarios}
+          disabled={ocupado}
+          className="text-marca-600 dark:text-marca-400 text-sm font-semibold hover:underline disabled:opacity-50"
+        >
+          Ver horarios de {respuesta.booking?.specialty?.name}
+        </button>
       )}
 
       {respuesta.alternatives.length > 0 && (
@@ -337,6 +590,141 @@ function BurbujaAsistente({ respuesta }: { respuesta: RespuestaAsistente }) {
           </ul>
         </details>
       )}
+    </Burbuja>
+  )
+}
+
+function fechaYHora(iso: string): string {
+  return new Date(iso).toLocaleString('es-BO', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+/**
+ * US-33 — Los turnos ofrecidos. Cada uno es un botón que abre el modal de
+ * confirmación: tocarlo no reserva nada.
+ */
+function BurbujaTurnos({
+  respuesta,
+  ocupado,
+  alElegir,
+  alPedirOtro,
+}: {
+  respuesta: OfertaDeTurnos
+  ocupado: boolean
+  alElegir: (turno: TurnoOfrecido) => void
+  alPedirOtro: (preferencia: string) => void
+}) {
+  const [otro, setOtro] = useState('')
+  const idCampo = useId()
+
+  const pedirOtro = (evento: FormEvent) => {
+    evento.preventDefault()
+    const texto = otro.trim()
+    if (!texto || ocupado) return
+    setOtro('')
+    alPedirOtro(texto)
+  }
+
+  return (
+    <Burbuja>
+      <p
+        className={
+          respuesta.matched_preference
+            ? 'text-tinta-800 dark:text-tinta-100'
+            : 'text-espera-700 dark:text-espera-200'
+        }
+      >
+        {respuesta.answer}
+      </p>
+
+      {respuesta.offers.length > 0 && (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {respuesta.offers.map((turno) => (
+            <li key={`${turno.schedule.id}-${turno.start}`}>
+              <button
+                type="button"
+                onClick={() => alElegir(turno)}
+                className="border-tinta-200 hover:border-marca-400 hover:bg-marca-50 dark:border-tinta-700 dark:hover:border-marca-700 dark:hover:bg-marca-950/40 w-full rounded-xl border px-3 py-2.5 text-left transition"
+              >
+                <span className="text-tinta-900 dark:text-tinta-50 block font-semibold capitalize">
+                  {fechaYHora(turno.start)}
+                </span>
+                <span className="text-tinta-600 dark:text-tinta-300 block text-sm">
+                  {turno.practitioner.full_name}
+                </span>
+                <span className="text-tinta-400 block text-xs">{turno.branch.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="space-y-2">
+        <p className="text-tinta-500 text-xs">¿Otro día u horario?</p>
+        <div className="flex flex-wrap gap-1.5">
+          {PREFERENCIAS_RAPIDAS.map((preferencia) => (
+            <button
+              key={preferencia}
+              type="button"
+              onClick={() => alPedirOtro(preferencia)}
+              disabled={ocupado}
+              className="border-tinta-200 text-tinta-600 hover:border-marca-300 hover:bg-marca-50 hover:text-marca-700 dark:border-tinta-700 dark:text-tinta-300 dark:hover:bg-marca-950/40 rounded-full border px-3 py-1 text-xs transition disabled:opacity-50"
+            >
+              {preferencia}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={pedirOtro} className="flex gap-2">
+          <label className="sr-only" htmlFor={idCampo}>
+            Otro día u horario
+          </label>
+          <input
+            id={idCampo}
+            value={otro}
+            onChange={(e) => setOtro(e.target.value)}
+            maxLength={200}
+            disabled={ocupado}
+            placeholder="Ej.: el jueves por la tarde"
+            className="border-tinta-300 dark:border-tinta-700 focus:border-marca-500 dark:bg-tinta-900/60 min-w-0 flex-1 rounded-lg border bg-white px-3 py-1.5 text-sm focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={ocupado || !otro.trim()}
+            className="text-marca-600 dark:text-marca-400 text-sm font-semibold disabled:opacity-50"
+          >
+            Buscar
+          </button>
+        </form>
+      </div>
+    </Burbuja>
+  )
+}
+
+/** US-33 — La ficha quedó reservada, pendiente de pago, como por la pantalla. */
+function BurbujaReservada({ ficha }: { ficha: Ficha }) {
+  return (
+    <Burbuja>
+      <div className="bg-marca-50 dark:bg-marca-950/40 rounded-xl px-3.5 py-3">
+        <p className="text-marca-700 dark:text-marca-400 text-xs font-medium">Ficha reservada</p>
+        <p className="text-tinta-900 dark:text-tinta-50 font-semibold capitalize">
+          {fechaYHora(ficha.starts_at)}
+        </p>
+        <p className="text-tinta-600 dark:text-tinta-300 text-sm">
+          {ficha.practitioner_name} · {ficha.branch_name}
+        </p>
+        <p className="text-tinta-500 text-sm">Para {ficha.patient_name}</p>
+      </div>
+      <p className="text-tinta-700 dark:text-tinta-200 text-sm">
+        Queda pendiente de pago. Págala desde tus fichas para confirmarla.
+      </p>
+      <Link
+        to="/mis-fichas"
+        className="bg-marca-600 hover:bg-marca-700 inline-block rounded-lg px-3 py-1.5 text-sm font-semibold text-white transition"
+      >
+        Ir a mis fichas
+      </Link>
     </Burbuja>
   )
 }
