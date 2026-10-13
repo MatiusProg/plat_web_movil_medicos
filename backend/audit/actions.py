@@ -78,6 +78,10 @@ class Action:
     ASSISTANT_EMERGENCY = "assistant.emergency"
     # US-32: el índice se recalculó desde la pantalla de servicios.
     ASSISTANT_REINDEX = "assistant.catalog.reindex"
+    # US-33: ficha reservada desde la conversación. Va con código propio y no
+    # como un detalle de la reserva, para medir cuánto se reserva por el
+    # asistente. Tampoco acá se guarda lo que escribió el paciente.
+    ASSISTANT_BOOKING = "assistant.booking"
     SERVICE_CREATE = "catalog.service.create"
     SERVICE_UPDATE = "catalog.service.update"
     SERVICE_DEACTIVATE = "catalog.service.deactivate"
@@ -130,6 +134,7 @@ LABELS = {
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
     Action.ASSISTANT_EMERGENCY: "Derivación a emergencia por el asistente",
     Action.ASSISTANT_REINDEX: "Catálogo del asistente reindexado",
+    Action.ASSISTANT_BOOKING: "Ficha reservada desde el asistente",
     Action.SERVICE_CREATE: "Servicio registrado",
     Action.SERVICE_UPDATE: "Servicio editado",
     Action.SERVICE_DEACTIVATE: "Servicio desactivado",

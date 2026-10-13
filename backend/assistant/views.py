@@ -34,9 +34,11 @@ from rest_framework.views import APIView
 from audit import services as bitacora
 from tenancy.plans import ai_queries_this_month, check_limit, require_feature
 from audit.actions import Action
+from catalog.models import Service
 
-from . import generation, triage
+from . import generation, preferences, triage
 from .embeddings import EmbeddingError, active_model_name
+from .models import SourceType
 from .permissions import CanUseAssistant
 from .retrieval import is_administrative, rank_specialties, retrieve
 from .serializers import (
@@ -103,7 +105,16 @@ class SuggestView(APIView):
 
         # US-32: la pregunta es administrativa si lo más parecido lo es.
         if fragments and is_administrative(fragments[0]):
-            return self._administrativa(request, question, fragments)
+            # US-33: "quiero reservar un turno de cardiología" se parece más
+            # al servicio "Consulta de Cardiología" que a la especialidad, y
+            # cae acá. Se contesta igual, pero sin perder la reserva.
+            especialidad = None
+            if preferences.has_booking_intent(question):
+                especialidad = _specialty_for_booking(organization, fragments)
+            return self._administrativa(
+                request, question, fragments,
+                _booking_hint(request, question, especialidad),
+            )
 
         # Lo administrativo que haya quedado más abajo no respalda una
         # sugerencia de especialidad: no viaja ni al modelo ni como evidencia.
@@ -145,9 +156,17 @@ class SuggestView(APIView):
             # La evidencia. Ver FragmentSerializer: es parte del contrato.
             "fragments": FragmentSerializer(fragments, many=True).data,
             "retrieval": {"embedding_model": active_model_name()},
+            # US-33: si hay especialidad, el cliente puede pedir turnos a
+            # ``slots/``. ``booking_intent`` dice si la pregunta ya pedía
+            # reservar ("quiero una ficha el jueves"): el cliente los pide
+            # solo, con la misma pregunta como preferencia de horario.
+            "booking": _booking_hint(
+                request, question,
+                {"id": str(mejor.id), "name": mejor.name} if mejor else None,
+            ),
         })
 
-    def _administrativa(self, request, question, fragments):
+    def _administrativa(self, request, question, fragments, booking):
         """US-32 — Dónde, cuándo, cuánto o cómo. Ninguna especialidad."""
         fragments = [f for f in fragments if is_administrative(f)]
         redactado = generation.answer_administrative(question, fragments)
@@ -168,7 +187,49 @@ class SuggestView(APIView):
             "alternatives": [],
             "fragments": FragmentSerializer(fragments, many=True).data,
             "retrieval": {"embedding_model": active_model_name()},
+            "booking": booking,
         })
+
+
+def _specialty_for_booking(organization, fragments):
+    """US-33 — La especialidad a la que apunta una pregunta administrativa
+    que pide reservar: la del servicio recuperado, o la especialidad que
+    haya quedado entre los fragmentos. ``None`` si no hay ninguna."""
+    for fragment in fragments:
+        if fragment.source_type == SourceType.SERVICE:
+            servicio = (
+                Service.objects.filter(
+                    pk=fragment.source_id, organization=organization,
+                    specialty__is_active=True,
+                )
+                .select_related("specialty")
+                .first()
+            )
+            if servicio is not None:
+                return {"id": str(servicio.specialty.id),
+                        "name": servicio.specialty.name}
+    ranked = rank_specialties(fragments)
+    return {"id": ranked[0].id, "name": ranked[0].name} if ranked else None
+
+
+def _booking_hint(request, question, especialidad) -> dict:
+    """US-33 — Lo que el cliente necesita para ofrecer reservar.
+
+    ``specialty`` es aquella cuyos turnos se piden a ``slots/``. En una
+    orientación es la sugerida; en una consulta administrativa, la del
+    servicio por el que se preguntó.
+    """
+    puede = bool(
+        especialidad is not None
+        and getattr(request.user, "patient_profile", None) is not None
+        and request.user.has_permission("appointments.appointment.create")
+        and request.user.has_permission("scheduling.slot.read")
+    )
+    return {
+        "available": puede,
+        "booking_intent": puede and preferences.has_booking_intent(question),
+        "specialty": especialidad if puede else None,
+    }
 
 
 def _emergency_response(generated_by: str) -> Response:
