@@ -198,6 +198,7 @@ def test_por_la_tarde_ofrece_solo_turnos_de_la_tarde(
     cuerpo = pedir_turnos(api_client, paciente, specialty_a, "por la tarde").json()
 
     assert cuerpo["matched_preference"] is True
+    assert cuerpo["relaxed"] is None
     assert cuerpo["preference"]["part_of_day"] == "tarde"
     assert cuerpo["offers"]
     for oferta in cuerpo["offers"]:
@@ -223,8 +224,39 @@ def test_si_lo_pedido_no_tiene_turnos_lo_dice_y_ofrece_los_mas_proximos(
     cuerpo = pedir_turnos(api_client, paciente, specialty_a, "de noche").json()
 
     assert cuerpo["matched_preference"] is False
+    assert cuerpo["relaxed"] == "proximos"
     assert cuerpo["offers"]
     assert "No hay horarios" in cuerpo["answer"]
+
+
+def test_si_el_dia_pedido_no_tiene_esa_hora_ofrece_el_mismo_dia_a_otra_hora(
+    api_client, paciente, specialty_a, agendas,
+):
+    """"Mañana de noche" sin turnos: antes que otro día, mañana a otra hora.
+    El día suele ser lo que el paciente no puede mover."""
+    manana = timezone.localdate() + dt.timedelta(days=1)
+    cuerpo = pedir_turnos(api_client, paciente, specialty_a, "mañana de noche").json()
+
+    assert cuerpo["matched_preference"] is False
+    assert cuerpo["relaxed"] == "mismo_dia"
+    assert cuerpo["offers"]
+    for oferta in cuerpo["offers"]:
+        assert dt.datetime.fromisoformat(oferta["start"]).date() == manana
+    assert "mismo día" in cuerpo["answer"]
+
+
+def test_lo_que_se_suelta_va_de_lo_mas_parecido_a_lo_menos():
+    pedida = preferences.parse("el jueves por la tarde", today=LUNES)
+    orden = [
+        (cual, sorted(p.days), p.part_of_day)
+        for cual, p in preferences.relaxations(pedida, today=LUNES)
+    ]
+    jueves = dt.date(2026, 10, 15)
+    assert orden == [
+        ("mismo_dia", [jueves], ""),
+        ("misma_franja", [], "tarde"),
+        ("proximos", [], ""),
+    ]
 
 
 def test_sin_agendas_no_ofrece_nada_y_lo_dice(
