@@ -93,29 +93,36 @@ class SlotsView(APIView):
             organization, specialty, preferencia, branch_id=datos["branch"],
         )
 
-        # Lo pedido no tiene turnos: se dice, y se ofrece lo más próximo. Es
-        # mejor que una lista vacía, y el paciente decide si le sirve.
-        cumple = True
+        # Lo pedido no tiene turnos: se dice, y se ofrece lo más parecido
+        # que sí tenga. Es mejor que una lista vacía, y el paciente decide si
+        # le sirve. Ver ``preferences.relaxations``.
+        alternativa = None
         if not ofertas and not preferencia.is_empty:
-            cumple = False
-            ofertas = offer_slots(
-                organization, specialty,
-                preferences.parse("", today=hoy), branch_id=datos["branch"],
-            )
+            for cual, relajada in preferences.relaxations(preferencia, today=hoy):
+                ofertas = offer_slots(
+                    organization, specialty, relajada, branch_id=datos["branch"],
+                )
+                if ofertas:
+                    alternativa = cual
+                    break
+        cumple = alternativa is None
 
         return Response({
             "emergency": False,
             "kind": "reserva",
-            "answer": _redactar(specialty.name, ofertas, cumple),
+            "answer": _redactar(specialty.name, ofertas, alternativa),
             "generated_by": "regla",
             "specialty": {"id": str(specialty.id), "name": specialty.name},
             "preference": preferencia.as_dict(),
             "matched_preference": cumple,
+            # Qué se soltó para encontrar turnos: ``mismo_dia`` (otra hora),
+            # ``misma_franja`` (otro día) o ``proximos``. ``None`` si cumple.
+            "relaxed": alternativa,
             "offers": ofertas,
         })
 
 
-def _redactar(especialidad, ofertas, cumple) -> str:
+def _redactar(especialidad, ofertas, alternativa) -> str:
     """El texto que acompaña a las tarjetas. Lo arma el backend, no el
     modelo: es una frase fija sobre datos que ya están en las tarjetas."""
     if not ofertas:
@@ -123,7 +130,17 @@ def _redactar(especialidad, ofertas, cumple) -> str:
             f"No encontré horarios libres de {especialidad} en las próximas "
             "dos semanas. Puedes buscar otra fecha en la pantalla de reserva."
         )
-    if not cumple:
+    if alternativa == "mismo_dia":
+        return (
+            f"No hay horarios de {especialidad} a esa hora. Estos son del "
+            "mismo día. Elige uno y confirma para reservar."
+        )
+    if alternativa == "misma_franja":
+        return (
+            f"No hay horarios de {especialidad} ese día. Estos son los más "
+            "próximos a esa hora. Elige uno y confirma para reservar."
+        )
+    if alternativa:
         return (
             f"No hay horarios de {especialidad} en lo que pediste. Estos son "
             "los más próximos. Elige uno y confirma para reservar."

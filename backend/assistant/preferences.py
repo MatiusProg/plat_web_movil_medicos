@@ -161,3 +161,25 @@ _BOOKING_INTENT = re.compile(
 def has_booking_intent(text: str) -> bool:
     """¿El paciente pide reservar, además de contar lo que le pasa?"""
     return bool(_BOOKING_INTENT.search(normalize_text(text)))
+
+
+def relaxations(preference: Preference, *, today: dt.date):
+    """Lo que se prueba cuando lo pedido no tiene turnos, de lo más parecido
+    a lo menos: el mismo día a otra hora, la misma franja otro día, y lo más
+    próximo. Devuelve pares ``(cual, preferencia)``.
+
+    "El jueves por la tarde" sin turnos se contesta mejor con el jueves a la
+    mañana que con el miércoles: el día suele ser lo que el paciente no puede
+    mover.
+    """
+    if preference.days and preference.part_of_day:
+        yield "mismo_dia", Preference(
+            date_from=preference.date_from, date_to=preference.date_to,
+            days=preference.days,
+        )
+        yield "misma_franja", Preference(
+            date_from=today,
+            date_to=today + dt.timedelta(days=DEFAULT_HORIZON_DAYS),
+            part_of_day=preference.part_of_day,
+        )
+    yield "proximos", parse("", today=today)

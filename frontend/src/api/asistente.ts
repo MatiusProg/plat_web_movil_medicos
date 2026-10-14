@@ -95,6 +95,9 @@ export type RespuestaTurnos =
       preference: PreferenciaEntendida
       /** `false`: lo pedido no tenía turnos y éstos son los más próximos. */
       matched_preference: boolean
+      /** Qué se soltó para encontrar turnos: otra hora el mismo día, otro
+       * día en la misma franja, o lo más próximo. `null` si cumple. */
+      relaxed: 'mismo_dia' | 'misma_franja' | 'proximos' | null
       offers: TurnoOfrecido[]
     }
   | { emergency: true; answer: string }
