@@ -1,8 +1,9 @@
 """US-18 — Abrir el cobro, confirmarlo y devolverlo.
 
 `confirm_payment` es **el único lugar donde una ficha pasa a `confirmed` por
-un pago**. Lo llaman el webhook de Stripe y la página del proveedor simulado,
-nunca una vista que use el paciente (regla 10 del Sprint 2).
+un pago**. Lo llaman el webhook de Stripe, la página del proveedor simulado y
+el cobro en ventanilla de recepción (US-23), nunca una vista que use el
+paciente (regla 10 del Sprint 2).
 
 Todas las funciones de acá suponen que el contexto de inquilino ya está
 fijado: en una petición autenticada lo fija la autenticación; en el webhook,
@@ -29,6 +30,19 @@ from .providers import ProviderError, active_provider, provider_for
 logger = logging.getLogger(__name__)
 
 
+def _assert_payable(appointment: Appointment) -> None:
+    """La ficha espera el pago y la reserva todavía no venció."""
+    if appointment.status != Appointment.Status.PENDING_PAYMENT:
+        raise ValidationError(
+            "Esta ficha no está pendiente de pago.", code="ficha_no_pendiente",
+        )
+    if appointment.expires_at and appointment.expires_at <= timezone.now():
+        raise ValidationError(
+            "La reserva venció antes de pagarla. Elige el turno de nuevo.",
+            code="ficha_vencida",
+        )
+
+
 def start_checkout(appointment: Appointment, *, user, request,
                    return_to: str = "app") -> Payment:
     """Crea un intento de cobro y la sesión del proveedor.
@@ -36,16 +50,7 @@ def start_checkout(appointment: Appointment, *, user, request,
     Lanza `ValidationError` si la ficha no está esperando pago, y
     `ProviderError` si el proveedor no la acepta.
     """
-    now = timezone.now()
-    if appointment.status != Appointment.Status.PENDING_PAYMENT:
-        raise ValidationError(
-            "Esta ficha no está pendiente de pago.", code="ficha_no_pendiente",
-        )
-    if appointment.expires_at and appointment.expires_at <= now:
-        raise ValidationError(
-            "La reserva venció antes de pagarla. Elegí el turno de nuevo.",
-            code="ficha_vencida",
-        )
+    _assert_payable(appointment)
 
     amount, currency = quote(appointment)
     nombre = active_provider()
@@ -125,6 +130,39 @@ def confirm_payment(payment: Payment, *, provider_payment_id: str = "",
 
     _asentar(request, payment, "pagado")
     return payment
+
+
+def register_cash_payment(appointment: Appointment, *, user,
+                          request=None) -> Payment:
+    """US-23 — Recepción cobró la ficha en efectivo, en el mostrador.
+
+    No hay checkout ni webhook: el dinero ya está en la caja. Se registra el
+    pago y se confirma **por `confirm_payment`**, el mismo camino que el
+    webhook de Stripe —así salen el comprobante y el aviso al paciente igual
+    que con un pago en línea—. El importe lo decide el backend (`quote`),
+    nunca recepción.
+
+    No depende del pago en línea del plan: el plan Básico, que no lo trae,
+    es justamente el que cobra en ventanilla.
+
+    Lanza `ValidationError` si la ficha no está esperando pago. Si dos
+    recepcionistas cobran la misma ficha a la vez, el segundo pago queda
+    `refunded` (`pago_duplicado`): quien lo registró tiene que devolver el
+    efectivo.
+    """
+    _assert_payable(appointment)
+    amount, currency = quote(appointment)
+    with transaction.atomic():
+        payment = Payment.objects.create(
+            organization_id=appointment.organization_id,
+            appointment=appointment,
+            created_by=user,
+            amount=amount,
+            currency=currency,
+            provider=Payment.Provider.CASH,
+        )
+        _asentar(request, payment, "cobro_en_ventanilla")
+        return confirm_payment(payment, request=request)
 
 
 def refund_payment(payment: Payment, *, reason: str, request=None) -> Payment:

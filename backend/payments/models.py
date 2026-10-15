@@ -28,6 +28,10 @@ class Payment(models.Model):
     class Provider(models.TextChoices):
         STRIPE = "stripe", "Stripe"
         SIMULATED = "simulated", "Simulado"
+        # US-23: lo cobra recepción en el mostrador. No hay checkout ni
+        # webhook: el cobro se registra y confirma en el mismo acto
+        # (`services.register_cash_payment`).
+        CASH = "cash", "Efectivo en ventanilla"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
@@ -38,7 +42,8 @@ class Payment(models.Model):
         "appointments.Appointment", on_delete=models.PROTECT,
         related_name="payments",
     )
-    # Quién abrió el checkout: el paciente o el titular de un dependiente.
+    # Quién abrió el checkout —el paciente o el titular de un dependiente—, o
+    # quién cobró en ventanilla (recepción).
     created_by = models.ForeignKey(
         "accounts.User", on_delete=models.PROTECT,
         related_name="payments",

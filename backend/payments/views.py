@@ -31,7 +31,7 @@ from tenancy.context import tenant_context
 from tenancy.plans import require_feature
 
 from .models import Payment
-from .permissions import CanCreatePayments
+from .permissions import CanCreatePayments, CanRegisterCashPayments
 from .providers import (
     RETURN_TARGETS,
     ProviderError,
@@ -39,7 +39,7 @@ from .providers import (
     StripeProvider,
     active_provider,
 )
-from .services import confirm_payment, start_checkout
+from .services import confirm_payment, register_cash_payment, start_checkout
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +100,62 @@ class CheckoutView(APIView):
             "amount": str(payment.amount),
             "currency": payment.currency,
             "status": payment.status,
+        }, status=status.HTTP_201_CREATED)
+
+
+class CashPaymentView(APIView):
+    """`POST /payments/appointments/{id}/cash/` — cobro en ventanilla (US-23).
+
+    Recepción registra que cobró la ficha en efectivo y la ficha queda
+    `confirmed` en el acto: a diferencia del checkout, el dinero ya está en
+    la caja. Sin cuerpo: el importe lo decide el backend.
+
+    Respuestas:
+
+        201  cobrado; devuelve el pago y la ficha confirmada
+        400  `ficha_no_pendiente` o `ficha_vencida`
+        403  sin `payments.payment.register_cash`
+        404  la ficha no existe en la organización
+        409  `ficha_ya_pagada`: otro cobro la confirmó en el mismo instante y
+             éste quedó devuelto; hay que devolver el efectivo
+    """
+
+    permission_classes = [IsAuthenticated, CanRegisterCashPayments]
+
+    def post(self, request, pk=None):
+        from appointments.serializers import AppointmentSerializer
+
+        appointment = (
+            Appointment.objects
+            .select_related("patient", "practitioner", "branch")
+            .filter(pk=pk, organization=request.user.organization)
+            .first()
+        )
+        if appointment is None:
+            return Response({"detail": "La ficha no existe."},
+                            status=status.HTTP_404_NOT_FOUND)
+        try:
+            payment = register_cash_payment(appointment, user=request.user,
+                                            request=request)
+        except ValidationError as error:
+            return Response({"code": error.code, "detail": error.messages[0]},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if payment.status != Payment.Status.SUCCEEDED:
+            return Response(
+                {"code": "ficha_ya_pagada",
+                 "detail": "La ficha ya estaba pagada: devuelve el efectivo."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        appointment.refresh_from_db()
+        return Response({
+            "payment_id": str(payment.id),
+            "provider": payment.provider,
+            "amount": str(payment.amount),
+            "currency": payment.currency,
+            "status": payment.status,
+            "appointment": AppointmentSerializer(appointment).data,
         }, status=status.HTTP_201_CREATED)
 
 
