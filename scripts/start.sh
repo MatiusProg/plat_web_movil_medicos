@@ -38,6 +38,12 @@ echo "==> Lanzando las copias automáticas en segundo plano"
 # logs de Railway: no se veía si las copias se estaban generando ni si fallaban.
 python -u manage.py run_automatic_backups --loop &
 
+# US-28: los recordatorios de fichas. Mismo esquema que las copias: una vuelta
+# cada 15 minutos, idempotente (cada ficha se marca al avisarla). Se apaga con
+# APPOINTMENT_REMINDERS=off. Ver appointments/reminders.py.
+echo "==> Lanzando los recordatorios de fichas en segundo plano"
+python -u manage.py send_appointment_reminders --loop &
+
 echo "==> Levantando gunicorn en el puerto ${PORT:-8000}"
 # exec: gunicorn reemplaza al script y recibe las señales de la plataforma
 # directamente. Sin exec, un reinicio de Railway mata el shell y deja el

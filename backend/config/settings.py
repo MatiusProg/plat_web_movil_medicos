@@ -100,6 +100,8 @@ INSTALLED_APPS = [
     # US-31: el asistente. Guarda los fragmentos del catálogo con su embedding
     # en una columna `vector` de pgvector.
     "assistant",
+    # US-28: los tokens de los teléfonos y el envío de push por Firebase.
+    "notifications",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
@@ -270,6 +272,21 @@ BACKUP_ENCRYPTION_KEY = env("BACKUP_ENCRYPTION_KEY", default="")
 # El programador corre junto a gunicorn (scripts/start.sh). "off" lo apaga,
 # por ejemplo si se pasa a un servicio cron de Railway aparte.
 AUTOMATIC_BACKUPS = env("AUTOMATIC_BACKUPS", default="on")
+
+# --------------------------------------------------------------------------
+#  US-28 — Notificaciones push y recordatorios
+# --------------------------------------------------------------------------
+# La credencial de servicio de Firebase: el JSON entero (en Railway, pegado
+# en la variable) o la ruta a ese archivo, guardado FUERA del repositorio.
+# **Es secreta**: quien la tiene puede mandar push a todos los pacientes. Sin
+# ella el backend no se cae: los push se anotan en el log y no salen, y el
+# correo sigue saliendo igual. Ver `notifications/push.py`.
+FIREBASE_CREDENTIALS = env("FIREBASE_CREDENTIALS", default="")
+# Los recordatorios corren junto a gunicorn, como las copias automáticas
+# (scripts/start.sh). "off" los apaga.
+APPOINTMENT_REMINDERS = env("APPOINTMENT_REMINDERS", default="on")
+# Cuántas horas antes de la ficha sale el recordatorio.
+APPOINTMENT_REMINDER_HOURS = env.int("APPOINTMENT_REMINDER_HOURS", default=24)
 
 # --------------------------------------------------------------------------
 #  US-18 — Pago en línea

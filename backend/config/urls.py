@@ -25,6 +25,8 @@ la ruta crítica del sprint y no podía esperar a que ``payments`` y
 ``encounters`` existieran (avisar al SM). ``encounters`` entra con US-24;
 ``payments`` entra con US-18, por la misma excepción: es una app nueva.
 
+**Sprint 3.** ``notifications`` entra con US-28 (push), por la misma excepción.
+
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py       (US-43, US-44, US-45)
     usuarios, roles, login     accounts/urls.py      (US-01, US-02, US-04)
@@ -38,6 +40,7 @@ la ruta crítica del sprint y no podía esperar a que ``payments`` y
     copias de seguridad        backups/urls.py       (característica 6)
     asistente                  assistant/urls.py     (US-31, US-32, US-34)
     atención médica            encounters/urls.py    (US-24, US-25)
+    notificaciones push        notifications/urls.py (US-28)
 """
 
 from django.urls import include, path
@@ -81,4 +84,5 @@ urlpatterns = [
     path("api/appointments/", include("appointments.urls")),
     path("api/encounters/", include("encounters.urls")),
     path("api/payments/", include("payments.urls")),
+    path("api/notifications/", include("notifications.urls")),
 ]

@@ -10,6 +10,12 @@
 *.key
 credentials.json
 service-account*.json
+# US-28: la credencial de servicio de Firebase y la configuración del cliente.
+# La app recibe sus valores por --dart-define; el backend, por
+# FIREBASE_CREDENTIALS. Ninguno de estos archivos entra al repositorio.
+*firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
 
 # ================== Python / Django ==================
 __pycache__/

@@ -183,6 +183,13 @@ class CancelAppointmentView(APIView):
             request, Action.APPOINTMENT_CANCEL, "appointment", appointment.id,
             detail={"refund_eligible": appointment.refund_eligible},
         )
+
+        # US-28: el aviso por push y por correo, después del COMMIT y ya con
+        # la devolución resuelta, para poder decir si se devolvió el pago.
+        from notifications.services import CANCELLED, notify
+
+        transaction.on_commit(lambda: notify(CANCELLED, appointment.id,
+                                             appointment.organization_id))
         return Response(AppointmentSerializer(appointment).data)
 
 
