@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/notifications/push.dart';
 import 'core/router/app_router.dart';
 import 'core/session/session.dart';
 import 'core/session/session_scope.dart';
@@ -30,6 +31,39 @@ class CentroMedicoApp extends StatefulWidget {
 
 class _CentroMedicoAppState extends State<CentroMedicoApp> {
   late final GoRouter _router = buildRouter(widget.session);
+
+  @override
+  void initState() {
+    super.initState();
+    // US-28: tocar un aviso de ficha abre esa ficha.
+    Push.instance.alAbrirFicha = _abrirFicha;
+  }
+
+  /// Abre la ficha de un aviso tocado.
+  ///
+  /// Si la app recién arranca, la sesión todavía se está leyendo y el router
+  /// manda todo a la pantalla de carga: se espera a que entre. Si no hay
+  /// nadie adentro, no se abre nada: la ficha es de quien inició sesión.
+  void _abrirFicha(String appointmentId) {
+    final session = widget.session;
+    void ir() => WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _router.go('/appointments/$appointmentId'),
+        );
+
+    if (session.isSignedIn) {
+      ir();
+      return;
+    }
+    if (session.status != SessionStatus.unknown) return;
+
+    void alEntrar() {
+      if (session.status == SessionStatus.unknown) return;
+      session.removeListener(alEntrar);
+      if (session.isSignedIn) ir();
+    }
+
+    session.addListener(alEntrar);
+  }
 
   @override
   Widget build(BuildContext context) {

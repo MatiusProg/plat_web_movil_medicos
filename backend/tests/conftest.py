@@ -69,6 +69,14 @@ PERMISOS_PACIENTE = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def sin_firebase_real(settings):
+    """US-28: ninguna prueba manda un push de verdad, aunque el `.env` de quien
+    las corre tenga la credencial de Firebase. Las que prueban el envío ponen
+    la suya, falsa, con `override_settings`."""
+    settings.FIREBASE_CREDENTIALS = ""
+
+
 @pytest.fixture
 def platform_admin(db):
     """El Superadministrador de Plataforma: sin organización, por definición."""

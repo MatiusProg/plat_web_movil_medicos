@@ -114,13 +114,14 @@ def confirm_payment(payment: Payment, *, provider_payment_id: str = "",
         appointment.expires_at = None
         appointment.save(update_fields=["status", "expires_at", "updated_at"])
 
-        # US-21: el aviso por correo con el comprobante y el enlace para
-        # confirmar asistencia. Después del COMMIT: si la transacción se
-        # revierte, no se manda un correo de una ficha que no quedó confirmada.
-        from appointments.attendance import send_confirmation_email
+        # US-21 y US-28: el aviso por correo —con el comprobante y el enlace
+        # para confirmar asistencia— y por push. Después del COMMIT: si la
+        # transacción se revierte, no se avisa de una ficha que no quedó
+        # confirmada.
+        from notifications.services import CONFIRMED, notify
 
-        transaction.on_commit(lambda: send_confirmation_email(appointment.id,
-                                                              appointment.organization_id))
+        transaction.on_commit(lambda: notify(CONFIRMED, appointment.id,
+                                             appointment.organization_id))
 
     _asentar(request, payment, "pagado")
     return payment

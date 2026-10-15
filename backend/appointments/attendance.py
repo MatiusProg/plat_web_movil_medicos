@@ -100,14 +100,21 @@ def attendance_link(appointment: Appointment) -> str:
     )
 
 
-def _destinatario(appointment: Appointment) -> str:
-    """El correo del paciente o, si es un dependiente sin cuenta, el del titular."""
+def recipient_user(appointment: Appointment):
+    """Quién recibe los avisos de la ficha: el paciente o, si es un dependiente
+    sin cuenta, su titular. Lo usan el correo y el push de US-28."""
     paciente = appointment.patient
     for candidato in (paciente, paciente.guardian):
         user = getattr(candidato, "user", None) if candidato else None
         if user is not None and user.email:
-            return user.email
-    return ""
+            return user
+    return None
+
+
+def _destinatario(appointment: Appointment) -> str:
+    """El correo del paciente o, si es un dependiente sin cuenta, el del titular."""
+    user = recipient_user(appointment)
+    return user.email if user is not None else ""
 
 
 def send_confirmation_email(appointment_id, organization_id) -> bool:

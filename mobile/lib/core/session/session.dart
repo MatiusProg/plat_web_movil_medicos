@@ -19,6 +19,7 @@ import 'package:flutter/foundation.dart';
 import '../api/client.dart';
 import '../api/errors.dart';
 import '../config.dart';
+import '../notifications/push.dart';
 import 'jwt.dart';
 import 'token_storage.dart';
 
@@ -92,14 +93,23 @@ enum SessionStatus {
 }
 
 class Session extends ChangeNotifier implements AuthContext {
-  Session({TokenStorage? storage, ApiClient? refreshClient, this._meClient})
-      : _storage = storage ?? TokenStorage(),
+  Session({
+    TokenStorage? storage,
+    ApiClient? refreshClient,
+    this._meClient,
+    DeviceRegistrar? devices,
+  })  : _storage = storage ?? TokenStorage(),
         // Cliente SIN contexto de autenticación: es el que renueva. Si tuviera
         // contexto, pedir un token para renovar dispararía otra renovación.
-        _refreshClient = refreshClient ?? ApiClient();
+        _refreshClient = refreshClient ?? ApiClient(),
+        _devices = devices ?? Push.instance;
 
   final TokenStorage _storage;
   final ApiClient _refreshClient;
+
+  /// US-28: el registro del teléfono para los avisos push. Sin la
+  /// configuración de Firebase no hace nada.
+  final DeviceRegistrar _devices;
 
   // Con contexto (`auth: this`), a diferencia de `_refreshClient`: `/me/`
   // necesita el `Authorization` vigente. No se arma en el inicializador
@@ -187,6 +197,14 @@ class Session extends ChangeNotifier implements AuthContext {
     _setStatus(SessionStatus.signedIn);
 
     await recargarUsuario();
+    _registrarTelefono();
+  }
+
+  /// US-28: registra este teléfono para los avisos de fichas, sin esperar.
+  /// El superadministrador no tiene fichas de las que avisarle.
+  void _registrarTelefono() {
+    if (!isSignedIn || (_user?.isPlatformAdmin ?? false)) return;
+    unawaited(_devices.registrar(_me));
   }
 
   /// Vuelve a pedir el perfil.
@@ -261,6 +279,7 @@ class Session extends ChangeNotifier implements AuthContext {
     // El perfil vino con el login, pero lo que incluye el plan no: se pide
     // aparte y, cuando llega, la pantalla de inicio se redibuja.
     unawaited(_cargarPlan().then((_) => notifyListeners()));
+    _registrarTelefono();
   }
 
   /// US-05 — Reemplaza el par de tokens sin cerrar la sesión.
@@ -359,8 +378,15 @@ class Session extends ChangeNotifier implements AuthContext {
 
     if (refresh == null || access == null) return;
 
+    final api = ApiClient(auth: _StaticAuth(access, _organization));
+
+    // US-28: quien sale no tiene que seguir recibiendo los avisos de sus
+    // fichas en este teléfono. Va antes del logout, con el token que todavía
+    // vale; nunca lanza.
+    await _devices.olvidar(api);
+
     try {
-      await ApiClient(auth: _StaticAuth(access, _organization)).post(
+      await api.post(
         '/accounts/logout/',
         body: {'refresh': refresh},
       );

@@ -43,6 +43,13 @@ dependencies:
   # del dispositivo y al backend sólo viaja el texto.
   speech_to_text: ^7.3.0
   open_filex: ^4.7.0
+  # US-28: avisos push por Firebase Cloud Messaging. La configuración llega
+  # por --dart-define (ver lib/core/notifications/push.dart); sin ella la app
+  # arranca sin push. flutter_local_notifications muestra el aviso cuando la
+  # app está abierta, que Android no lo hace solo.
+  firebase_core: ^5.0.0
+  firebase_messaging: ^17.0.0
+  flutter_local_notifications: ^22.3.2
 
 dev_dependencies:
   flutter_test:

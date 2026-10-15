@@ -167,6 +167,9 @@ EXCLUDED = {
     "backups.StoredBackup": "son las propias copias automáticas",
     # Se regeneran desde el catálogo con «Reindexar» (US-31).
     "assistant.CatalogFragment": "índice del asistente; se regenera desde el catálogo",
+    # US-28: la app vuelve a registrar el token de su teléfono al iniciar
+    # sesión, y uno viejo restaurado mandaría avisos a teléfonos ajenos.
+    "notifications.DeviceToken": "direcciones de los teléfonos; la app las registra sola",
 }
 
 BY_KEY = {table.key: table for table in TABLES}

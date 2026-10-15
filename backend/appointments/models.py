@@ -113,6 +113,14 @@ class Appointment(models.Model):
         blank=True,
     )
 
+    # US-28 — cuándo salió el recordatorio previo a la ficha. NULL = todavía
+    # no salió. Es lo que impide mandarlo dos veces: se marca en la misma
+    # transacción que lo envía (ver `appointments/reminders.py`).
+    reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     # Vence la reserva `pending_payment`: pasado este momento, el turno se
     # considera libre aunque la fila siga existiendo con este estado hasta que
     # algo la marque `expired` (lectura perezosa, sin tarea en segundo plano).

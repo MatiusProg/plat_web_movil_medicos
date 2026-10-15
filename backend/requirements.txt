@@ -78,6 +78,13 @@ django-anymail==15.2
 # Fernet. Ya venía como dependencia de otra; se fija porque ahora se usa.
 cryptography==50.0.1
 
+# US-28: push por la API HTTP v1 de Firebase Cloud Messaging, autenticada con
+# la credencial de servicio. Ya venían como dependencias de google-genai; se
+# fijan porque ahora se usan. No se usa firebase-admin: trae Firestore,
+# Storage y gRPC para una sola llamada HTTP. Ver notifications/push.py.
+google-auth==2.60.0
+requests==2.34.2
+
 # ---------- Pruebas ----------
 # RNF-08 y criterio 4 de la Definición de Terminado: las pruebas de
 # aislamiento se conectan como app_user, nunca como postgres.
