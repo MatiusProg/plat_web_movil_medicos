@@ -140,9 +140,9 @@ def _email(event: str, appointment) -> tuple[str, str]:
             + _datos(appointment) + "\n"
         )
         if appointment.attendance_confirmed_at is None:
-            cuerpo += ("Confirmá que vas a asistir con este enlace:\n\n"
+            cuerpo += ("Confirma que vas a asistir con este enlace:\n\n"
                        f"  {attendance_link(appointment)}\n\n")
-        cuerpo += ("Si no podés ir, cancelala desde la aplicación para liberar "
+        cuerpo += ("Si no puedes ir, cancélala desde la aplicación para liberar "
                    "el turno.\n")
         return f"Recordatorio: tu ficha del {inicio:%d/%m}", cuerpo
 
@@ -152,7 +152,7 @@ def _email(event: str, appointment) -> tuple[str, str]:
         + f"Tu ficha en {organizacion.name} fue cancelada.\n\n"
         + _datos(appointment)
         + (f"\n{devolucion}\n" if devolucion else "")
-        + "\nPodés reservar otra desde la aplicación.\n"
+        + "\nPuedes reservar otra desde la aplicación.\n"
     )
     return f"Tu ficha del {inicio:%d/%m} fue cancelada", cuerpo
 
