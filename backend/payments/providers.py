@@ -1,6 +1,6 @@
 """US-18 — Con quién se cobra.
 
-Dos proveedores con la misma forma:
+Tres proveedores con la misma forma. Los dos primeros cobran en línea:
 
 - **Stripe**, en modo prueba. El paciente paga en el Checkout alojado por
   Stripe —la tarjeta nunca pasa por nuestros servidores— y la ficha la
@@ -11,6 +11,13 @@ Dos proveedores con la misma forma:
   se prueba igual con o sin cuenta de Stripe, y el móvil no puede distinguir
   uno de otro: en los dos casos abre una URL y espera a que el backend diga
   que la ficha quedó confirmada.
+
+El tercero no:
+
+- **Efectivo en ventanilla** (US-23). Recepción cobra en el mostrador y lo
+  registra; no hay checkout ni webhook. Existe como proveedor para que la
+  devolución de una cancelación a tiempo (`services.refund_payment`) lo
+  trate igual que a los otros.
 """
 
 from __future__ import annotations
@@ -174,9 +181,29 @@ class SimulatedProvider:
             raise ProviderError("El enlace de pago no es válido o venció.") from error
 
 
+class CashProvider:
+    """US-23 — Efectivo en ventanilla."""
+
+    name = "cash"
+
+    def create_checkout(self, payment, request, return_to="app") -> Checkout:
+        # No hay página donde pagar: el efectivo se registra con
+        # `services.register_cash_payment`. Si algo llega acá es un error de
+        # configuración (PAYMENTS_PROVIDER=cash), no un pago.
+        raise ProviderError("El pago en efectivo se registra en ventanilla, "
+                            "no tiene checkout.")
+
+    def refund(self, payment) -> None:
+        # El dinero lo devuelve recepción en el mostrador: acá sólo se deja
+        # el pago `refunded`, que es lo que le dice que tiene que devolverlo.
+        return None
+
+
 def provider_for(name: str):
     if name == "stripe":
         return StripeProvider()
     if name == "simulated":
         return SimulatedProvider()
+    if name == "cash":
+        return CashProvider()
     raise ProviderError(f"Proveedor de pago desconocido: {name}")

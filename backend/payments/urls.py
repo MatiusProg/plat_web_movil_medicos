@@ -13,6 +13,12 @@ urlpatterns = [
         views.CheckoutView.as_view(),
         name="checkout",
     ),
+    # ---------- US-23 — Cobro en ventanilla ----------------------------
+    path(
+        "appointments/<uuid:pk>/cash/",
+        views.CashPaymentView.as_view(),
+        name="cash",
+    ),
     # Lo llama Stripe, sin usuario: se autentica con la firma del evento.
     path("webhooks/stripe/", views.stripe_webhook, name="stripe-webhook"),
     # Adonde vuelve el navegador después de pagar o de cancelar.
