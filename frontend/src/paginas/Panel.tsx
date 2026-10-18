@@ -12,9 +12,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { pedir } from '@/api/cliente'
+import { Bloque, Cifra, Uso } from '@/componentes/Indicadores'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
-import { ErrorCatalogo, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
+import { ErrorCatalogo, SECONDARY, mensajeError } from './catalogo_comun'
 
 interface FichaPanel {
   id: string
@@ -39,7 +40,7 @@ interface DatosPanel {
     incluye: { asistente: boolean; exportar_reportes: boolean }
   }
   hoy?: { total: number; atendidas: number; por_atender: number; canceladas: number; proximas: FichaPanel[] }
-  asistencia?: { atendidas: number; ausentes: number; canceladas: number }
+  asistencia?: { atendidas: number; ausentes: number; canceladas: number; tasa_inasistencia: number | null }
   mi_agenda?: { fichas: FichaPanel[]; sin_firmar: number }
   mis_fichas?: FichaPanel[]
   incluye?: { asistente: boolean; exportar_reportes: boolean }
@@ -56,40 +57,6 @@ const fechaLarga = (iso: string) =>
 
 const fechaFicha = (iso: string) =>
   new Date(iso).toLocaleString('es-BO', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-
-function Bloque({ titulo, accion, children }: { titulo: string; accion?: ReactNode; children: ReactNode }) {
-  return <section className={PANEL} aria-label={titulo}>
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="font-semibold text-tinta-900 dark:text-tinta-100">{titulo}</h2>
-      {accion}
-    </div>
-    {children}
-  </section>
-}
-
-function Cifra({ valor, etiqueta, tono = 'normal' }: { valor: number | string; etiqueta: string; tono?: 'normal' | 'marca' | 'espera' | 'alerta' }) {
-  const color = { normal: 'text-tinta-900 dark:text-tinta-50', marca: 'text-marca-700 dark:text-marca-300', espera: 'text-espera-700 dark:text-espera-200', alerta: 'text-alerta-700 dark:text-alerta-500' }[tono]
-  return <div>
-    <p className={`text-3xl font-semibold tabular-nums ${color}`}>{valor}</p>
-    <p className="mt-1 text-sm text-tinta-500">{etiqueta}</p>
-  </div>
-}
-
-/** Una barra de uso contra el tope del plan. Ámbar desde el 80 %, rojo al llegar. */
-function Uso({ etiqueta, usados, tope }: { etiqueta: string; usados: number; tope: number | null }) {
-  const porcentaje = tope ? Math.min(100, Math.round((usados / tope) * 100)) : 0
-  const color = !tope ? 'bg-marca-500' : porcentaje >= 100 ? 'bg-alerta-600' : porcentaje >= 80 ? 'bg-espera-600' : 'bg-marca-500'
-  return <div>
-    <div className="flex items-baseline justify-between gap-3 text-sm">
-      <span className="text-tinta-700 dark:text-tinta-300">{etiqueta}</span>
-      <span className="tabular-nums text-tinta-500">{usados}{tope !== null ? ` de ${tope}` : ' · sin límite'}</span>
-    </div>
-    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-tinta-100 dark:bg-tinta-800" role="progressbar"
-      aria-label={etiqueta} aria-valuenow={usados} aria-valuemin={0} aria-valuemax={tope ?? undefined}>
-      <div className={`h-full rounded-full ${color}`} style={{ width: tope ? `${porcentaje}%` : '100%', opacity: tope ? 1 : 0.25 }} />
-    </div>
-  </div>
-}
 
 function ListaFichas({ fichas, vacio, accion }: { fichas: FichaPanel[]; vacio: string; accion?: (f: FichaPanel) => ReactNode }) {
   if (fichas.length === 0) return <p className="text-sm text-tinta-500">{vacio}</p>
@@ -212,7 +179,9 @@ export function Panel() {
           const pct = (n: number) => total ? Math.round((n / total) * 100) : 0
           return <Bloque titulo="Asistencia, últimos 30 días">
             {total === 0 ? <p className="text-sm text-tinta-500">Todavía no hay fichas pasadas.</p> : <>
-              <Cifra valor={`${pct(a.ausentes)} %`} etiqueta="de ausentismo" tono={pct(a.ausentes) >= 15 ? 'espera' : 'normal'} />
+              {/* La tasa de US-29: las canceladas a tiempo no cuentan como inasistencia. */}
+              <Cifra valor={a.tasa_inasistencia === null ? '—' : `${(a.tasa_inasistencia * 100).toLocaleString('es-BO', { maximumFractionDigits: 1 })} %`}
+                etiqueta="de inasistencia" tono={(a.tasa_inasistencia ?? 0) >= 0.15 ? 'espera' : 'normal'} />
               <div className="mt-4 flex h-2 overflow-hidden rounded-full" aria-hidden="true">
                 <div className="bg-marca-500" style={{ width: `${pct(a.atendidas)}%` }} />
                 <div className="bg-espera-600" style={{ width: `${pct(a.ausentes)}%` }} />

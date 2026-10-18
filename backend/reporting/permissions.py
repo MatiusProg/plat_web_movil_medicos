@@ -48,3 +48,10 @@ class CanSaveReports(RequiresPermission):
 
 class CanShareReports(RequiresPermission):
     code = "reporting.report.share"
+
+
+class CanReadKpis(RequiresPermission):
+    """US-29 — el panel de indicadores. Aparte de ``reporting.report.run``
+    porque muestra ingresos, y eso no se le da a quien sólo arma listados."""
+
+    code = "reporting.kpi.read"

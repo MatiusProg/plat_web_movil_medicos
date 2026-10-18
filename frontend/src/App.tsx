@@ -33,6 +33,7 @@ import { Atencion } from '@/paginas/Atencion'
 import { Historial } from '@/paginas/Historial'
 import { MiHistoria } from '@/paginas/MiHistoria'
 import { Reportes } from '@/paginas/Reportes'
+import { Kpis } from '@/paginas/Kpis'
 import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
 import { Pacientes } from '@/paginas/Pacientes'
@@ -221,6 +222,8 @@ export default function App() {
                         <Route path="/mi-historia" element={<MiHistoria />} />
                         {/* Característica general 5: constructor de reportes, y por voz */}
                         <Route path="/reportes" element={<Reportes />} />
+                        {/* US-29: panel de indicadores (KPIs) */}
+                        <Route path="/kpis" element={<Kpis />} />
                         {/* Característica general 6: copias de seguridad por plan */}
                         <Route path="/respaldos" element={<Respaldos />} />
 
