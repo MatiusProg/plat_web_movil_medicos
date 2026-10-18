@@ -64,6 +64,7 @@ from catalog.models import (
 )
 from encounters.models import Encounter
 from patients.models import Patient, PatientHistoryEntry
+from payments.models import Payment
 from scheduling.models import Schedule
 from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization, SubscriptionPlan
@@ -429,6 +430,7 @@ class Sembrador:
         }
         usuarios_paciente = {p.id: p.user for p in pacientes if p.user_id}
         nuevas_fichas, nuevas_atenciones, desenlaces = [], [], {}
+        nuevos_pagos = []
 
         agendas = (Schedule.objects.filter(organization=self.org, is_active=True)
                    .select_related("practitioner"))
@@ -466,6 +468,17 @@ class Sembrador:
                             )
                             nuevas_fichas.append(ficha)
                             desenlaces[estado] = desenlaces.get(estado, 0) + 1
+                            # US-29: una ficha confirmada, atendida o ausente
+                            # está pagada; el panel de ingresos lo necesita.
+                            if estado in ("confirmed", "attended", "no_show"):
+                                nuevos_pagos.append(Payment(
+                                    organization=self.org, appointment=ficha,
+                                    created_by=reservo,
+                                    amount=Decimal(self.rnd.choice([80, 100, 120, 150])),
+                                    currency="BOB", provider="simulated",
+                                    status="succeeded",
+                                    paid_at=min(ahora, inicio - dt.timedelta(days=1)),
+                                ))
                             if estado == "attended":
                                 nuevas_atenciones.append(self._atencion(
                                     ficha, agenda.practitioner,
@@ -478,6 +491,8 @@ class Sembrador:
         # minutos de pura latencia.
         Appointment.objects.bulk_create(nuevas_fichas, batch_size=500)
         Encounter.objects.bulk_create(nuevas_atenciones, batch_size=500)
+        Payment.objects.bulk_create(nuevos_pagos, batch_size=500)
+        self._contar("pagos", len(nuevos_pagos))
         self._contar("fichas", len(nuevas_fichas))
         self._contar("atenciones firmadas", len(nuevas_atenciones))
         self.resumen["desenlaces"] = ", ".join(f"{k} {v}" for k, v in sorted(desenlaces.items()))

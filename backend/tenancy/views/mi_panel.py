@@ -7,7 +7,8 @@ cada persona necesita al empezar el día.
     plan        administración: uso del plan contra sus topes (tenancy/plans.py)
     hoy         recepción y administración: las fichas de hoy del centro
     asistencia  recepción y administración: atendidas, ausentes y canceladas
-                de los últimos 30 días (el dato del modelo de inasistencia)
+                de los últimos 30 días, y la tasa de inasistencia con la misma
+                definición que el panel de KPIs (US-29)
     mi_agenda   médico: sus fichas de hoy y sus atenciones sin firmar
     mis_fichas  paciente: sus próximas fichas y las de sus dependientes
 
@@ -23,6 +24,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from appointments.kpis import debian_atenderse_q, inasistencia_q
 from appointments.models import Appointment
 from catalog.models import Branch, Practitioner
 
@@ -123,13 +125,23 @@ def mi_panel(request):
         datos["hoy"] = {**conteo, "proximas": [_ficha(f) for f in proximas]}
 
         hace_30 = ahora - dt.timedelta(days=30)
-        datos["asistencia"] = Appointment.objects.filter(
+        # US-29: «ausentes» y la tasa siguen la definición del panel de KPIs
+        # (`appointments/kpis.py`), para que los dos den el mismo número. Una
+        # confirmada vencida sin check-in también es ausente, y las canceladas
+        # no entran en el denominador de la tasa.
+        asistencia = Appointment.objects.filter(
             organization=organizacion, starts_at__gte=hace_30, starts_at__lt=ahora,
         ).aggregate(
             atendidas=Count("id", filter=Q(status="attended")),
-            ausentes=Count("id", filter=Q(status="no_show")),
+            ausentes=Count("id", filter=inasistencia_q(ahora)),
             canceladas=Count("id", filter=Q(status="cancelled")),
+            esperadas=Count("id", filter=debian_atenderse_q(ahora)),
         )
+        esperadas = asistencia.pop("esperadas")
+        asistencia["tasa_inasistencia"] = (
+            round(asistencia["ausentes"] / esperadas, 4) if esperadas else None
+        )
+        datos["asistencia"] = asistencia
 
     # ---- Médico: su agenda del día ----------------------------------------
     profesional = Practitioner.objects.filter(user=usuario, is_active=True).first()

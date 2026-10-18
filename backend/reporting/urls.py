@@ -12,11 +12,13 @@ es la única excepción que ese archivo admite según su propio encabezado.
     PATCH  /api/reporting/reports/{id}/      sólo el dueño
     DELETE /api/reporting/reports/{id}/      sólo el dueño
     POST   /api/reporting/reports/{id}/run/  ejecutar uno guardado
+    GET    /api/reporting/kpis/              el panel de indicadores (US-29)
 """
 
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .kpi_views import KpiView
 from .views import (
     DatasetListView,
     InterpretVoiceView,
@@ -33,5 +35,6 @@ urlpatterns = [
     path("datasets/", DatasetListView.as_view(), name="datasets"),
     path("run/", RunReportView.as_view(), name="run"),
     path("interpret/", InterpretVoiceView.as_view(), name="interpret"),
+    path("kpis/", KpiView.as_view(), name="kpis"),
     *router.urls,
 ]

@@ -60,6 +60,7 @@ type ItemMenu = {
         | 'servicio'
         | 'respaldo'
         | 'reportes'
+        | 'indicadores'
         | 'historia'
     /**
      * Quién ve la entrada.
@@ -154,6 +155,14 @@ const items: ItemMenu[] = [
         seccion: 'Organización',
         icono: 'reportes',
         requiere: 'reporting.report.run',
+    },
+    // US-29 — ocupación, inasistencia, demanda e ingresos.
+    {
+        etiqueta: 'Indicadores',
+        ruta: '/kpis',
+        seccion: 'Organización',
+        icono: 'indicadores',
+        requiere: 'reporting.kpi.read',
     },
     // Característica general 6 — la frecuencia depende del plan.
     {
@@ -785,6 +794,10 @@ function IconoMenu({
     )
     if (tipo === 'reportes') return (
         <svg {...trazo}><path d="M4 19V5a1 1 0 0 1 1-1h9l6 6v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" /><path d="M14 4v6h6" /><path d="M8 17v-3M12 17v-5M16 17v-2" /></svg>
+    )
+
+    if (tipo === 'indicadores') return (
+        <svg {...trazo}><path d="M4 20h16" /><path d="M6 20v-6M11 20V9M16 20v-9M21 20V5" /></svg>
     )
 
     if (tipo === 'respaldo') return (
