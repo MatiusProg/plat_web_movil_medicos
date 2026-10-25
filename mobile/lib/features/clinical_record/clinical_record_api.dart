@@ -5,6 +5,9 @@
 /// el paciente ve la suya y la de las personas a su cargo (US-07); cualquier
 /// otro paciente le da 404. Sólo trae atenciones **firmadas**: un borrador
 /// todavía no es historia clínica.
+///
+/// US-27: cada atención trae además la receta y las órdenes que el médico
+/// emitió (US-26), y la receta se baja en PDF con [descargarReceta].
 library;
 
 import 'package:mobile/core/api/client.dart';
@@ -40,6 +43,50 @@ class Enmienda {
       );
 }
 
+/// US-26 — Un medicamento de la receta.
+class Medicamento {
+  const Medicamento({
+    required this.medication,
+    required this.dose,
+    required this.frequency,
+    required this.duration,
+    required this.instructions,
+  });
+
+  final String medication;
+  final String dose;
+  final String frequency;
+  final String duration;
+  final String instructions;
+
+  factory Medicamento.fromJson(Map<String, dynamic> json) => Medicamento(
+        medication: json['medication'] as String? ?? '',
+        dose: json['dose'] as String? ?? '',
+        frequency: json['frequency'] as String? ?? '',
+        duration: json['duration'] as String? ?? '',
+        instructions: json['instructions'] as String? ?? '',
+      );
+}
+
+/// US-26 — Una orden de laboratorio o de estudio.
+class Orden {
+  const Orden({
+    required this.kindDisplay,
+    required this.description,
+    required this.notes,
+  });
+
+  final String kindDisplay;
+  final String description;
+  final String notes;
+
+  factory Orden.fromJson(Map<String, dynamic> json) => Orden(
+        kindDisplay: json['kind_display'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        notes: json['notes'] as String? ?? '',
+      );
+}
+
 class Atencion {
   const Atencion({
     required this.id,
@@ -50,6 +97,8 @@ class Atencion {
     required this.signedByName,
     required this.signedAt,
     required this.enmiendas,
+    this.medicamentos = const [],
+    this.ordenes = const [],
   });
 
   final String id;
@@ -62,6 +111,11 @@ class Atencion {
   final String signedByName;
   final DateTime? signedAt;
   final List<Enmienda> enmiendas;
+  final List<Medicamento> medicamentos;
+  final List<Orden> ordenes;
+
+  /// Hay algo que bajar en PDF.
+  bool get tieneReceta => medicamentos.isNotEmpty || ordenes.isNotEmpty;
 
   factory Atencion.fromJson(Map<String, dynamic> json) => Atencion(
         id: json['id'] as String? ?? '',
@@ -79,6 +133,14 @@ class Atencion {
         enmiendas: (json['amendments'] as List? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map(Enmienda.fromJson)
+            .toList(),
+        medicamentos: (json['prescription_items'] as List? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(Medicamento.fromJson)
+            .toList(),
+        ordenes: (json['orders'] as List? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(Orden.fromJson)
             .toList(),
       );
 }
@@ -123,3 +185,17 @@ Future<HistoriaClinica> verHistoriaClinica(
     data is Map<String, dynamic> ? data : const <String, dynamic>{},
   );
 }
+
+/// US-27 — La receta firmada de una atención, en PDF.
+///
+/// El backend la entrega sólo de una atención firmada y a quien tiene alcance
+/// sobre el historial (el paciente o el titular de un dependiente), y deja el
+/// asiento en la bitácora.
+Future<ArchivoRecibido> descargarReceta(
+  ApiClient client, {
+  required String encounterId,
+}) =>
+    client.download(
+      'GET',
+      '/encounters/${Uri.encodeComponent(encounterId)}/prescription.pdf',
+    );

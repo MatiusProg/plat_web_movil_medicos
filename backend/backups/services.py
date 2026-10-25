@@ -485,6 +485,20 @@ def _write(table, filas, organization) -> int:
             .values_list("pk", flat=True)
         }
         filas = [f for f in filas if str(f.get("pk")) not in existentes]
+        if table.draft_only_parent:
+            # Un renglón de receta que falta y cuyo encuentro ya se firmó se
+            # quitó del borrador antes de firmar: no es parte de lo firmado.
+            campo = table.draft_only_parent
+            Encounter = apps.get_model("encounters", "Encounter")
+            firmados = {
+                str(pk) for pk in
+                Encounter.objects.filter(
+                    organization=organization, status="signed",
+                    pk__in=[f["fields"].get(campo) for f in filas],
+                ).values_list("pk", flat=True)
+            }
+            filas = [f for f in filas
+                     if str(f["fields"].get(campo)) not in firmados]
         if not filas:
             return 0
 

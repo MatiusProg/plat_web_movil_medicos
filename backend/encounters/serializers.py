@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from appointments.models import Appointment
 
-from .models import Encounter, EncounterAmendment
+from .models import Encounter, EncounterAmendment, MedicalOrder, PrescriptionItem
 
 
 class PatientSummarySerializer(serializers.Serializer):
@@ -27,8 +27,41 @@ class AmendmentSerializer(serializers.ModelSerializer):
 
 
 class AmendmentWriteSerializer(serializers.Serializer):
-    section = serializers.ChoiceField(choices=list(Encounter.SECTIONS.items()))
+    section = serializers.ChoiceField(choices=list(Encounter.AMENDABLE.items()))
     text = serializers.CharField(trim_whitespace=True, max_length=5000)
+
+
+class PrescriptionItemSerializer(serializers.ModelSerializer):
+    """US-26 — Un medicamento de la receta. Sirve para leer y para escribir."""
+
+    medication = serializers.CharField(max_length=200, trim_whitespace=True)
+    dose = serializers.CharField(max_length=80, trim_whitespace=True)
+    frequency = serializers.CharField(max_length=80, trim_whitespace=True)
+    duration = serializers.CharField(max_length=80, trim_whitespace=True)
+    instructions = serializers.CharField(
+        max_length=300, trim_whitespace=True, required=False, allow_blank=True,
+    )
+
+    class Meta:
+        model = PrescriptionItem
+        fields = ["id", "medication", "dose", "frequency", "duration",
+                  "instructions", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class MedicalOrderSerializer(serializers.ModelSerializer):
+    """US-26 — Una orden de laboratorio o de estudio."""
+
+    kind_display = serializers.CharField(source="get_kind_display", read_only=True)
+    description = serializers.CharField(max_length=300, trim_whitespace=True)
+    notes = serializers.CharField(
+        max_length=300, trim_whitespace=True, required=False, allow_blank=True,
+    )
+
+    class Meta:
+        model = MedicalOrder
+        fields = ["id", "kind", "kind_display", "description", "notes", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 class EncounterSerializer(serializers.ModelSerializer):
@@ -39,6 +72,8 @@ class EncounterSerializer(serializers.ModelSerializer):
     appointment_starts_at = serializers.DateTimeField(source="appointment.starts_at", read_only=True)
     signed_by_name = serializers.CharField(source="signed_by.full_name", read_only=True, default=None)
     amendments = AmendmentSerializer(many=True, read_only=True)
+    prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
+    orders = MedicalOrderSerializer(many=True, read_only=True)
 
     class Meta:
         model = Encounter
@@ -46,7 +81,8 @@ class EncounterSerializer(serializers.ModelSerializer):
             "id", "status", "status_display", "appointment", "appointment_starts_at",
             "patient", "practitioner_name", "branch_name",
             "reason", "evolution", "diagnosis", "indications", "treatment",
-            "signed_at", "signed_by_name", "amendments", "created_at", "updated_at",
+            "signed_at", "signed_by_name", "amendments",
+            "prescription_items", "orders", "created_at", "updated_at",
         ]
         read_only_fields = fields
 

@@ -89,6 +89,11 @@ class Table:
     label: str
     restore: bool = True
     strategy: str = PURGE
+    # US-26: el campo que apunta al encuentro, en las tablas que sólo se
+    # escriben mientras el encuentro es borrador. Al restaurar se saltean las
+    # filas cuyo encuentro ya está firmado en la base: lo firmado es lo que
+    # vale, y el trigger de `encounters/0006` rechazaría el INSERT igual.
+    draft_only_parent: str = ""
 
     @property
     def key(self) -> str:
@@ -130,6 +135,10 @@ TABLES: tuple[Table, ...] = (
     Table("encounters", "Encounter", "Atenciones médicas", strategy=APPEND),
     Table("encounters", "EncounterAmendment", "Enmiendas de atenciones",
           strategy=APPEND),
+    Table("encounters", "PrescriptionItem", "Medicamentos recetados",
+          strategy=APPEND, draft_only_parent="encounter"),
+    Table("encounters", "MedicalOrder", "Órdenes médicas",
+          strategy=APPEND, draft_only_parent="encounter"),
 
     # ---------- Reportes ----------
     Table("reporting", "SavedReport", "Reportes guardados"),

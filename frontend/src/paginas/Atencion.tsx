@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  OBLIGATORIAS_PARA_FIRMAR, SECCIONES, agregarEnmienda, firmarEncuentro, guardarBorrador,
-  verAntecedentes, verEncuentro, type Antecedentes, type Encuentro, type Seccion,
+  ENMENDABLES, OBLIGATORIAS_PARA_FIRMAR, SECCIONES, agregarEnmienda, firmarEncuentro, guardarBorrador,
+  verAntecedentes, verEncuentro, type Antecedentes, type Encuentro, type Seccion, type SeccionEnmendable,
 } from '@/api/atencion'
 import { Boton } from '@/componentes/Boton'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
+import { PanelReceta } from './RecetaAtencion'
 
 type Borrador = Record<Seccion, string>
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
@@ -53,7 +54,7 @@ export function Atencion() {
   const [aviso, setAviso] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [confirmarFirma, setConfirmarFirma] = useState(false)
-  const [enmienda, setEnmienda] = useState<{ section: Seccion; text: string }>({ section: 'reason', text: '' })
+  const [enmienda, setEnmienda] = useState<{ section: SeccionEnmendable; text: string }>({ section: 'reason', text: '' })
 
   const cargar = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -145,10 +146,12 @@ export function Atencion() {
       </div>}
     </form>
 
+    <PanelReceta encuentro={encuentro} onCambio={setEncuentro} />
+
     {firmado && enmendar && <form onSubmit={e => void enviarEnmienda(e)} className={`${PANEL} space-y-4`}>
       <div><h2 className="font-semibold text-tinta-900 dark:text-tinta-100">Agregar una enmienda</h2><p className="mt-1 text-sm text-tinta-500">La atención firmada no se modifica. La corrección queda al lado del texto original, con tu nombre y la fecha.</p></div>
       <label className="block space-y-1.5 text-sm"><span className="font-medium text-tinta-700 dark:text-tinta-300">Sección</span>
-        <select className={INPUT} value={enmienda.section} onChange={e => setEnmienda({ ...enmienda, section: e.target.value as Seccion })}>{SECCIONES.map(s => <option key={s.campo} value={s.campo}>{s.etiqueta}</option>)}</select></label>
+        <select className={INPUT} value={enmienda.section} onChange={e => setEnmienda({ ...enmienda, section: e.target.value as SeccionEnmendable })}>{ENMENDABLES.map(s => <option key={s.campo} value={s.campo}>{s.etiqueta}</option>)}</select></label>
       <label className="block space-y-1.5 text-sm"><span className="font-medium text-tinta-700 dark:text-tinta-300">Corrección</span>
         <textarea className={`${INPUT} min-h-20 resize-y`} value={enmienda.text} maxLength={5000} onChange={e => setEnmienda({ ...enmienda, text: e.target.value })} placeholder="Qué se corrige y por qué…" /></label>
       <div className="flex justify-end"><Boton type="submit" className="w-auto" cargando={guardando} disabled={!enmienda.text.trim()}>Agregar enmienda</Boton></div>

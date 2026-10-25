@@ -86,6 +86,15 @@ class Encounter(models.Model):
         "treatment": "Tratamiento",
     }
 
+    # US-26: lo que se puede enmendar es más que las secciones de texto. La
+    # receta y las órdenes de un encuentro firmado tampoco se tocan: se
+    # corrigen con una enmienda, igual que el diagnóstico.
+    AMENDABLE = {
+        **SECTIONS,
+        "prescription": "Receta",
+        "orders": "Órdenes",
+    }
+
     class Meta:
         db_table = "encounters"
         verbose_name = "encuentro clínico"
@@ -139,7 +148,7 @@ class EncounterAmendment(models.Model):
     encounter = models.ForeignKey(
         Encounter, on_delete=models.PROTECT, related_name="amendments",
     )
-    section = models.CharField(max_length=20, choices=list(Encounter.SECTIONS.items()))
+    section = models.CharField(max_length=20, choices=list(Encounter.AMENDABLE.items()))
     text = models.TextField()
     author = models.ForeignKey(
         "accounts.User", on_delete=models.PROTECT,
@@ -155,3 +164,84 @@ class EncounterAmendment(models.Model):
 
     def __str__(self):
         return f"{self.encounter_id} · {self.section}"
+
+
+# --------------------------------------------------------------------------
+#  US-26 — Receta digital y órdenes
+# --------------------------------------------------------------------------
+#
+# Las dos cuelgan del encuentro y comparten su regla: mientras el encuentro es
+# borrador se agregan, se corrigen y se quitan; firmado, no se tocan. Igual
+# que con el encuentro, eso no queda en manos de la vista: lo imponen los
+# triggers de la migración 0006, que miran el estado del encuentro padre.
+#
+# No hay una tabla "receta" con sus renglones colgando: un encuentro tiene a
+# lo sumo una receta, así que la receta *es* el conjunto de medicamentos del
+# encuentro. Una tabla intermedia sólo agregaría un estado más que sincronizar.
+
+
+class PrescriptionItem(models.Model):
+    """Un medicamento recetado en una atención."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="prescription_items",
+    )
+    encounter = models.ForeignKey(
+        Encounter, on_delete=models.PROTECT, related_name="prescription_items",
+    )
+    medication = models.CharField("medicamento", max_length=200)
+    dose = models.CharField("dosis", max_length=80)
+    frequency = models.CharField("frecuencia", max_length=80)
+    duration = models.CharField("duración", max_length=80)
+    instructions = models.CharField(
+        "indicaciones de toma", max_length=300, blank=True, default="",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "encounter_prescription_items"
+        verbose_name = "medicamento recetado"
+        verbose_name_plural = "medicamentos recetados"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.medication} {self.dose}"
+
+
+class MedicalOrder(models.Model):
+    """Una orden de laboratorio o de estudio emitida en una atención."""
+
+    class Kind(models.TextChoices):
+        LABORATORY = "laboratory", "Laboratorio"
+        IMAGING = "imaging", "Imagenología"
+        OTHER = "other", "Otro estudio"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="medical_orders",
+    )
+    encounter = models.ForeignKey(
+        Encounter, on_delete=models.PROTECT, related_name="orders",
+    )
+    kind = models.CharField("tipo", max_length=12, choices=Kind.choices)
+    description = models.CharField("estudio", max_length=300)
+    notes = models.CharField("observaciones", max_length=300, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "encounter_orders"
+        verbose_name = "orden médica"
+        verbose_name_plural = "órdenes médicas"
+        ordering = ["created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(kind__in=["laboratory", "imaging", "other"]),
+                name="ck_order_kind",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.description}"
