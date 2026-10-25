@@ -7,6 +7,14 @@
     POST  <id>/sign/                firmar (queda fijo)
     POST  <id>/amendments/          enmendar un encuentro firmado
 
+    US-26 — la receta y las órdenes, mientras el encuentro es borrador:
+
+    POST         <id>/prescription/          agregar un medicamento
+    PATCH|DELETE <id>/prescription/<renglón>/
+    POST         <id>/orders/                agregar una orden
+    PATCH|DELETE <id>/orders/<orden>/
+    GET          <id>/prescription.pdf       la receta firmada  → bitácora
+
 **Un encuentro ajeno responde 404, no 403.** Un 403 confirma que ese
 encuentro existe, y la existencia de una atención ya es un dato clínico
 (dice que esa persona se atendió). Es el mismo criterio de US-08 con los
@@ -20,7 +28,7 @@ sería una historia paralela sin ninguna de sus protecciones.
 import datetime as dt
 from zoneinfo import ZoneInfo
 
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -31,7 +39,7 @@ from appointments.models import Appointment
 from audit import services as bitacora
 from audit.actions import Action
 
-from . import services
+from . import prescription_pdf, services
 from .models import Encounter
 from .permissions import CanAmendEncounters, CanCreateEncounters, CanReadEncounters
 from .serializers import (
@@ -40,8 +48,15 @@ from .serializers import (
     AmendmentWriteSerializer,
     EncounterDraftSerializer,
     EncounterSerializer,
+    MedicalOrderSerializer,
     OpenEncounterSerializer,
+    PrescriptionItemSerializer,
 )
+
+CHILD_SERIALIZERS = {
+    "prescription": PrescriptionItemSerializer,
+    "orders": MedicalOrderSerializer,
+}
 
 
 def _own_encounter(request, pk):
@@ -51,7 +66,7 @@ def _own_encounter(request, pk):
         .filter(organization=request.user.organization, pk=pk)
         .select_related("patient", "practitioner", "branch", "appointment",
                         "signed_by")
-        .prefetch_related("amendments__author")
+        .prefetch_related("amendments__author", "prescription_items", "orders")
         .first()
     )
     if encuentro is None or not services.is_own(request.user, encuentro):
@@ -75,7 +90,7 @@ class AgendaView(APIView):
         profesional = services.practitioner_of(request.user)
         if profesional is None:
             return Response(
-                {"detail": "No tenés ficha de profesional en esta organización."},
+                {"detail": "No tienes ficha de profesional en esta organización."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -84,7 +99,7 @@ class AgendaView(APIView):
         try:
             dia = dt.date.fromisoformat(texto) if texto else timezone.now().astimezone(tz).date()
         except ValueError:
-            return Response({"date": ["Usá el formato AAAA-MM-DD."]},
+            return Response({"date": ["Usa el formato AAAA-MM-DD."]},
                             status=status.HTTP_400_BAD_REQUEST)
 
         desde = dt.datetime.combine(dia, dt.time.min, tzinfo=tz)
@@ -173,3 +188,118 @@ class EncounterAmendView(APIView):
                section=enmienda.section)
         return Response(AmendmentSerializer(enmienda).data,
                         status=status.HTTP_201_CREATED)
+
+
+# --------------------------------------------------------------------------
+#  US-26 — Receta y órdenes
+# --------------------------------------------------------------------------
+
+class EncounterChildrenView(APIView):
+    """Agregar un medicamento (``kind="prescription"``) o una orden.
+
+    Devuelve el encuentro entero y no sólo el renglón: la pantalla de la
+    atención se redibuja con lo que dice el servidor, no con lo que cree que
+    pasó.
+    """
+
+    permission_classes = [IsAuthenticated, CanCreateEncounters]
+    kind = ""
+
+    def post(self, request, pk):
+        encuentro = _own_encounter(request, pk)
+        entrada = CHILD_SERIALIZERS[self.kind](data=request.data)
+        entrada.is_valid(raise_exception=True)
+        services.add_child(encuentro, self.kind, entrada.validated_data)
+        return Response(EncounterSerializer(_own_encounter(request, pk)).data,
+                        status=status.HTTP_201_CREATED)
+
+
+class EncounterChildDetailView(APIView):
+    """Corregir o quitar un renglón de la receta, o una orden, del borrador."""
+
+    permission_classes = [IsAuthenticated, CanCreateEncounters]
+    kind = ""
+
+    def _child(self, encuentro, child_pk):
+        modelo = services.CHILDREN[self.kind]
+        renglon = modelo.objects.filter(encounter=encuentro, pk=child_pk).first()
+        if renglon is None:
+            raise Http404
+        return renglon
+
+    def patch(self, request, pk, child_pk):
+        encuentro = _own_encounter(request, pk)
+        renglon = self._child(encuentro, child_pk)
+        entrada = CHILD_SERIALIZERS[self.kind](renglon, data=request.data, partial=True)
+        entrada.is_valid(raise_exception=True)
+        services.update_child(encuentro, renglon, entrada.validated_data)
+        return Response(EncounterSerializer(_own_encounter(request, pk)).data)
+
+    def delete(self, request, pk, child_pk):
+        encuentro = _own_encounter(request, pk)
+        services.delete_child(encuentro, self._child(encuentro, child_pk))
+        return Response(EncounterSerializer(_own_encounter(request, pk)).data)
+
+
+class PrescriptionPdfView(APIView):
+    """La receta y las órdenes de una atención firmada, en PDF.
+
+    La pueden bajar dos personas, cada una con su permiso:
+
+    - **el médico que atendió** (``encounters.encounter.read``), para
+      imprimirla en la consulta;
+    - **quien tiene alcance sobre el historial del paciente**
+      (``encounters.history.read`` y ``services.history_scope``): el propio
+      paciente, el titular de un dependiente (US-27) y un médico con vínculo
+      de atención, igual que el historial de US-25.
+
+    **Sólo de un encuentro firmado.** Un borrador todavía puede cambiar, y una
+    receta impresa que después cambia es una receta que no coincide con la
+    historia. Al médico que atiende se le dice por qué (409); a cualquier otro
+    un borrador ajeno le responde 404, como en el historial.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        user = request.user
+        encuentro = (
+            Encounter.objects
+            .filter(organization=user.organization, pk=pk)
+            .select_related("organization", "patient", "practitioner", "branch",
+                            "appointment", "signed_by")
+            .prefetch_related("amendments__author", "prescription_items", "orders")
+            .first()
+        )
+        if encuentro is None:
+            raise Http404
+
+        if services.is_own(user, encuentro) and user.has_permission(
+            "encounters.encounter.read",
+        ):
+            alcance = "attending"
+        else:
+            alcance = (
+                services.history_scope(user, encuentro.patient)
+                if user.has_permission("encounters.history.read") else None
+            )
+            if alcance is None or not encuentro.is_signed:
+                raise Http404
+
+        if not encuentro.is_signed:
+            raise services.Conflict(
+                "Firma la atención antes de descargar la receta: un borrador "
+                "todavía puede cambiar.",
+            )
+        if not encuentro.prescription_items.all() and not encuentro.orders.all():
+            raise services.Conflict("La atención no tiene receta ni órdenes.")
+
+        contenido = prescription_pdf.render(encuentro)
+        _audit(request, Action.RECORD_READ, encuentro,
+               origen="receta_pdf", alcance=alcance)
+
+        nombre = prescription_pdf.filename(encuentro)
+        respuesta = HttpResponse(contenido, content_type="application/pdf")
+        respuesta["Content-Disposition"] = f'attachment; filename="{nombre}"'
+        respuesta["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return respuesta

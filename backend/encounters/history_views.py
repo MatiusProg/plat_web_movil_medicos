@@ -51,7 +51,7 @@ class PatientHistoryView(APIView):
                     status=Encounter.Status.SIGNED)
             .select_related("patient", "practitioner", "branch", "appointment",
                             "signed_by")
-            .prefetch_related("amendments__author")
+            .prefetch_related("amendments__author", "prescription_items", "orders")
             .order_by("-appointment__starts_at")
         )
 

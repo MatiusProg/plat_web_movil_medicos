@@ -4,7 +4,8 @@
 ///
 /// Lo que se prueba acá es la pantalla: que muestre la línea de tiempo con
 /// sus enmiendas, que el filtro por sucursal funcione y que cambiar de
-/// persona traiga la historia de esa persona. Quién puede leer la historia de
+/// persona traiga la historia de esa persona. US-27: que muestre la receta
+/// y las órdenes y que la receta se baje a Descargas. Quién puede leer la historia de
 /// quién se prueba en el backend (`tests/test_us25.py`).
 library;
 
@@ -16,6 +17,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:mobile/core/api/client.dart';
+import 'package:mobile/core/files/archivos.dart';
 import 'package:mobile/features/clinical_record/clinical_record_screen.dart';
 
 http.Response _json(Object cuerpo) => http.Response(
@@ -48,6 +50,8 @@ Map<String, dynamic> _atencion(
   String sucursal,
   String diagnostico, {
   List<Map<String, dynamic>> enmiendas = const [],
+  List<Map<String, dynamic>> medicamentos = const [],
+  List<Map<String, dynamic>> ordenes = const [],
 }) =>
     {
       'id': id,
@@ -63,7 +67,29 @@ Map<String, dynamic> _atencion(
       'signed_by_name': 'Dra. Paz',
       'signed_at': '2026-09-20T15:00:00Z',
       'amendments': enmiendas,
+      'prescription_items': medicamentos,
+      'orders': ordenes,
     };
+
+class _GuardadoFalso implements GuardadoDeArchivos {
+  final guardados = <String, List<int>>{};
+
+  @override
+  Future<String> guardar(String nombre, List<int> bytes) async {
+    guardados[nombre] = bytes;
+    return '/storage/emulated/0/Download/$nombre';
+  }
+}
+
+class _AbridorFalso implements AbridorDeArchivos {
+  final abiertos = <String>[];
+
+  @override
+  Future<String?> abrir(String ruta) async {
+    abiertos.add(ruta);
+    return null;
+  }
+}
 
 Map<String, dynamic> _historia(String nombre, List<Map<String, dynamic>> atenciones) {
   final porSucursal = <String, int>{};
@@ -89,19 +115,37 @@ void _pantallaGrande(WidgetTester tester) {
 
 Future<List<String>> _abrir(
   WidgetTester tester,
-  Map<String, Map<String, dynamic>> historias,
-) async {
+  Map<String, Map<String, dynamic>> historias, {
+  GuardadoDeArchivos? guardado,
+  AbridorDeArchivos? abridor,
+}) async {
   final pedidos = <String>[];
   final client = ApiClient(
     httpClient: MockClient((request) async {
       pedidos.add(request.url.path);
       if (request.url.path.endsWith('/patient-options/')) return _json(_opciones);
+      if (request.url.path.endsWith('/prescription.pdf')) {
+        return http.Response.bytes(
+          utf8.encode('%PDF-1.4 receta'),
+          200,
+          headers: {
+            'content-type': 'application/pdf',
+            'content-disposition': 'attachment; filename="receta-2026-09-20-rios.pdf"',
+          },
+        );
+      }
       final id = request.url.pathSegments.where((s) => s.isNotEmpty).last;
       return _json(historias[id]!);
     }),
   );
   await tester.pumpWidget(
-    MaterialApp(home: ClinicalRecordScreen(client: client)),
+    MaterialApp(
+      home: ClinicalRecordScreen(
+        client: client,
+        guardado: guardado,
+        abridor: abridor,
+      ),
+    ),
   );
   await tester.pumpAndSettle();
   return pedidos;
@@ -172,5 +216,66 @@ void main() {
     expect(pedidos.last, endsWith('/encounters/history/d1/'));
     expect(find.text('Todavía no hay atenciones firmadas.'), findsOneWidget);
     expect(find.text('Migraña.'), findsNothing);
+  });
+
+  testWidgets('US-27: muestra la receta y las órdenes y baja el PDF a Descargas',
+      (tester) async {
+    _pantallaGrande(tester);
+    final guardado = _GuardadoFalso();
+    final abridor = _AbridorFalso();
+    final pedidos = await _abrir(
+      tester,
+      {
+        't1': _historia('Ana Ríos', [
+          _atencion('e1', 'Sede Central', 'Faringitis.', medicamentos: [
+            {
+              'id': 'p1',
+              'medication': 'Amoxicilina 500 mg',
+              'dose': '1 cápsula',
+              'frequency': 'cada 8 horas',
+              'duration': '7 días',
+              'instructions': 'Después de comer',
+            },
+          ], ordenes: [
+            {
+              'id': 'o1',
+              'kind': 'laboratory',
+              'kind_display': 'Laboratorio',
+              'description': 'Hemograma completo',
+              'notes': '',
+            },
+          ]),
+        ]),
+      },
+      guardado: guardado,
+      abridor: abridor,
+    );
+
+    expect(find.text('Receta y órdenes'), findsOneWidget);
+    expect(find.text('Amoxicilina 500 mg'), findsOneWidget);
+    expect(find.text('1 cápsula · cada 8 horas · 7 días'), findsOneWidget);
+    expect(find.text('Laboratorio: Hemograma completo'), findsOneWidget);
+
+    await tester.tap(find.text('Descargar receta (PDF)'));
+    await tester.pumpAndSettle();
+
+    expect(pedidos.last, endsWith('/encounters/e1/prescription.pdf'));
+    expect(guardado.guardados.keys, ['receta-2026-09-20-rios.pdf']);
+    expect(find.textContaining('Receta guardada en Descargas'), findsOneWidget);
+
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    expect(abridor.abiertos,
+        ['/storage/emulated/0/Download/receta-2026-09-20-rios.pdf']);
+  });
+
+  testWidgets('US-27: una atención sin receta no muestra el botón',
+      (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(tester, {
+      't1': _historia('Ana Ríos', [_atencion('e1', 'Sede Central', 'Migraña.')]),
+    });
+    expect(find.text('Receta y órdenes'), findsNothing);
+    expect(find.text('Descargar receta (PDF)'), findsNothing);
   });
 }

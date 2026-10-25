@@ -1,5 +1,9 @@
 /** US-24: la agenda del profesional, el encuentro clínico y sus enmiendas. */
 import { pedir, type Contexto } from './cliente'
+import { ErrorApi, type CodigoError } from './tipos'
+
+const BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000/api'
 
 export type Seccion = 'reason' | 'evolution' | 'diagnosis' | 'indications' | 'treatment'
 
@@ -40,9 +44,51 @@ export interface Agenda {
   appointments: FichaAgenda[]
 }
 
+/** US-26: lo enmendable de una atención firmada incluye la receta y las órdenes. */
+export type SeccionEnmendable = Seccion | 'prescription' | 'orders'
+
+export const ENMENDABLES: { campo: SeccionEnmendable; etiqueta: string }[] = [
+  ...SECCIONES.map(({ campo, etiqueta }) => ({ campo, etiqueta })),
+  { campo: 'prescription', etiqueta: 'Receta' },
+  { campo: 'orders', etiqueta: 'Órdenes' },
+]
+
+/** US-26: un medicamento de la receta. */
+export interface Medicamento {
+  id: string
+  medication: string
+  dose: string
+  frequency: string
+  duration: string
+  instructions: string
+  created_at: string
+}
+
+export type DatosMedicamento = Omit<Medicamento, 'id' | 'created_at'>
+
+export type TipoOrden = 'laboratory' | 'imaging' | 'other'
+
+export const TIPOS_DE_ORDEN: { valor: TipoOrden; etiqueta: string }[] = [
+  { valor: 'laboratory', etiqueta: 'Laboratorio' },
+  { valor: 'imaging', etiqueta: 'Imagenología' },
+  { valor: 'other', etiqueta: 'Otro estudio' },
+]
+
+/** US-26: una orden de laboratorio o de estudio. */
+export interface Orden {
+  id: string
+  kind: TipoOrden
+  kind_display: string
+  description: string
+  notes: string
+  created_at: string
+}
+
+export type DatosOrden = Pick<Orden, 'kind' | 'description' | 'notes'>
+
 export interface Enmienda {
   id: string
-  section: Seccion
+  section: SeccionEnmendable
   section_display: string
   text: string
   author_name: string
@@ -61,6 +107,8 @@ export interface Encuentro extends Record<Seccion, string> {
   signed_at: string | null
   signed_by_name: string | null
   amendments: Enmienda[]
+  prescription_items: Medicamento[]
+  orders: Orden[]
   created_at: string
   updated_at: string
 }
@@ -97,7 +145,7 @@ export const guardarBorrador = (id: string, datos: Partial<Record<Seccion, strin
 export const firmarEncuentro = (id: string, contexto: Contexto) =>
   pedir<Encuentro>(`${base}${encodeURIComponent(id)}/sign/`, { ...contexto, metodo: 'POST' })
 
-export const agregarEnmienda = (id: string, section: Seccion, text: string, contexto: Contexto) =>
+export const agregarEnmienda = (id: string, section: SeccionEnmendable, text: string, contexto: Contexto) =>
   pedir<Enmienda>(`${base}${encodeURIComponent(id)}/amendments/`, {
     ...contexto, metodo: 'POST', cuerpo: { section, text },
   })
@@ -118,3 +166,51 @@ export interface Historial {
 
 export const verHistorial = (pacienteId: string, contexto: Contexto, senal?: AbortSignal) =>
   pedir<Historial>(`${base}history/${encodeURIComponent(pacienteId)}/`, { ...contexto, senal })
+
+// --------------------------------------------------------------------------
+//  US-26 — Receta y órdenes, mientras la atención es borrador
+// --------------------------------------------------------------------------
+// Cada operación devuelve la atención entera: la pantalla se redibuja con lo
+// que dice el servidor.
+
+const enc = (id: string) => `${base}${encodeURIComponent(id)}`
+
+export const agregarMedicamento = (id: string, datos: DatosMedicamento, contexto: Contexto) =>
+  pedir<Encuentro>(`${enc(id)}/prescription/`, { ...contexto, metodo: 'POST', cuerpo: datos })
+
+export const quitarMedicamento = (id: string, renglon: string, contexto: Contexto) =>
+  pedir<Encuentro>(`${enc(id)}/prescription/${encodeURIComponent(renglon)}/`, { ...contexto, metodo: 'DELETE' })
+
+export const agregarOrden = (id: string, datos: DatosOrden, contexto: Contexto) =>
+  pedir<Encuentro>(`${enc(id)}/orders/`, { ...contexto, metodo: 'POST', cuerpo: datos })
+
+export const quitarOrden = (id: string, orden: string, contexto: Contexto) =>
+  pedir<Encuentro>(`${enc(id)}/orders/${encodeURIComponent(orden)}/`, { ...contexto, metodo: 'DELETE' })
+
+async function errorDe(respuesta: Response): Promise<ErrorApi> {
+  let cuerpo: { detail?: string; code?: string } = {}
+  try { cuerpo = await respuesta.json() } catch { /* sin cuerpo JSON */ }
+  return new ErrorApi(cuerpo.detail ?? `Error ${respuesta.status}`,
+    (cuerpo.code ?? 'desconocido') as CodigoError, respuesta.status)
+}
+
+/**
+ * Baja la receta firmada en PDF. La pueden bajar el médico que atendió y
+ * quien tiene alcance sobre el historial (el paciente, el titular de un
+ * dependiente). El backend lo deja en la bitácora.
+ */
+export async function descargarReceta(id: string, { token }: Contexto): Promise<string> {
+  const respuesta = await fetch(`${BASE}${enc(id)}/prescription.pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!respuesta.ok) throw await errorDe(respuesta)
+  const disposicion = respuesta.headers.get('Content-Disposition') ?? ''
+  const nombre = /filename="([^"]+)"/.exec(disposicion)?.[1] ?? 'receta.pdf'
+  const url = URL.createObjectURL(await respuesta.blob())
+  const enlace = Object.assign(document.createElement('a'), { href: url, download: nombre })
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+  URL.revokeObjectURL(url)
+  return nombre
+}

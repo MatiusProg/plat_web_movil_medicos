@@ -4,6 +4,7 @@ import { SECCIONES, verHistorial, type Historial as DatosHistorial } from '@/api
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { ErrorCatalogo, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
+import { RecetaDeLaAtencion } from './RecetaAtencion'
 
 const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
@@ -57,7 +58,8 @@ export function Historial() {
  *
  * La comparten el médico (`Historial`) y el paciente (`MiHistoria`): es la
  * misma historia, sólo cambia quién la lee. Las enmiendas van debajo de lo
- * firmado, que nunca se reemplaza.
+ * firmado, que nunca se reemplaza. La receta y las órdenes (US-26) van al
+ * pie de cada atención, con su PDF (US-27).
  */
 export function LineaDeTiempo({ datos }: { datos: DatosHistorial }) {
   const [sucursal, setSucursal] = useState<string>('todas')
@@ -89,6 +91,7 @@ export function LineaDeTiempo({ datos }: { datos: DatosHistorial }) {
               </dd>)}
             </div>)}
           </dl>
+          <RecetaDeLaAtencion encuentro={e} />
           <p className="mt-3 text-xs text-tinta-500">Firmada por {e.signed_by_name} · {e.signed_at && fechaHora(e.signed_at)}</p>
         </article>
       </li>)}

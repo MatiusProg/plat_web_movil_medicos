@@ -31,7 +31,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from appointments.models import Appointment
 from catalog.models import Practitioner
 
-from .models import Encounter, EncounterAmendment
+from .models import Encounter, EncounterAmendment, MedicalOrder, PrescriptionItem
 
 ATTENDABLE_STATUSES = [
     Appointment.Status.PENDING_PAYMENT,
@@ -114,7 +114,7 @@ def open_encounter(user, appointment):
 def update_draft(encounter, data):
     if encounter.is_signed:
         raise Conflict(
-            "El encuentro está firmado y no se edita. Agregá una enmienda.",
+            "El encuentro está firmado y no se edita. Agrega una enmienda.",
         )
     campos = [campo for campo in Encounter.SECTIONS if campo in data]
     for campo in campos:
@@ -129,7 +129,7 @@ def sign(encounter, user):
         raise Conflict("El encuentro ya estaba firmado.")
 
     faltan = {
-        campo: [f"Completá {Encounter.SECTIONS[campo].lower()} antes de firmar."]
+        campo: [f"Completa {Encounter.SECTIONS[campo].lower()} antes de firmar."]
         for campo in REQUIRED_TO_SIGN
         if not getattr(encounter, campo).strip()
     }
@@ -153,7 +153,7 @@ def sign(encounter, user):
 def amend(encounter, user, section, text):
     if not encounter.is_signed:
         raise Conflict(
-            "El encuentro todavía es borrador: corregilo directamente.",
+            "El encuentro todavía es borrador: corrígelo directamente.",
         )
     return EncounterAmendment.objects.create(
         organization=encounter.organization,
@@ -162,6 +162,46 @@ def amend(encounter, user, section, text):
         text=text,
         author=user,
     )
+
+
+# --------------------------------------------------------------------------
+#  US-26 — Receta y órdenes
+# --------------------------------------------------------------------------
+#
+# Las tres operaciones son iguales para los medicamentos y para las órdenes,
+# y las dos exigen lo mismo: que el encuentro siga siendo borrador. El chequeo
+# acá es para devolver un 409 legible; el que no se puede saltar es el trigger
+# de la migración 0006.
+
+CHILDREN = {"prescription": PrescriptionItem, "orders": MedicalOrder}
+
+
+def _require_draft(encounter):
+    if encounter.is_signed:
+        raise Conflict(
+            "El encuentro está firmado: la receta y las órdenes no se editan. "
+            "Agrega una enmienda.",
+        )
+
+
+def add_child(encounter, kind, data):
+    _require_draft(encounter)
+    return CHILDREN[kind].objects.create(
+        organization=encounter.organization, encounter=encounter, **data,
+    )
+
+
+def update_child(encounter, child, data):
+    _require_draft(encounter)
+    for campo, valor in data.items():
+        setattr(child, campo, valor)
+    child.save(update_fields=list(data))
+    return child
+
+
+def delete_child(encounter, child):
+    _require_draft(encounter)
+    child.delete()
 
 
 # --------------------------------------------------------------------------

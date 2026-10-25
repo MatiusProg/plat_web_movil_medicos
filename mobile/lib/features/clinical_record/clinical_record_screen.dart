@@ -7,12 +7,18 @@
 ///
 /// Con el selector de US-07 arriba, igual que en antecedentes: el titular ve
 /// también la historia de las personas a su cargo.
+///
+/// US-27: al pie de cada atención, la receta y las órdenes (US-26), con el
+/// botón para bajar la receta en PDF a Descargas y abrirla.
 library;
+
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
+import 'package:mobile/core/files/archivos.dart';
 import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/dependents/dependents_api.dart';
@@ -39,10 +45,21 @@ String _fechaHora(DateTime? d) {
 }
 
 class ClinicalRecordScreen extends StatefulWidget {
-  const ClinicalRecordScreen({super.key, this.client});
+  const ClinicalRecordScreen({
+    super.key,
+    this.client,
+    this.guardado,
+    this.abridor,
+  });
 
   @visibleForTesting
   final ApiClient? client;
+
+  @visibleForTesting
+  final GuardadoDeArchivos? guardado;
+
+  @visibleForTesting
+  final AbridorDeArchivos? abridor;
 
   @override
   State<ClinicalRecordScreen> createState() => _ClinicalRecordScreenState();
@@ -58,8 +75,51 @@ class _ClinicalRecordScreenState extends State<ClinicalRecordScreen> {
   /// `null` = todas las sucursales.
   String? _sucursal;
 
+  /// Las atenciones cuya receta se está bajando ahora.
+  final Set<String> _bajando = {};
+
+  late final GuardadoDeArchivos _guardado =
+      widget.guardado ?? const GuardadoEnDescargas();
+  late final AbridorDeArchivos _abridor =
+      widget.abridor ?? const AbridorDelSistema();
+
   ApiClient get client =>
       _client ??= widget.client ?? ApiClient(auth: SessionScope.of(context));
+
+  /// Baja la receta, la guarda en Descargas y ofrece abrirla.
+  Future<void> _descargarReceta(Atencion atencion) async {
+    if (_bajando.contains(atencion.id)) return;
+    setState(() => _bajando.add(atencion.id));
+    final avisos = ScaffoldMessenger.of(context);
+    try {
+      final archivo =
+          await descargarReceta(client, encounterId: atencion.id);
+      final ruta = await _guardado.guardar(
+        archivo.nombre ?? 'receta.pdf',
+        archivo.bytes,
+      );
+      avisos.showSnackBar(
+        SnackBar(
+          content: Text('Receta guardada en Descargas: ${ruta.split('/').last}'),
+          action: SnackBarAction(
+            label: 'Abrir',
+            onPressed: () async {
+              final problema = await _abridor.abrir(ruta);
+              if (problema != null) {
+                avisos.showSnackBar(SnackBar(content: Text(problema)));
+              }
+            },
+          ),
+        ),
+      );
+    } on ApiError catch (error) {
+      avisos.showSnackBar(SnackBar(content: Text(error.message)));
+    } on FileSystemException catch (error) {
+      avisos.showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _bajando.remove(atencion.id));
+    }
+  }
 
   Future<void> _cargar() async {
     final paciente = _deQuien;
@@ -164,7 +224,11 @@ class _ClinicalRecordScreenState extends State<ClinicalRecordScreen> {
             for (final (i, atencion) in atenciones.indexed)
               _EnLaLinea(
                 ultima: i == atenciones.length - 1,
-                child: _TarjetaAtencion(atencion: atencion),
+                child: _TarjetaAtencion(
+                  atencion: atencion,
+                  bajando: _bajando.contains(atencion.id),
+                  onDescargar: () => _descargarReceta(atencion),
+                ),
               ),
           ],
         ],
@@ -223,9 +287,15 @@ class _EnLaLinea extends StatelessWidget {
 }
 
 class _TarjetaAtencion extends StatelessWidget {
-  const _TarjetaAtencion({required this.atencion});
+  const _TarjetaAtencion({
+    required this.atencion,
+    required this.bajando,
+    required this.onDescargar,
+  });
 
   final Atencion atencion;
+  final bool bajando;
+  final VoidCallback onDescargar;
 
   @override
   Widget build(BuildContext context) {
@@ -285,6 +355,12 @@ class _TarjetaAtencion extends StatelessWidget {
                   ),
                 ),
             ],
+            if (atencion.tieneReceta)
+              _Receta(
+                atencion: atencion,
+                bajando: bajando,
+                onDescargar: onDescargar,
+              ),
             const SizedBox(height: 12),
             Text(
               'Firmada por ${atencion.signedByName} · '
@@ -294,6 +370,86 @@ class _TarjetaAtencion extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// US-27 — Lo que el médico recetó y ordenó en la atención, con su PDF.
+class _Receta extends StatelessWidget {
+  const _Receta({
+    required this.atencion,
+    required this.bajando,
+    required this.onDescargar,
+  });
+
+  final Atencion atencion;
+  final bool bajando;
+  final VoidCallback onDescargar;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final suave = theme.colorScheme.onSurfaceVariant;
+    final enmiendas = atencion.enmiendas
+        .where((e) => e.section == 'prescription' || e.section == 'orders');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        Text('Receta y órdenes', style: theme.textTheme.titleSmall),
+        for (final m in atencion.medicamentos) ...[
+          const SizedBox(height: 8),
+          Text(m.medication, style: theme.textTheme.labelLarge),
+          Text('${m.dose} · ${m.frequency} · ${m.duration}',
+              style: theme.textTheme.bodyMedium),
+          if (m.instructions.isNotEmpty)
+            Text(m.instructions,
+                style: theme.textTheme.bodySmall?.copyWith(color: suave)),
+        ],
+        for (final o in atencion.ordenes) ...[
+          const SizedBox(height: 8),
+          Text('${o.kindDisplay}: ${o.description}',
+              style: theme.textTheme.bodyMedium),
+          if (o.notes.isNotEmpty)
+            Text(o.notes,
+                style: theme.textTheme.bodySmall?.copyWith(color: suave)),
+        ],
+        for (final enmienda in enmiendas)
+          Container(
+            margin: const EdgeInsets.only(top: 8, left: 4),
+            padding: const EdgeInsets.only(left: 10),
+            decoration: const BoxDecoration(
+              border: Border(
+                left: BorderSide(color: Marca.primaryLight, width: 2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enmienda de ${enmienda.authorName} · '
+                  '${_fechaHora(enmienda.createdAt)}',
+                  style: theme.textTheme.labelSmall?.copyWith(color: suave),
+                ),
+                Text(enmienda.text, style: theme.textTheme.bodyMedium),
+              ],
+            ),
+          ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: bajando ? null : onDescargar,
+          icon: bajando
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download_outlined),
+          label: Text(bajando ? 'Bajando…' : 'Descargar receta (PDF)'),
+        ),
+      ],
     );
   }
 }

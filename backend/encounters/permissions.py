@@ -11,7 +11,7 @@ from rest_framework.permissions import BasePermission
 
 class RequiresPermission(BasePermission):
     code = ""
-    message = "No tenés permiso para realizar esta acción."
+    message = "No tienes permiso para realizar esta acción."
 
     def has_permission(self, request, view):
         user = request.user
