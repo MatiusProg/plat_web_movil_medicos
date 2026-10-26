@@ -17,6 +17,7 @@ Sale de dos guías que ya existían:
 1. [Reglas que valen para todos los diagramas](#1-reglas-que-valen-para-todos-los-diagramas)
 2. [Modelo C4 en Lucidchart](#2-modelo-c4-en-lucidchart)
 3. [Antes de abrir Enterprise Architect](#3-antes-de-abrir-enterprise-architect)
+   - [3.4 Desde el Sprint 3: «Diseño de clase» en lugar de «análisis de clase»](#34-desde-el-sprint-3-diseño-de-clase-en-lugar-de-análisis-de-clase)
 4. [Diagramas de clases y de comunicación](#4-diagramas-de-clases-y-de-comunicación)
 5. [Diagrama de secuencia](#5-diagrama-de-secuencia)
 6. [Diagrama de estado](#6-diagrama-de-estado)
@@ -478,6 +479,36 @@ foreach ($g in 'cu-modelo','comunicacion','clases','secuencia','estado','tiempo'
 
 La guía completa de la automatización, con todo lo que se probó, sigue en `D:\UNI\SI2\Primer_Parcial\GUIA-DIAGRAMAS-EA.md`.
 
+### 3.4 Desde el Sprint 3: «Diseño de clase» en lugar de «análisis de clase»
+
+**Cambio decidido el 26/10/26.** El antiguo *diagrama de análisis de clase* (2.1.4.1 en el Sprint 2) **pasa a llamarse «Diseño de clase»** y **cambia de lugar**: va **después del diagrama de secuencia** y **antes** de los de navegación, estado y tiempo. El orden del 2.1.4 queda así:
+
+1. Diagrama de secuencia
+2. **Diagrama de diseño de clase**
+3. Diagrama de navegación
+4. Diagrama de estados
+5. Diagrama de tiempo
+
+Qué cambia en el contenido respecto de las clases de análisis (sección 4.1):
+
+- **Frontera:** lleva **todos** sus atributos (los endpoints) y **todos** sus métodos. Cada mensaje que le llega en el diagrama de secuencia tiene que estar como método suyo: el diagrama de clase se **rastrea** contra la secuencia.
+- **Control:** lleva **todos** sus métodos, con la misma regla de rastreo. Puede haber **varias** clases control por caso de uso (por ejemplo, `ControladorAtencion`, `GestorAtencion` y `GeneradorReceta` en CU27).
+- **Entidad:** la tabla con sus columnas y su tipo, y **las relaciones entre entidades con su multiplicidad en los dos extremos** (`1`, `0..1`, `0..*`, `1..*`), sacadas de las `ForeignKey` del modelo.
+
+**Para quien hace la secuencia:** tiene que usar **los mismos participantes y los mismos mensajes, con la misma numeración**, que la comunicación y el diseño de clase. Están en `scripts/ea-sprint3-casos.ps1`, un bloque por caso de uso.
+
+Generadores del Sprint 3 (mismas reglas que los del Sprint 2: aditivos, `-Rehacer`, UTF-8 con BOM):
+
+| Archivo | Qué hace |
+|---|---|
+| `scripts/ea-sprint3-casos.ps1` | Los datos de CU24, CU27, CU28, CU29, CU30 y CU34: participantes, métodos, mensajes y relaciones entre entidades (`rel`). |
+| `scripts/ea-sprint3-comun.ps1` | Lo común (paquetes, actores, cajas). |
+| `ea-cu-modelo-sprint3.ps1` | 1.3 acumulado. **Sólo entran los casos de uso que tienen código** (CU31 queda afuera). Va primero. |
+| `ea-comunicacion-sprint3.ps1` | 2.1.3, comunicación. |
+| `ea-diseno-clases-sprint3.ps1` | Diseño de clase. Agrega como método cada mensaje recibido que falte. |
+
+Los PNG exportados están en `docs/diagramas/png/Sprint3/`. Los rótulos de comunicación se corrieron por script, escribiendo `SX`/`SY` en `t_diagramlinks.Geometry`. **En el Sprint 3 la secuencia, el estado, el tiempo y la navegación los arma Karen.**
+
 ---
 
 ## 4. Diagramas de clases y de comunicación
@@ -485,6 +516,8 @@ La guía completa de la automatización, con todo lo que se probó, sigue en `D:
 Hay dos diagramas de clases distintos, y no hay que confundirlos: las **clases de análisis**, que son de comportamiento y van una por caso de uso, y el **modelo de dominio**, que es de datos y va uno para todo el sistema. El **diagrama de comunicación** va acá porque dibuja las mismas clases de análisis, con los mensajes encima.
 
 ### 4.1 Clases de análisis (una por caso de uso)
+
+> **Desde el Sprint 3 esto es «Diseño de clase» y va después de la secuencia:** ver la [sección 3.4](#34-desde-el-sprint-3-diseño-de-clase-en-lugar-de-análisis-de-clase).
 
 **Tipo de EA:** `Logical`.
 
