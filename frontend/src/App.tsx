@@ -38,6 +38,7 @@ import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
 import { Pacientes } from '@/paginas/Pacientes'
 import { CheckIn } from '@/paginas/CheckIn'
+import { Mostrador } from '@/paginas/Mostrador'
 import { Usuarios } from '@/paginas/Usuarios'
 import { Sucursales } from '@/paginas/Sucursales'
 import { HistorialSuscripcion } from '@/paginas/HistorialSuscripcion'
@@ -212,6 +213,7 @@ export default function App() {
 
                         {/* US-22: check-in de pacientes en recepción */}
                         <Route path="/check-in" element={<CheckIn />} />
+                        <Route path="/mostrador" element={<Mostrador />} />
 
                         {/* US-24: registro de la atención médica */}
                         <Route path="/atencion" element={<AgendaAtencion />} />

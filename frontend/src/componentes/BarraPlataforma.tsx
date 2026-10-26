@@ -214,6 +214,12 @@ const items: ItemMenu[] = [
         requiere: 'patients.patient.read',
     },
 
+    // US-23 — reserva asistida en mostrador.
+    {
+        etiqueta: 'Mostrador', ruta: '/mostrador', seccion: 'Atención',
+        icono: 'ficha', requiere: 'appointments.appointment.book_at_counter',
+    },
+
     // US-22 — check-in en recepción.
     {
         etiqueta: 'Check-in',

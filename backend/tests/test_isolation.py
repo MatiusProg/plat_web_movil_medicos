@@ -220,7 +220,9 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1
+        # US-23 agrega appointments.appointment.book_at_counter
+        # para reservar citas desde recepción.
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()
