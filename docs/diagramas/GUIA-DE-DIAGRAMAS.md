@@ -506,8 +506,18 @@ Generadores del Sprint 3 (mismas reglas que los del Sprint 2: aditivos, `-Rehace
 | `ea-cu-modelo-sprint3.ps1` | 1.3 acumulado. **Sólo entran los casos de uso que tienen código** (CU31 queda afuera). Va primero. |
 | `ea-comunicacion-sprint3.ps1` | 2.1.3, comunicación. |
 | `ea-diseno-clases-sprint3.ps1` | Diseño de clase. Agrega como método cada mensaje recibido que falte. |
+| `scripts/ea-sprint3-dinamica.ps1` | Los datos de secuencia, estado y tiempo de cada caso de uso (CU30 sólo lleva secuencia: sólo lee). |
+| `ea-secuencia-sprint3.ps1` | Secuencia. Va **después** del diseño de clase: clasifica cada línea de vida con su clase. Antes de dibujar comprueba que cada mensaje de Mateo esté una sola vez, con su número, y que no haya llamadas nuevas. |
+| `ea-estado-sprint3.ps1` | Estado de los casos de uso transaccionales (CU24, CU27, CU28, CU29 y CU34). |
+| `ea-tiempo-sprint3.ps1` | Tiempo de los mismos casos de uso. |
+| `scripts/ea-sprint3-navegacion-datos.ps1` | Los datos de navegación: pantallas web y móviles, menús, controladores y enlaces. |
+| `ea-navegacion-sprint3.ps1` | Navegación: una del sistema completo y una por subsistema del Sprint 3 (P5, P6, P7 y P8). |
 
-Los PNG exportados están en `docs/diagramas/png/Sprint3/`. Los rótulos de comunicación se corrieron por script, escribiendo `SX`/`SY` en `t_diagramlinks.Geometry`. **En el Sprint 3 la secuencia, el estado, el tiempo y la navegación los arma Karen.**
+Orden: `ea-cu-modelo-sprint3`, `ea-comunicacion-sprint3`, `ea-diseno-clases-sprint3`, y después `ea-secuencia-sprint3`, `ea-estado-sprint3`, `ea-tiempo-sprint3` y `ea-navegacion-sprint3`.
+
+**`-UsarEAAbierto`.** En algunas máquinas, crear el repositorio de EA por COM falla con `CO_E_SERVER_EXEC_FAILURE (0x80080005)`, sobre todo con la versión de prueba, cuyo aviso sale como ventana aparte. En ese caso se deja EA abierto **sin ningún proyecto** y se corre el generador con `-UsarEAAbierto`: usa ese EA en vez de levantar otro, y al terminar no lo cierra. El eapx que se escribe **no** tiene que estar abierto en EA.
+
+Los PNG exportados están en `docs/diagramas/png/Sprint3/`. Los rótulos de comunicación se corrieron por script, escribiendo `SX`/`SY` en `t_diagramlinks.Geometry`. La secuencia, el estado, el tiempo y la navegación del Sprint 3 los armó Karen con los generadores de la tabla.
 
 ---
 
@@ -644,6 +654,14 @@ El estilo es el del **ciclo 3 de Violet Boutique** (`3.2 CU-04 Gestionar perfil 
 | un `if` / `else`, un `try` / `except` que cambia la respuesta, un código de error distinto | **`alt`**, un operando por rama |
 | un `for`, una comprensión de lista (`[f for f in …]`), un `any()` / `all()` sobre una colección | **`loop`**, con la guarda «por cada …» |
 
+> **Desde el Sprint 3 (26/10/2026) se dibujan sólo los fragmentos característicos.** Con un `alt` por cada `if`, CU29 y CU34 pasaban de quince cajas y no se veía la secuencia. El guion de `ea-sprint3-dinamica.ps1` sigue teniendo todas las ramas, pero `ea-secuencia-sprint3.ps1` dibuja:
+>
+> - un `alt` sólo si dos o más de sus ramas llevan mensajes de la comunicación; si los lleva una sola, se dibuja esa rama sin caja, y las ramas de error que sólo devuelven un código (401, 403, 404, validaciones) se omiten;
+> - un `loop` sólo si encierra algún mensaje de la comunicación;
+> - `clave=$true` en los datos deja una caja aunque no cumpla lo anterior (la devolución por pago duplicado en CU24, la firma en CU27, el alcance en CU28, la respuesta de Firebase en CU29), y `omitir=$true` la quita.
+>
+> Quedan de una a cuatro cajas por diagrama, como en el Sprint 2. `-Completo` dibuja el guion entero. Además, **cada secuencia muestra una sola plataforma**: el móvil donde lo hay (CU28, CU29 y CU34) y la web en los que sólo son web (CU24, CU27 y CU30), porque los dos clientes siguen el mismo flujo. El nombre del diagrama lo dice: `Secuencia - CU34 Agendamiento mediante Chatbot (móvil)`.
+
 Un diagrama de secuencia sin ningún `alt` ni `loop` casi seguro está incompleto. El 03/10/2026 los CU21, CU25, CU33 y CU35 salieron sin `loop`, aunque su código tenía repeticiones (`booking.py:63`, `services.py:120` y `:133`, `retrieval.py:148`, `triage.py:234-238`), y hubo que agregarlos.
 
 - **`alt`** para las ramas: cada operando lleva su guarda entre corchetes, y la guarda es la condición literal del `if`. Sólo donde hay una rama real en el código.
@@ -663,7 +681,8 @@ Un diagrama de secuencia sin ningún `alt` ni `loop` casi seguro está incomplet
 
 Esto es lo que más tiempo costó en el otro proyecto, y vale igual a mano:
 
-1. **EA no respeta la altura de los mensajes.** Los apila por su número de orden, de 35 en 35 píxeles, cada vez que abre el diagrama.
+1. **EA no respeta la altura de los mensajes.** Los apila por su número de orden, de 35 en 35 píxeles desde -135, cada vez que abre el diagrama. Medido el 26/10/2026: **no** baja ningún mensaje por la cabecera de una caja ni por la guarda de un operando. Por eso las cabeceras, los cortes de operando y los cierres se reparten dentro del hueco de 35 px que queda entre dos mensajes.
+   - **El rótulo de un mensaje admite 255 caracteres** (`t_connector.Name`). Con más, `Update()` devuelve `False` y el mensaje no se guarda, sin dar error. El generador recorta en 250 el anclaje al código que va entre llaves, pasa el texto completo a las notas del mensaje y se detiene si un `Update()` falla.
 2. **Las cajas de los fragmentos y las notas sí quedan donde están.** Por eso una caja puede terminar encerrando mensajes que no son suyos, y **no da ningún error**: el diagrama parece bien hasta que se lee.
 3. **Mover cualquier cosa "mueve todo".** Al arrastrar una nota, una caja o un mensaje, EA recalcula y las cajas de abajo dejan de encerrar lo que encerraban. **No acomoden las cajas a mano al final**: agreguen los mensajes en orden y ajusten las cajas una sola vez, revisando cada operando.
 4. **Las notas de separación de flujo van en una columna a la izquierda**, fuera de toda caja. Una nota dentro de una caja queda atada a ella.
@@ -784,6 +803,8 @@ El rótulo usa la notación de UML `evento [guarda] / acción`. La acción `/ re
 El diagrama de navegación **no existe en UML 2.5**. Es la extensión **UWE** (*UML-based Web Engineering*): un diagrama de clases con un perfil de navegación encima. Si en la defensa preguntan qué diagrama UML es, la respuesta honesta es que no lo es.
 
 ### 7.2 Va uno por caso de uso
+
+> **Desde el Sprint 3 (26/10/2026) ya no va por caso de uso.** Hay **una del sistema completo** (todas las pantallas que tienen código, con sus menús: `BarraPlataforma.tsx`, el inicio y los cajones del móvil) y **una por cada subsistema del Sprint 3**: P5 Agendamiento y Compra de Fichas, P6 Historia Clínica Digital, P7 Notificaciones y Reportes, y P8 Chatbot. **La web y el móvil van juntos en el mismo diagrama.** Las cajas se comparten por nombre y estereotipo, y cada diagrama oculta los enlaces que no son suyos. Lo que sigue de esta sección vale para el Sprint 2.
 
 El ejemplo de cátedra se titula `class navegacion cliente` y es uno por actor. **En este proyecto va uno por caso de uso** (decisión del equipo del 03/10/2026), igual que la comunicación, las clases y la secuencia: `2.1.4.5 Navegación - CU6 Gestión de Perfil de Usuario`. Así cada caso de uso se explica con todos sus diagramas cortados igual. Del ejemplo de cátedra se conservan dos reglas:
 

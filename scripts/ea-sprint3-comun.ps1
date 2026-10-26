@@ -25,7 +25,16 @@ $ErrorActionPreference = 'Stop'
 
 $Modelo = [System.IO.Path]::GetFullPath($Modelo)
 if (-not (Test-Path $Modelo)) { throw "No existe $Modelo" }
-$ea = New-Object -ComObject EA.Repository
+# Con -UsarEAAbierto (si el generador lo declara) se engancha al EA que ya
+# esta corriendo, en lugar de levantar uno propio: con la Trial, la
+# instancia nueva a veces no arranca (CO_E_SERVER_EXEC_FAILURE) porque se
+# queda en el aviso de la version. Abre el modelo en esa ventana y al final
+# lo cierra SIN cerrar EA. Mientras corre, no hay que tocar EA.
+if ($UsarEAAbierto) {
+    $ea = ([System.Runtime.InteropServices.Marshal]::GetActiveObject('EA.App')).Repository
+} else {
+    $ea = New-Object -ComObject EA.Repository
+}
 if (-not $ea.OpenFile($Modelo)) { throw "No se pudo abrir $Modelo" }
 
 # Si algo falla a mitad de camino, EA queda abierto en segundo plano, sin
@@ -35,7 +44,7 @@ if (-not $ea.OpenFile($Modelo)) { throw "No se pudo abrir $Modelo" }
 # del archivo que se carga con dot-sourcing, no protege al generador.
 function Salir-ConError($err) {
     Write-Host "ERROR: $($err.Exception.Message)  [$($err.InvocationInfo.ScriptName):$($err.InvocationInfo.ScriptLineNumber)]"
-    try { $ea.CloseFile(); $ea.Exit() } catch { }
+    try { $ea.CloseFile(); if (-not $UsarEAAbierto) { $ea.Exit() } } catch { }
     try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ea) | Out-Null } catch { }
     exit 1
 }
@@ -90,7 +99,7 @@ function Poner($dia, $eid, $l, $t, $w, $h) {
 }
 
 function Cerrar-Modelo {
-    $ea.CloseFile(); $ea.Exit()
+    $ea.CloseFile(); if (-not $UsarEAAbierto) { $ea.Exit() }
     [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ea) | Out-Null
     [GC]::Collect(); [GC]::WaitForPendingFinalizers()
     Start-Sleep -Milliseconds 1500
