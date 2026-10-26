@@ -18,8 +18,8 @@ import 'package:mobile/core/api/errors.dart';
 import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/appointments/appointments_api.dart';
+import 'package:mobile/features/appointments/confirmar_reserva_sheet.dart';
 import 'package:mobile/features/dependents/dependents_api.dart';
-import 'package:mobile/features/dependents/patient_selector.dart';
 
 import 'availability_api.dart';
 
@@ -97,11 +97,11 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     final paraQuien = await showModalBottomSheet<PatientOption>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _ConfirmarReserva(
-        slot: slot,
-        fecha: fecha,
+      builder: (context) => ConfirmarReservaSheet(
         profesional:
             widget.practitionerName ?? _nombreDeLaRespuesta ?? 'el profesional',
+        sede: slot.branchName,
+        cuando: '$fecha a las ${slot.horaInicio}',
         client: _client!,
       ),
     );
@@ -119,7 +119,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       );
       if (!mounted) return;
       messenger.showSnackBar(const SnackBar(
-        content: Text('Ficha reservada. Pagala para confirmarla.'),
+        content: Text('Ficha reservada. Págala para confirmarla.'),
       ));
       await context.push('/appointments/${ficha.id}');
       if (mounted) _cargar();
@@ -278,78 +278,6 @@ class _SlotChip extends StatelessWidget {
           ],
         ),
       ),
-      ),
-    );
-  }
-}
-
-/// La hoja de confirmación: qué turno, con quién y para quién.
-class _ConfirmarReserva extends StatefulWidget {
-  const _ConfirmarReserva({
-    required this.slot,
-    required this.fecha,
-    required this.profesional,
-    required this.client,
-  });
-
-  final SlotDisponible slot;
-  final String fecha;
-  final String profesional;
-  final ApiClient client;
-
-  @override
-  State<_ConfirmarReserva> createState() => _ConfirmarReservaState();
-}
-
-class _ConfirmarReservaState extends State<_ConfirmarReserva> {
-  PatientOption? _paraQuien;
-  bool _sinOpciones = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Reservar ficha', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 12),
-          Text('${widget.profesional} · ${widget.slot.branchName}'),
-          Text('${widget.fecha} a las ${widget.slot.horaInicio}'),
-          const SizedBox(height: 16),
-          PatientSelector(
-            label: '¿Para quién es la ficha?',
-            client: widget.client,
-            onChanged: (opcion) => setState(() => _paraQuien = opcion),
-            onSinSeleccion: () => setState(() => _sinOpciones = true),
-          ),
-          if (_sinOpciones)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text('No se pudo saber para quién reservar.'),
-            ),
-          const SizedBox(height: 12),
-          Text(
-            'La ficha queda reservada y pendiente de pago: se confirma cuando '
-            'el pago se acredita.',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _paraQuien == null
-                ? null
-                : () => Navigator.pop(context, _paraQuien),
-            child: const Text('Reservar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-        ],
       ),
     );
   }
