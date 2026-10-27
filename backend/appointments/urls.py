@@ -4,6 +4,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .booking import AppointmentViewSet
+from .counter import CounterBookingView
 from .changes import CancelAppointmentView, RescheduleAppointmentView
 from .attendance import ConfirmAttendanceView, attendance_link_view
 from .checkin import CheckInView
@@ -21,6 +22,7 @@ router.register(
 )
 
 urlpatterns = router.urls + [
+    path("counter/book/", CounterBookingView.as_view(), name="counter-book"),
     # ---------- US-20 — Cancelación y reprogramación --------------------
     path(
         "appointments/<uuid:pk>/cancel/",
