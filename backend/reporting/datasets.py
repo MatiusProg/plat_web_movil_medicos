@@ -35,9 +35,15 @@ no completa.
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from django.db.models import Case, CharField, Value, When
+from django.utils import timezone
+
 from accounts.models import AuditLog
+from appointments.kpis import debian_atenderse_q, inasistencia_q
+from appointments.models import Appointment
 from catalog.models import Branch, Practitioner, Specialty
 from patients.models import Patient
+from payments.models import Payment
 from scheduling.models import Schedule
 
 # --------------------------------------------------------------------------
@@ -176,10 +182,10 @@ WEEKDAYS = {
 # --------------------------------------------------------------------------
 #  Los conjuntos
 # --------------------------------------------------------------------------
-#  Se declaran los del Sprint 1, que son los que tienen datos cargados. Los del
-#  Sprint 2 —fichas, pagos, atenciones— se agregan acá cuando existan sus
-#  modelos: un conjunto nuevo es un bloque en esta lista y nada más. Ése es el
-#  punto de que la lista sea declarativa.
+#  Un conjunto nuevo es un bloque en esta lista y nada más. Ése es el punto de
+#  que la lista sea declarativa. Los del Sprint 1 (pacientes, catálogo, agendas,
+#  bitácora) van primero; fichas y pagos (US-30) van al final del archivo
+#  porque necesitan las definiciones de `appointments/kpis.py`.
 
 PATIENTS = Dataset(
     code="patients",
@@ -354,10 +360,161 @@ AUDIT = Dataset(
 )
 
 
+# --------------------------------------------------------------------------
+#  US-30 — Reportes operativos: fichas y pagos
+# --------------------------------------------------------------------------
+#  Los dos conjuntos exigen `reporting.kpi.read`, el permiso del panel de US-29,
+#  y no `appointments.appointment.read`: éste lo tienen los pacientes (para ver
+#  *sus* fichas) y el alcance de un conjunto es la organización entera, así que
+#  con él un paciente con acceso al constructor se llevaría todas las fichas del
+#  centro. Además un reporte de pagos muestra ingresos, y eso es de la
+#  administración (ver `reporting/migrations/0003_seed_kpi_permission.py`).
+#
+#  Los números coinciden con el panel porque usan sus mismos filtros
+#  (`appointments/kpis.py`) y su mismo criterio de fecha: el día de la ficha,
+#  en la zona horaria del proyecto (`America/La_Paz`).
+#  Para sacar «fichas por estado», «ingresos por sucursal» o «inasistencias por
+#  especialidad» se filtra por ese criterio y se cuentan o suman las filas del
+#  archivo: el constructor entrega filas, no totales.
+
+ASISTENCIA_AUSENTE = "absent"
+ASISTENCIA_ATENDIDA = "attended"
+ASISTENCIA_NO_APLICA = "not_applicable"
+ASISTENCIA = {
+    ASISTENCIA_AUSENTE: "Ausente",
+    ASISTENCIA_ATENDIDA: "Asistió",
+    ASISTENCIA_NO_APLICA: "No aplica",
+}
+
+
+def _fichas_con_asistencia(objects, organization):
+    """Las fichas de la organización, con el desenlace de asistencia del panel.
+
+    `attendance_outcome` no es una columna: se calcula con los mismos filtros
+    que la tasa de inasistencia de US-29. Una ficha `confirmed` cuya hora ya
+    pasó y que nunca hizo check-in figura como «Ausente» aunque nadie la haya
+    marcado `no_show`, porque así la cuenta el panel; si el reporte leyera sólo
+    `status`, daría menos ausentes que él.
+    """
+    ahora = timezone.now()
+    return objects.filter(organization=organization).annotate(
+        attendance_outcome=Case(
+            When(inasistencia_q(ahora), then=Value(ASISTENCIA_AUSENTE)),
+            When(debian_atenderse_q(ahora), then=Value(ASISTENCIA_ATENDIDA)),
+            default=Value(ASISTENCIA_NO_APLICA),
+            output_field=CharField(),
+        ),
+    )
+
+
+APPOINTMENTS = Dataset(
+    code="appointments",
+    label="Fichas",
+    description=(
+        "Las fichas de la organización con su estado, su profesional, su "
+        "sucursal y si el paciente asistió. Una ficha de un profesional con "
+        "dos especialidades sale una vez por especialidad si se pide esa "
+        "columna."
+    ),
+    permission="reporting.kpi.read",
+    model=Appointment,
+    scope=_fichas_con_asistencia,
+    columns=(
+        Column("starts_at", "Fecha y hora", "starts_at", DATETIME),
+        Column("patient_last_name", "Apellidos del paciente",
+               "patient__last_name", TEXT),
+        Column("patient_first_name", "Nombres del paciente",
+               "patient__first_name", TEXT),
+        Column("patient_document", "Documento del paciente",
+               "patient__document_number", TEXT),
+        Column("practitioner", "Profesional", "practitioner__last_name", TEXT),
+        Column("specialty", "Especialidad",
+               "practitioner__specialties__name", TEXT),
+        Column("branch", "Sucursal", "branch__name", TEXT),
+        Column("status", "Estado", "status", CHOICE,
+               _labels(Appointment.Status)),
+        Column("attendance", "Asistencia", "attendance_outcome", CHOICE,
+               ASISTENCIA),
+        Column("checked_in_at", "Check-in", "checked_in_at", DATETIME),
+        Column("attendance_confirmed_at", "Confirmó asistencia",
+               "attendance_confirmed_at", DATETIME),
+        Column("cancelled_at", "Cancelada el", "cancelled_at", DATETIME),
+        Column("cancellation_reason", "Motivo de la cancelación",
+               "cancellation_reason", CHOICE,
+               _labels(Appointment.CancellationReason)),
+        Column("created_at", "Reservada el", "created_at", DATETIME),
+    ),
+    filters=(
+        Filter("starts_at", "Fecha de la ficha", "starts_at", DATETIME),
+        Filter("status", "Estado", "status", CHOICE,
+               _labels(Appointment.Status)),
+        Filter("attendance", "Asistencia", "attendance_outcome", CHOICE,
+               ASISTENCIA),
+        Filter("branch", "Sucursal", "branch__name", TEXT),
+        Filter("practitioner", "Profesional", "practitioner__last_name", TEXT),
+        Filter("specialty", "Especialidad",
+               "practitioner__specialties__name", TEXT),
+        Filter("patient_last_name", "Apellidos del paciente",
+               "patient__last_name", TEXT),
+    ),
+    default_columns=("starts_at", "patient_last_name", "patient_first_name",
+                     "practitioner", "branch", "status"),
+    default_order=("-starts_at",),
+)
+
+PAYMENTS = Dataset(
+    code="payments",
+    label="Pagos",
+    description=(
+        "Los cobros de las fichas, en línea y en ventanilla. Para que el total "
+        "coincida con los ingresos del panel, filtra por estado «Pagado» y por "
+        "la fecha de la ficha; cada moneda se suma por separado."
+    ),
+    permission="reporting.kpi.read",
+    model=Payment,
+    columns=(
+        Column("appointment_starts_at", "Fecha de la ficha",
+               "appointment__starts_at", DATETIME),
+        Column("paid_at", "Pagado el", "paid_at", DATETIME),
+        Column("patient_last_name", "Apellidos del paciente",
+               "appointment__patient__last_name", TEXT),
+        Column("patient_first_name", "Nombres del paciente",
+               "appointment__patient__first_name", TEXT),
+        Column("practitioner", "Profesional",
+               "appointment__practitioner__last_name", TEXT),
+        Column("branch", "Sucursal", "appointment__branch__name", TEXT),
+        Column("amount", "Importe", "amount", NUMBER),
+        Column("currency", "Moneda", "currency", TEXT),
+        Column("provider", "Medio de pago", "provider", CHOICE,
+               _labels(Payment.Provider)),
+        Column("status", "Estado", "status", CHOICE, _labels(Payment.Status)),
+        Column("refunded_at", "Devuelto el", "refunded_at", DATETIME),
+        Column("refund_reason", "Motivo de la devolución", "refund_reason",
+               TEXT),
+        Column("created_at", "Intento de cobro", "created_at", DATETIME),
+    ),
+    filters=(
+        Filter("appointment_starts_at", "Fecha de la ficha",
+               "appointment__starts_at", DATETIME),
+        Filter("paid_at", "Fecha del pago", "paid_at", DATETIME),
+        Filter("status", "Estado", "status", CHOICE, _labels(Payment.Status)),
+        Filter("provider", "Medio de pago", "provider", CHOICE,
+               _labels(Payment.Provider)),
+        Filter("currency", "Moneda", "currency", TEXT),
+        Filter("branch", "Sucursal", "appointment__branch__name", TEXT),
+        Filter("practitioner", "Profesional",
+               "appointment__practitioner__last_name", TEXT),
+    ),
+    default_columns=("appointment_starts_at", "patient_last_name", "branch",
+                     "amount", "currency", "provider", "status"),
+    default_order=("-appointment__starts_at",),
+)
+
+
 REGISTRY: dict[str, Dataset] = {
     dataset.code: dataset
     for dataset in (PATIENTS, PRACTITIONERS, SPECIALTIES, BRANCHES,
-                    SCHEDULES, AUDIT)
+                    SCHEDULES, AUDIT, APPOINTMENTS, PAYMENTS)
 }
 
 

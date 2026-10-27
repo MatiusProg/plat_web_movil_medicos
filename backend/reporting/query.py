@@ -68,7 +68,16 @@ class Report:
         que sólo sirve para escribir un número en una nota al pie.
         """
         paths = [column.path for column in self.columns]
-        crudas = list(self.queryset.values_list(*paths)[: limit + 1])
+        # La clave primaria viaja en el SELECT para que el ``DISTINCT`` de
+        # ``build`` sólo quite las filas que un join multiplicó, y no las que
+        # son iguales por pura coincidencia: sin ella, un reporte de fichas con
+        # las columnas «Estado» y «Sucursal» devolvería una fila por
+        # combinación y no una por ficha, y no se podrían contar desde el
+        # archivo.
+        crudas = [
+            fila[:-1]
+            for fila in self.queryset.values_list(*paths, "pk")[: limit + 1]
+        ]
         truncado = len(crudas) > limit
         if truncado:
             crudas = crudas[:limit]
