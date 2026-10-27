@@ -14,6 +14,14 @@
          "no disponible" en el teléfono aunque esté instalado. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
+    <!-- US-28: avisos push de la ficha (confirmación, recordatorio y
+         cancelación). Desde Android 13 una app no puede mostrar
+         notificaciones sin declarar este permiso; sin él, el
+         `requestPermission()` de `core/notifications/push.dart` no muestra el
+         diálogo y los avisos llegan a Firebase pero nunca aparecen en el
+         teléfono. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService"/>

@@ -22,7 +22,10 @@ import csv
 import datetime as dt
 import io
 import re
+from decimal import Decimal
 from html import escape
+
+from django.utils import timezone
 
 # Qué produce cada formato. La vista valida contra estas claves.
 FORMATS = ("csv", "xlsx", "html", "pdf")
@@ -130,8 +133,10 @@ def _xlsx(headers, rows, title, subtitle, truncated):
 
     for desplazamiento, fila in enumerate(rows, start=1):
         for columna, valor in enumerate(fila, start=1):
-            hoja.cell(row=fila_encabezado + desplazamiento,
-                      column=columna, value=_excel_value(valor))
+            celda = hoja.cell(row=fila_encabezado + desplazamiento,
+                              column=columna, value=_excel_value(valor))
+            if isinstance(valor, Decimal):
+                celda.number_format = "#,##0.00"
 
     # Ancho por contenido. Sin esto todas las columnas salen en 8,43 y las
     # fechas se ven como `#######`, que es el reclamo número uno de cualquier
@@ -166,11 +171,19 @@ def _xlsx(headers, rows, title, subtitle, truncated):
 def _excel_value(valor):
     """Lo que openpyxl sabe escribir.
 
-    Un ``UUID``, un ``Decimal`` o un ``time`` de Python le hacen lanzar
-    ``ValueError: Cannot convert``. Se pasan como texto; los tipos que Excel sí
-    entiende —número, fecha, instante— se dejan como están para que la celda
-    quede tipada y se pueda ordenar.
+    Un ``UUID`` o un ``time`` de Python le hacen lanzar ``ValueError: Cannot
+    convert``. Se pasan como texto; los tipos que Excel sí entiende —número,
+    fecha, instante— se dejan como están para que la celda quede tipada y se
+    pueda ordenar. Un ``Decimal`` (el importe de un pago) pasa a ``float``: como
+    texto la columna no se podría sumar, y con dos decimales no pierde nada.
     """
+    if isinstance(valor, Decimal):
+        return float(valor)
+    if isinstance(valor, dt.datetime) and valor.tzinfo is not None:
+        # Excel no guarda zonas horarias: openpyxl lanza ``TypeError`` con un
+        # instante «aware». Se escribe la hora de pared de la zona del
+        # proyecto, que es la que muestran las demás pantallas.
+        return timezone.localtime(valor).replace(tzinfo=None)
     if isinstance(valor, (int, float, dt.date, dt.datetime)) and not isinstance(
         valor, bool
     ):
