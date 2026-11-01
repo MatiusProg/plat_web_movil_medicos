@@ -43,69 +43,98 @@
 $DINAMICA_SPRINT3 = @{}
 
 # =========================================================================
-# CU24 (US-23, PR #80) y CU30 (US-29, PR #82): secuencia, estado y tiempo.
+# CU24 (US-23, PR #80 y #87), CU30 (US-29, PR #82) y CU31 (US-30, PR #89).
 # Para pegar en scripts/ea-sprint3-dinamica.ps1, despues de
 # $DINAMICA_SPRINT3 = @{}. Participantes y mensajes: los de Mateo en
 # ea-sprint3-casos.ps1. Verificado contra el codigo al 26/10.
 # =========================================================================
 
 # -------------------------------------------------------------------------
-# CU24 Agendamiento y Cobro Asistido: cobro en efectivo en ventanilla.
-# Toda la peticion corre en la transaccion de TenantMiddleware
-# (tenancy/middleware.py:39, COMMIT en :71); el atomic() de
-# register_cash_payment y el de confirm_payment son savepoints. Los asientos
-# de la bitacora se encolan y los escribe AuditTrailMiddleware despues del
-# COMMIT (config/settings.py:133 va antes que :137, asi que su
-# process_response corre despues).
+# CU24 Agendamiento y Cobro Asistido: la atención en el mostrador (PR #87).
+# Rehecho el 01/11 sobre los datos de ea-sprint3-casos-us23-us30.ps1. Cada
+# petición corre en la transacción de TenantMiddleware (tenancy/middleware.py,
+# COMMIT al final); los atomic() de book_appointment, register_cash_payment
+# y confirm_payment son savepoints. Los asientos de la bitácora se encolan
+# y los escribe AuditTrailMiddleware después del COMMIT.
 # -------------------------------------------------------------------------
 $DINAMICA_SPRINT3['CU24'] = @{
   plataforma = 'web'
   secuencia = @(
-    @{ t='nota'; txt='FLUJO 1 Cobrar en ventanilla' },
-    @{ t='msg'; o='recep';     d='api';       n='1.1: cobrarEnEfectivo(ficha)  {sin pantalla al 26/10: se llama al endpoint sin cuerpo; el importe lo decide el backend}' },
-    @{ t='msg'; o='api';       d='vista';     n='1.2: post(request, pk)  {POST /api/payments/appointments/{id}/cash/, payments/urls.py:17-21; IsAuthenticated y CanRegisterCashPayments, payments/views.py:123, :125}' },
-    @{ t='alt' },
-    @{ t='op'; g='sin token o sin payments.payment.register_cash' },
-    @{ t='msg'; o='vista';     d='api';       n='1.2.1: 401 | 403(detail)  {DRF corta antes de post(); payments/permissions.py:11-14}'; ret=$true },
-    @{ t='op'; g='token válido y payments.payment.register_cash' },
-    @{ t='msg'; o='vista';     d='ficha';     n='1.3: filter(pk, organization)  {SELECT a.*, p.*, pr.*, b.* FROM appointments a JOIN patients p, practitioners pr, branches b WHERE a.id = :pk AND a.organization_id = :org LIMIT 1; payments/views.py:128-133}' },
-    @{ t='msg'; o='ficha';     d='vista';     n='1.3.1: Ficha(status, expires_at) o None()'; ret=$true },
-    @{ t='alt' },
-    @{ t='op'; g='appointment is None' },
-    @{ t='msg'; o='vista';     d='api';       n='1.3.2: 404(detail)  {La ficha no existe., payments/views.py:134-136}'; ret=$true },
-    @{ t='op'; g='la ficha existe en la organización' },
-    @{ t='msg'; o='vista';     d='gestor';    n='1.4: register_cash_payment(appointment, user, request)  {payments/views.py:138-139; payments/services.py:135}' },
-    @{ t='msg'; o='gestor';    d='gestor';    n='1.5: _assert_payable(appointment)  {payments/services.py:153, :33-43}' },
-    @{ t='alt' },
-    @{ t='op'; g='status != pending_payment o expires_at <= now' },
-    @{ t='nota'; txt='FLUJO 2 La ficha no se puede cobrar' },
-    @{ t='msg'; o='gestor';    d='vista';     n='2.1: ValidationError(code)  {ficha_no_pendiente, payments/services.py:35-38; ficha_vencida, :39-43}'; ret=$true },
-    @{ t='msg'; o='vista';     d='api';       n='2.2: 400(code, detail)  {except ValidationError, payments/views.py:140-142}'; ret=$true },
-    @{ t='op'; g='pending_payment y expires_at > now' },
-    @{ t='msg'; o='gestor';    d='gestor';    n='1.6: quote(appointment)  {payments/services.py:154; payments/pricing.py:39-74: la consulta más barata de la especialidad, la que la nombra o la genérica; si no hay, APPOINTMENT_DEFAULT_FEE = 100.00 BOB, config/settings.py:309-310}' },
-    @{ t='msg'; o='gestor';    d='pago';      n='1.7: create(appointment, amount, provider)  {INSERT INTO payments (organization_id, appointment_id, created_by_id, amount, currency, provider = ''cash'', status = ''pending''); dentro de transaction.atomic(), payments/services.py:155-163}' },
-    @{ t='msg'; o='gestor';    d='bitgestor'; n='1.8: record(request, action, entity, entity_id, detail)  {_asentar(request, payment, cobro_en_ventanilla), action = payment.movement; se encola en la petición, no se escribe: payments/services.py:164, :241-250; audit/services.py:112-118}' },
-    @{ t='msg'; o='gestor';    d='gestor';    n='1.10: confirm_payment(payment, request)  {payments/services.py:165, :79; SELECT * FROM payments WHERE id = :id FOR UPDATE (:89), SELECT * FROM appointments WHERE id = :ficha FOR UPDATE OF appointments (:96-100) y SELECT EXISTS pago succeeded de la ficha (:105-107); el pago recién creado está pending, así que el return idempotente de :90 no se da}' },
+    @{ t='nota'; txt='FLUJO 1 Reservar a nombre del paciente' },
     @{ t='alt'; clave=$true },
-    @{ t='op'; g='ya hay un pago succeeded o la ficha ya no está pending_payment' },
-    @{ t='msg'; o='gestor';    d='gestor';    n='1.10.1: Pago(status = refunded, refund_reason = pago_duplicado | ficha_no_disponible)  {refund_payment: CashProvider.refund no mueve dinero, UPDATE payments SET status = ''refunded'', refunded_at, refund_reason y _asentar(devuelto); payments/services.py:108-111, :168-178; payments/providers.py:196-199}'; ret=$true },
-    @{ t='op'; g='ficha pending_payment y sin otro pago succeeded' },
-    @{ t='msg'; o='gestor';    d='pago';      n='1.11: save(status, paid_at)  {UPDATE payments SET status = ''succeeded'', provider_payment_id, paid_at = now() WHERE id = :id; payments/services.py:103, :113-116}' },
-    @{ t='msg'; o='gestor';    d='ficha';     n='1.12: save(status)  {UPDATE appointments SET status = ''confirmed'', expires_at = NULL WHERE id = :ficha; payments/services.py:118-120}' },
-    @{ t='msg'; o='gestor';    d='gestor';    n='1.10.2: Pago(status = succeeded)  {on_commit(notify(CONFIRMED)) y _asentar(pagado), que también se encola; payments/services.py:128-131}'; ret=$true },
+    @{ t='op'; g='el paciente ya está registrado en el centro' },
+    @{ t='msg'; o='recep';    d='pantalla'; n='1.1: buscarPaciente(texto)  {campo Buscar por nombre o documento, Mostrador.tsx:67}' },
+    @{ t='msg'; o='pantalla'; d='busq';     n='1.2: list(request)  {buscarPacientes({q, status: active, pageSize: 100}): GET /api/patients/search/, Mostrador.tsx:45; api/pacientes.ts:77, :125; PatientSearchViewSet, patients/search.py:132}' },
+    @{ t='msg'; o='busq';     d='busq';     n='1.3: get_queryset()  {patients/search.py:156: documento exacto o nombre y apellido normalizados, sólo activos}' },
+    @{ t='msg'; o='busq';     d='paciente'; n='1.4: filter(organization, q, status)  {SELECT * FROM patients WHERE organization_id = :org AND is_active AND (document_number = :q OR id IN (...)) ORDER BY last_name, first_name; patients/search.py:163-231}' },
+    @{ t='msg'; o='busq';     d='pantalla'; n='1.5: 200(results)  {PatientSearchPagination; el desplegable Seleccionar paciente, Mostrador.tsx:68-70}'; ret=$true },
+    @{ t='op'; g='el paciente no está registrado' },
+    @{ t='nota'; txt='FLUJO 2 Registrar un paciente nuevo' },
+    @{ t='msg'; o='recep';    d='pantalla'; n='2.1: registrarPaciente(datos)  {Registrar paciente nuevo sin salir de mostrador: nombres, apellidos, documento y teléfono, Mostrador.tsx:74-80}' },
+    @{ t='msg'; o='pantalla'; d='alta';     n='2.2: create(request)  {crearPaciente(nuevo, contexto): POST /api/patients/admin/, api/pacientes.ts:170-180; PatientAdminViewSet, patients/admin_ops.py:124; pide patients.patient.create, :141-146}' },
+    @{ t='msg'; o='alta';     d='alta';     n='2.3: validate(attrs)  {PatientAdminSerializer: documento único en la organización, patients/admin_ops.py:56-64}' },
+    @{ t='msg'; o='alta';     d='alta';     n='2.4: perform_create(serializer)  {patients/admin_ops.py:180-183}' },
+    @{ t='msg'; o='alta';     d='paciente'; n='2.5: create(datos, organization)  {INSERT INTO patients (organization_id, document_type, document_number, first_name, last_name, phone, ...)}' },
+    @{ t='msg'; o='alta';     d='pantalla'; n='2.6: 201(paciente)  {queda elegido: setPaciente(creado.id), Mostrador.tsx:75}'; ret=$true },
     @{ t='fin' },
-    @{ t='msg'; o='gestor';    d='vista';     n='1.4.1: Pago(status)  {register_cash_payment devuelve lo de confirm_payment, payments/services.py:165}'; ret=$true },
+    @{ t='msg'; o='recep';    d='pantalla'; n='1.6: elegirTurno(profesional, dia)  {desplegable Profesional y Fecha, Mostrador.tsx:84-85; los profesionales salen de listarProfesionalesTodos, :40}' },
+    @{ t='msg'; o='pantalla'; d='disp';     n='1.7: get(request)  {disponibilidadConsolidada({practitioner, from: dia, to: dia}): GET /api/scheduling/availability/, Mostrador.tsx:53; api/disponibilidad.ts:33-48; AvailabilityView, scheduling/availability.py:244-253}' },
+    @{ t='msg'; o='disp';     d='gdisp';    n='1.8: consolidated_availability(practitioner_id, date_from, date_to, branch_id, now)  {scheduling/availability.py:102, :265-270}' },
+    @{ t='msg'; o='gdisp';    d='agenda';   n='1.9: filter(practitioner, is_active)  {SELECT * FROM schedules WHERE practitioner_id = :p AND is_active; scheduling/availability.py:130}' },
+    @{ t='msg'; o='gdisp';    d='gdisp';    n='1.10: _booked_slots(practitioner_id, date_from, date_to)  {scheduling/availability.py:51, :164}' },
+    @{ t='msg'; o='gdisp';    d='ficha';    n='1.11: filter(practitioner, status, starts_at)  {SELECT schedule_id, starts_at FROM appointments WHERE practitioner_id = :p AND status IN (pending_payment no vencida, confirmed); scheduling/availability.py:62}' },
+    @{ t='msg'; o='disp';     d='pantalla'; n='1.12: 200(days, slots)  {la pantalla sólo deja los reservable, Mostrador.tsx:54}'; ret=$true },
+    @{ t='msg'; o='recep';    d='pantalla'; n='1.13: reservar()  {botón Reservar a nombre del paciente, Mostrador.tsx:89}' },
+    @{ t='msg'; o='pantalla'; d='ctrlres';  n='1.14: post(request)  {reservarEnMostrador(datos, contexto): POST /api/appointments/counter/book/, api/mostrador.ts:4-11; CounterBookingView, appointments/counter.py:18-21; IsAuthenticated y CanBookAtCounter, :14-15}' },
+    @{ t='msg'; o='ctrlres';  d='planes';   n='1.15: appointments_this_month(organization)  {SELECT count(*) FROM appointments WHERE organization_id = :org AND created_at >= inicio de mes; tenancy/plans.py:170-175}' },
+    @{ t='msg'; o='ctrlres';  d='planes';   n='1.16: check_limit(organization, field, usados, que, singular)  {max_appointments_month; si llegó al tope, 403 plan_limit (PlanLimitExceeded); appointments/counter.py:28-29, tenancy/plans.py:119-140}' },
+    @{ t='msg'; o='ctrlres';  d='reserva';  n='1.17: book_appointment(organization, patient_id, practitioner_id, branch_id, schedule_id, starts_at, booked_by)  {booked_by = la recepcionista; appointments/counter.py:31-37; appointments/booking.py:72}' },
+    @{ t='msg'; o='reserva';  d='paciente'; n='1.18: filter(pk, organization, is_active)  {si no está, 400 paciente_invalido; appointments/booking.py:83-87}' },
+    @{ t='msg'; o='reserva';  d='agenda';   n='1.19: select_for_update(pk, organization, branch, practitioner)  {SELECT * FROM schedules WHERE id = :s ... FOR UPDATE: serializa las reservas del mismo turno; appointments/booking.py:111-120}' },
+    @{ t='msg'; o='reserva';  d='reserva';  n='1.20: _validate_slot_is_real(schedule, starts_at)  {recalcula el turno con generate_slots; si no es real, 400 turno_invalido; appointments/booking.py:53-69, :128}' },
+    @{ t='alt'; clave=$true },
+    @{ t='op'; g='el turno sigue libre' },
+    @{ t='msg'; o='reserva';  d='ficha';    n='1.21: create(patient, practitioner, branch, schedule, starts_at, status, expires_at)  {INSERT INTO appointments (..., status = pending_payment, expires_at = now + APPOINTMENT_HOLD_MINUTES); appointments/booking.py:131-142}' },
+    @{ t='msg'; o='ctrlres';  d='pantalla'; n='1.22: 201(ficha pending_payment)  {AppointmentSerializer; Ficha reservada. Registrá el cobro antes de 15 minutos., Mostrador.tsx:89}'; ret=$true },
+    @{ t='op'; g='otro tomó el turno: IntegrityError en uq_appointment_active_slot' },
+    @{ t='nota'; txt='FLUJO 5 El turno o la ficha no sirven' },
+    @{ t='msg'; o='reserva';  d='ctrlres';  n='5.1: SlotAlreadyTaken(detail)  {appointments/booking.py:143-147}'; ret=$true },
+    @{ t='msg'; o='ctrlres';  d='pantalla'; n='5.2: 409(turno_ocupado, detail)  {appointments/counter.py:41-42; la pantalla lo muestra en el aviso de error}'; ret=$true },
+    @{ t='fin' },
+    @{ t='nota'; txt='FLUJO 3 Cobrar en efectivo' },
+    @{ t='msg'; o='recep';    d='pantalla'; n='3.1: confirmarCobro()  {botón Confirmar cobro en efectivo, sólo con pending_payment y payments.payment.register_cash; el importe lo muestra la ficha, Mostrador.tsx:91-93}' },
+    @{ t='msg'; o='pantalla'; d='vista';    n='3.2: post(request, pk)  {cobrarEnMostrador(id, contexto): POST /api/payments/appointments/{id}/cash/ sin cuerpo, api/mostrador.ts:22-26; CashPaymentView, payments/views.py:106, :125}' },
+    @{ t='msg'; o='vista';    d='ficha';    n='3.3: filter(pk, organization)  {si no está, 404; payments/views.py:128-136}' },
+    @{ t='msg'; o='vista';    d='gestor';   n='3.4: register_cash_payment(appointment, user, request)  {payments/views.py:138-139; payments/services.py:135}' },
+    @{ t='msg'; o='gestor';   d='gestor';   n='3.5: _assert_payable(appointment)  {payments/services.py:33-43, :153}' },
     @{ t='alt' },
-    @{ t='op'; g='payment.status != succeeded' },
-    @{ t='msg'; o='vista';     d='api';       n='1.4.2: 409(ficha_ya_pagada, detail)  {hay que devolver el efectivo; payments/views.py:144-149}'; ret=$true },
-    @{ t='op'; g='payment.status = succeeded' },
-    @{ t='msg'; o='vista';     d='api';       n='1.13: 201(payment_id, amount, appointment)  {también provider, currency y status; refresh_from_db() y AppointmentSerializer, payments/views.py:151-159}'; ret=$true },
+    @{ t='op'; g='pending_payment y expires_at > now' },
+    @{ t='msg'; o='gestor';   d='tarifa';   n='3.6: quote(appointment)  {la consulta más barata de la especialidad o la genérica; si no hay, APPOINTMENT_DEFAULT_FEE; payments/pricing.py:39-74}' },
+    @{ t='msg'; o='gestor';   d='pago';     n='3.7: create(appointment, amount, currency, provider)  {INSERT INTO payments (..., provider = cash, status = pending) dentro de transaction.atomic(); payments/services.py:155-163}' },
+    @{ t='msg'; o='gestor';   d='gestor';   n='3.8: _asentar(request, payment, evento)  {evento = cobro_en_ventanilla; payments/services.py:164, :241-250}' },
+    @{ t='msg'; o='gestor';   d='bitgestor'; n='3.9: record(request, action, entity, entity_id, detail, organization, user)  {action = payment.movement; se encola en la petición; audit/services.py:81-118}' },
+    @{ t='msg'; o='gestor';   d='gestor';   n='3.10: confirm_payment(payment, provider_payment_id, request)  {bloquea pago y ficha con select_for_update; si ya hay un pago succeeded, lo devuelve (pago_duplicado) y la vista contesta 409 ficha_ya_pagada; payments/services.py:79-131, views.py:144-149}' },
+    @{ t='msg'; o='gestor';   d='pago';     n='3.11: save(status, paid_at)  {UPDATE payments SET status = succeeded, paid_at = now(); payments/services.py:113-116}' },
+    @{ t='msg'; o='gestor';   d='ficha';    n='3.12: save(status, expires_at)  {UPDATE appointments SET status = confirmed, expires_at = NULL; on_commit(notify(CONFIRMED)); payments/services.py:118-128}' },
+    @{ t='msg'; o='vista';    d='pantalla'; n='3.13: 201(payment_id, amount, appointment)  {Cobrado: importe. Ficha confirmada., Mostrador.tsx:93; payments/views.py:151-159}'; ret=$true },
+    @{ t='op'; g='status != pending_payment o expires_at <= now' },
+    @{ t='msg'; o='gestor';   d='vista';    n='5.3: ValidationError(code)  {ficha_no_pendiente o ficha_vencida, payments/services.py:35-43}'; ret=$true },
+    @{ t='msg'; o='vista';    d='pantalla'; n='5.4: 400(code, detail)  {payments/views.py:140-142}'; ret=$true },
     @{ t='fin' },
     @{ t='loop'; g='por cada asiento encolado, después del COMMIT' },
-    @{ t='msg'; o='bitgestor'; d='bitacora';  n='1.9: insert(asiento)  {INSERT INTO audit_log (organization_id, user_id, action = ''payment.movement'', entity = ''payment'', entity_id, detail); AuditTrailMiddleware tras el COMMIT de TenantMiddleware: audit/middleware.py:22-23, audit/services.py:145-146, :169; tenancy/middleware.py:71}' },
+    @{ t='msg'; o='bitgestor'; d='bitacora'; n='3.14: insert(asiento)  {INSERT INTO audit_log (..., action = payment.movement); AuditTrailMiddleware tras el COMMIT de TenantMiddleware; audit/services.py:134-169}' },
     @{ t='fin' },
-    @{ t='fin' },
-    @{ t='fin' },
+    @{ t='nota'; txt='FLUJO 4 Registrar la llegada' },
+    @{ t='msg'; o='recep';    d='pantalla'; n='4.1: registrarLlegada(documento)  {Check-in por documento, sólo con la ficha confirmed; el documento viene del paciente elegido, Mostrador.tsx:94}' },
+    @{ t='msg'; o='pantalla'; d='checkin';  n='4.2: post(request)  {realizarCheckIn({document_number}): POST /api/appointments/checkin/, api/fichas.ts:193-205; CheckInView, appointments/checkin.py:49-55}' },
+    @{ t='msg'; o='checkin';  d='checkin';  n='4.3: _find_by_document(organization, document_number)  {appointments/checkin.py:80-83, :156-177}' },
+    @{ t='msg'; o='checkin';  d='ficha';    n='4.4: select_for_update(organization, document_number)  {SELECT * FROM appointments JOIN patients WHERE organization_id = :org AND document_number = :doc ORDER BY starts_at LIMIT 1 FOR UPDATE; appointments/checkin.py:161-177}' },
+    @{ t='alt' },
+    @{ t='op'; g='la ficha está confirmed' },
+    @{ t='msg'; o='checkin';  d='ficha';    n='4.5: save(status, checked_in_at)  {UPDATE appointments SET status = attended, checked_in_at = now(); appointments/checkin.py:118-127}' },
+    @{ t='msg'; o='checkin';  d='pantalla'; n='4.6: 200(id, status, checked_in_at)  {Check-in realizado correctamente., Mostrador.tsx:94; appointments/checkin.py:129-154}'; ret=$true },
+    @{ t='op'; g='no hay ficha, ya registró su llegada o no está confirmada' },
+    @{ t='msg'; o='checkin';  d='pantalla'; n='4.4.1: 404 | 409(ficha_no_encontrada | comprobante_ya_utilizado | ficha_no_confirmada)  {appointments/checkin.py:85-116}'; ret=$true },
     @{ t='fin' }
   )
 
@@ -114,51 +143,59 @@ $DINAMICA_SPRINT3['CU24'] = @{
       @{ k='ini';    tipo='inicial'; col=0; f=0 },
       @{ k='aut';    n='Autenticar Recepcionista';     col=0; f=2 },
       @{ k='fin403'; tipo='final';   col=0; f=4.5 },
-      @{ k='val';    n='Validar ficha';                col=1; f=1 },
-      @{ k='reg';    n='Registrar cobro en efectivo';  col=2; f=1 },
+      @{ k='bus';    n='Identificar paciente';         col=1; f=0.5 },
+      @{ k='alta';   n='Registrar paciente';           col=1; f=3 },
+      @{ k='turno';  n='Elegir turno disponible';      col=2; f=0 },
+      @{ k='res';    n='Reservar ficha';               col=2; f=2 },
       @{ k='error';  n='Informar error';               col=2; f=5 },
-      @{ k='conf';   n='Confirmar ficha';              col=3; f=0.5 },
-      @{ k='dev';    n='Devolver pago duplicado';      col=3; f=3 },
-      @{ k='ok';     n='Transacción completada';       col=4; f=2 },
-      @{ k='fin';    tipo='final';   col=4; f=4 }
+      @{ k='cobro';  n='Cobrar en efectivo';           col=3; f=1 },
+      @{ k='dev';    n='Devolver pago duplicado';      col=3; f=3.5 },
+      @{ k='lleg';   n='Registrar llegada';            col=4; f=0.5 },
+      @{ k='ok';     n='Transacción completada';       col=4; f=2.5 },
+      @{ k='fin';    tipo='final';   col=4; f=4.5 }
     )
     transiciones = @(
       @{ de='ini';   a='aut' },
-      @{ de='aut';   a='val';    r='[token y payments.payment.register_cash] {CanRegisterCashPayments, payments/views.py:123}' },
+      @{ de='aut';   a='bus';    r='[appointments.appointment.book_at_counter] {Mostrador.tsx:37; counter.py:14}' },
       @{ de='aut';   a='fin403'; r='[sin token o sin permiso] {401 | 403}' },
-      @{ de='val';   a='reg';    r='[de la organización, pending_payment y expires_at > now] / quote(), INSERT payments (provider = cash) {views.py:128, services.py:35, :39, :154, :156}' },
-      @{ de='val';   a='error';  r='[inexistente, no pendiente o vencida] {404 views.py:134, 400 ficha_no_pendiente services.py:35, 400 ficha_vencida :39}' },
-      @{ de='reg';   a='conf';   r='[ficha pending_payment y sin otro pago succeeded] / select_for_update() {services.py:89, :96, :108}' },
-      @{ de='reg';   a='dev';    r='[ya pagada o la ficha ya no espera pago] / refund_payment(pago_duplicado | ficha_no_disponible) {services.py:108-111}' },
-      @{ de='conf';  a='ok';     r='/ pago succeeded, ficha confirmed, expires_at = NULL, on_commit(notify) {services.py:113-120, :128; 201 views.py:152}' },
-      @{ de='dev';   a='ok';     r='/ status = refunded {services.py:173; 409 ficha_ya_pagada views.py:144}' },
-      @{ de='error'; a='val';    r='reintentar()'; ortogonal=$true },
+      @{ de='bus';   a='alta';   r='[no está registrado] / POST patients/admin/ {admin_ops.py:180}' },
+      @{ de='alta';  a='bus';    r='/ 201, queda elegido {Mostrador.tsx:75}' },
+      @{ de='bus';   a='turno';  r='[paciente elegido] / GET availability/ {availability.py:253}' },
+      @{ de='turno'; a='res';    r='[turno reservable] / POST counter/book/ {counter.py:21}' },
+      @{ de='res';   a='cobro';  r='[cupo en el plan y turno libre] / INSERT appointments (pending_payment, expires_at) {booking.py:131}' },
+      @{ de='res';   a='error';  r='[sin cupo, inválido u ocupado] {403 plan_limit, 400, 409 turno_ocupado; counter.py:28, :38-42}' },
+      @{ de='cobro'; a='lleg';   r='[pending_payment, no vencida y sin otro pago] / pago succeeded, ficha confirmed {services.py:113-120}' },
+      @{ de='cobro'; a='dev';    r='[ya pagada] / refund_payment(pago_duplicado) {services.py:108-111}' },
+      @{ de='cobro'; a='error';  r='[no pendiente o vencida] {400 ficha_no_pendiente | ficha_vencida; services.py:35, :39}' },
+      @{ de='dev';   a='ok';     r='/ 409 ficha_ya_pagada: devolver el efectivo {views.py:144}' },
+      @{ de='lleg';  a='ok';     r='[ficha confirmed] / status = attended, checked_in_at {checkin.py:118-127}' },
+      @{ de='error'; a='bus';    r='reintentar()'; ortogonal=$true },
       @{ de='ok';    a='fin' }
     )
   }
 
-  # Escenario: la ficha se reservo (CU18) y recepcion la cobra en el
-  # mostrador antes de que venza su plazo de 15 minutos.
   tiempo = @{
-    escenario = 'cobrar en ventanilla una ficha pending_payment antes de que venza su plazo de 15 minutos'
-    nota = 'Regla relativa (0 a 100): instantes del escenario, no milisegundos medidos. 15 min = APPOINTMENT_HOLD_MINUTES (config/settings.py:262), que fija expires_at al reservar (appointments/booking.py:109, :140). El cobro sólo pasa si la ficha sigue pending_payment y expires_at > now (_assert_payable, payments/services.py:35, :39); si el plazo venció, 400 ficha_vencida y no se escribe nada. Autenticando es el JWT y CanRegisterCashPayments (payments/views.py:123); Validando, la búsqueda de la ficha en la organización, _assert_payable y quote (views.py:128, services.py:153-154); Escribiendo, el INSERT del pago con provider = cash y confirm_payment, que bloquea pago y ficha, deja el pago succeeded y la ficha confirmed con expires_at = NULL (services.py:155-165, :89-120); Confirmada, el COMMIT que cierra TenantMiddleware (tenancy/middleware.py:71). Los asientos se encolan con record() y los escribe AuditTrailMiddleware después de ese COMMIT (audit/services.py:117, :145-146; audit/middleware.py:22-23); el aviso al paciente sale en on_commit (services.py:128). No hay sesión de pago ni webhook: el dinero ya está en la caja.'
+    escenario = 'atender en el mostrador: reservar a nombre del paciente, cobrar en efectivo antes de que venza la reserva y registrar su llegada'
+    nota = 'Regla relativa (0 a 84): instantes del escenario, no milisegundos medidos. Son tres peticiones, cada una en su transacción (TenantMiddleware): POST counter/book/ (appointments/counter.py:21), POST payments/appointments/{id}/cash/ (payments/views.py:125) y POST checkin/ (appointments/checkin.py:55). 15 min = APPOINTMENT_HOLD_MINUTES (config/settings.py), que fija expires_at al reservar (appointments/booking.py:109, :140); el cobro sólo pasa si la ficha sigue pending_payment y expires_at > now (_assert_payable, payments/services.py:35, :39), y confirm_payment deja expires_at = NULL (:118-120). El check-in sólo acepta una ficha confirmed (checkin.py:106-116). Los asientos del cobro se encolan con record() y los escribe AuditTrailMiddleware después del COMMIT.'
     lineas = @(
+      @{ n='Recepción (Mostrador.tsx)'
+         estados=@('Buscando paciente', 'Eligiendo turno', 'Cobrando', 'Registrando llegada', 'Libre')
+         marcas=@( @{ t=0;  e='Buscando paciente' },
+                   @{ t=14; e='Eligiendo turno';     ev='GET availability/' },
+                   @{ t=30; e='Cobrando';            ev='201 counter/book/' },
+                   @{ t=64; e='Registrando llegada'; ev='201 cash/' },
+                   @{ t=80; e='Libre';               ev='200 checkin/' } ) },
       @{ n='Plazo de reserva'
-         estados=@('Corriendo', 'Cerrado')
-         marcas=@( @{ t=0;  e='Corriendo'; ev='expires_at' },
+         estados=@('Sin plazo', 'Corriendo', 'Cerrado')
+         marcas=@( @{ t=0;  e='Sin plazo' },
+                   @{ t=28; e='Corriendo'; ev='expires_at = now + 15 min' },
                    @{ t=58; e='Cerrado';   ev='expires_at = NULL'; r='< 15 min' } ) },
-      @{ n='Transacción del cobro'
-         estados=@('Inactiva', 'Autenticando', 'Validando', 'Escribiendo', 'Confirmada')
-         marcas=@( @{ t=0;  e='Inactiva' },
-                   @{ t=36; e='Autenticando'; ev='POST cash/' },
-                   @{ t=42; e='Validando';    ev='_assert_payable()' },
-                   @{ t=50; e='Escribiendo';  ev='INSERT payments' },
-                   @{ t=62; e='Confirmada';   ev='COMMIT' },
-                   @{ t=72; e='Inactiva';     ev='201' } ) },
       @{ n='Ficha'
-         estados=@('pending_payment', 'confirmed')
-         marcas=@( @{ t=0;  e='pending_payment'; ev='reserva (CU18)' },
-                   @{ t=58; e='confirmed';       ev='confirm_payment()' } ) },
+         estados=@('Sin ficha', 'pending_payment', 'confirmed', 'attended')
+         marcas=@( @{ t=0;  e='Sin ficha' },
+                   @{ t=28; e='pending_payment'; ev='book_appointment()' },
+                   @{ t=58; e='confirmed';       ev='confirm_payment()' },
+                   @{ t=76; e='attended';        ev='check-in' } ) },
       @{ n='Pago'
          estados=@('Sin pago', 'pending', 'succeeded')
          marcas=@( @{ t=0;  e='Sin pago' },
@@ -168,7 +205,7 @@ $DINAMICA_SPRINT3['CU24'] = @{
          estados=@('Vacía', 'Encolada', 'Escrita')
          marcas=@( @{ t=0;  e='Vacía' },
                    @{ t=52; e='Encolada'; ev='record()' },
-                   @{ t=66; e='Escrita';  ev='flush()' } ) }
+                   @{ t=62; e='Escrita';  ev='flush()' } ) }
     )
   }
 }
@@ -259,6 +296,80 @@ $DINAMICA_SPRINT3['CU30'] = @{
     @{ t='op'; g='la sucursal es de la organización' },
     @{ t='msg'; o='vista';    d='pantalla'; n='2.2.3: 200(ocupacion, inasistencia, ingresos, demanda)  {calcular(..., branch_id): los pasos 1.5 a 1.11 con AND branch_id = :branch, appointments/kpis.py:74-75, :118-120}'; ret=$true },
     @{ t='fin' },
+    @{ t='fin' }
+  )
+}
+
+
+# -------------------------------------------------------------------------
+# CU31 Generación de Reportes (US-30, PR #89): reportes operativos de fichas
+# y de pagos. Solo lee y no es de IA, pago ni historia clinica: lleva
+# secuencia y nada mas, como CU30. Datos en ea-sprint3-casos-us23-us30.ps1.
+# -------------------------------------------------------------------------
+$DINAMICA_SPRINT3['CU31'] = @{
+  plataforma = 'web'
+  secuencia = @(
+    @{ t='nota'; txt='FLUJO 1 Elegir el conjunto' },
+    @{ t='msg'; o='admin';    d='pantalla'; n='1.1: abrirReportes()  {ruta /reportes, frontend/src/App.tsx:226; pide reporting.report.run, Reportes.tsx:46}' },
+    @{ t='msg'; o='pantalla'; d='catvista'; n='1.2: get(request)  {listarConjuntos(contexto): GET /api/reporting/datasets/, api/reportes.ts:96-97, Reportes.tsx:60-74; DatasetListView, reporting/views.py:52-61}' },
+    @{ t='msg'; o='catvista'; d='catalogo'; n='1.3: available_for(user)  {sólo los conjuntos cuyo permiso tiene; Fichas y Pagos piden reporting.kpi.read; reporting/datasets.py:525-536}' },
+    @{ t='msg'; o='catvista'; d='pantalla'; n='1.4: 200(datasets, formats, max_rows)  {reporting/views.py:62-67}'; ret=$true },
+    @{ t='msg'; o='admin';    d='pantalla'; n='1.5: elegirConjunto(elegido)  {Fichas o Pagos, con sus columnas por defecto; Reportes.tsx:76-83}' },
+    @{ t='nota'; txt='FLUJO 2 Ver el reporte en pantalla' },
+    @{ t='msg'; o='admin';    d='pantalla'; n='2.1: previsualizarAhora()  {botón Vista previa, Reportes.tsx:128, :220}' },
+    @{ t='msg'; o='pantalla'; d='run';      n='2.2: post(request)  {previsualizar(definicion): POST /api/reporting/run/ con format = json, api/reportes.ts:100-110; RunReportView, reporting/views.py:70-78}' },
+    @{ t='msg'; o='run';      d='run';      n='2.3: _run(request, datos, saved_report)  {reporting/views.py:225}' },
+    @{ t='msg'; o='run';      d='query';    n='2.4: build(definition, user)  {reporting/views.py:240; reporting/query.py:91}' },
+    @{ t='msg'; o='query';    d='catalogo'; n='2.5: get(code)  {REGISTRY, reporting/datasets.py:521-522; si no existe, 400 conjunto_desconocido}' },
+    @{ t='alt' },
+    @{ t='op'; g='el usuario no tiene el permiso del conjunto (reporting.kpi.read)' },
+    @{ t='nota'; txt='FLUJO 4 Sin permiso o sin exportación en el plan' },
+    @{ t='msg'; o='query';    d='run';      n='4.1: PermissionError(permission)  {reporting/query.py:106-107}'; ret=$true },
+    @{ t='msg'; o='run';      d='pantalla'; n='4.2: 403(sin_permiso_sobre_el_conjunto, detail)  {reporting/views.py:247-253}'; ret=$true },
+    @{ t='op'; g='user.has_permission(dataset.permission)' },
+    @{ t='msg'; o='query';    d='query';    n='2.6: _columns(dataset, pedidas)  {las elegidas o default_columns; reporting/query.py:128-150}' },
+    @{ t='msg'; o='query';    d='catalogo'; n='2.7: base_queryset(user)  {reporting/datasets.py:144-156}' },
+    @{ t='msg'; o='catalogo'; d='catalogo'; n='2.8: _fichas_con_asistencia(objects, organization)  {sólo Fichas: scope del conjunto APPOINTMENTS; anota attendance_outcome; reporting/datasets.py:390-406}' },
+    @{ t='msg'; o='catalogo'; d='kpis';     n='2.9: inasistencia_q(ahora)  {Ausente: confirmed ya pasada sin check-in, o no_show; appointments/kpis.py:48}' },
+    @{ t='msg'; o='catalogo'; d='kpis';     n='2.10: debian_atenderse_q(ahora)  {Asistió; el resto es No aplica; appointments/kpis.py:40}' },
+    @{ t='msg'; o='query';    d='query';    n='2.11: _apply_filters(queryset, dataset, criterios)  {fecha de la ficha, estado, asistencia, sucursal, profesional, medio de pago; reporting/query.py:153}' },
+    @{ t='msg'; o='query';    d='query';    n='2.12: _order(dataset, pedido)  {o default_order: -starts_at; reporting/query.py:235}' },
+    @{ t='msg'; o='run';      d='query';    n='2.13: rows(limit)  {preview_rows = 50; reporting/views.py:259}' },
+    @{ t='alt'; clave=$true },
+    @{ t='op'; g='dataset = appointments (Fichas)' },
+    @{ t='msg'; o='query';    d='ficha';    n='2.14: values_list(paths, pk)  {SELECT DISTINCT a.starts_at, p.last_name, ..., attendance_outcome, a.id FROM appointments a JOIN patients, practitioners, branches WHERE a.organization_id = :org; reporting/query.py:77-80}' },
+    @{ t='op'; g='dataset = payments (Pagos)' },
+    @{ t='msg'; o='query';    d='pago';     n='2.15: values_list(paths, pk)  {SELECT DISTINCT a.starts_at, pay.paid_at, ..., pay.amount, pay.currency, pay.provider, pay.status, pay.id FROM payments pay JOIN appointments a WHERE pay.organization_id = :org; reporting/query.py:77-80}' },
+    @{ t='fin' },
+    @{ t='msg'; o='run';      d='run';      n='2.16: _audit_run(request, report, definicion, formato, filas, saved_report, recipients)  {quién, qué conjunto, filtros y cuántas filas; nunca las filas; reporting/views.py:260, :362-388}' },
+    @{ t='msg'; o='run';      d='bitgestor'; n='2.17: record(request, action, entity, entity_id, detail, organization, user)  {action = report.run; se encola; audit/services.py:81}' },
+    @{ t='msg'; o='bitgestor'; d='bitacora'; n='2.18: insert(asiento)  {INSERT INTO audit_log después del COMMIT; audit/services.py:134-169}' },
+    @{ t='msg'; o='run';      d='pantalla'; n='2.19: 200(columns, rows, truncated)  {Resultado, Reportes.tsx:529; reporting/views.py:262-273}'; ret=$true },
+    @{ t='fin' },
+    @{ t='nota'; txt='FLUJO 3 Exportar a PDF o Excel' },
+    @{ t='msg'; o='admin';    d='pantalla'; n='3.1: exportarAhora(formato)  {botones de formato, Reportes.tsx:142, :230}' },
+    @{ t='msg'; o='pantalla'; d='run';      n='3.2: post(request)  {exportar(definicion, formato, titulo): POST /api/reporting/run/ con format = xlsx | pdf, api/reportes.ts:153-168}' },
+    @{ t='msg'; o='run';      d='run';      n='3.3: _run(request, datos, saved_report)  {reporting/views.py:225}' },
+    @{ t='msg'; o='run';      d='query';    n='3.4: build(definition, user)  {las mismas validaciones del flujo 2; reporting/views.py:240}' },
+    @{ t='msg'; o='run';      d='planes';   n='3.5: require_feature(organization, feature, que)  {feature = report_export; reporting/views.py:275-276; tenancy/plans.py:104-116}' },
+    @{ t='alt' },
+    @{ t='op'; g='el plan no incluye report_export' },
+    @{ t='msg'; o='planes';   d='run';      n='4.3: PlanLimitExceeded(detail)  {tenancy/plans.py:110-115}'; ret=$true },
+    @{ t='msg'; o='run';      d='pantalla'; n='4.4: 403(plan_limit, detail)  {tenancy/plans.py:67-77}'; ret=$true },
+    @{ t='op'; g='el plan incluye report_export' },
+    @{ t='msg'; o='run';      d='query';    n='3.6: rows(limit)  {limit = MAX_ROWS; reporting/views.py:278}' },
+    @{ t='msg'; o='run';      d='run';      n='3.7: _subtitulo(report, definicion)  {reporting/views.py:281, :320}' },
+    @{ t='msg'; o='run';      d='export';   n='3.8: export(fmt, headers, rows, title, subtitle, truncated)  {reporting/views.py:279-282; reporting/exporters.py:42-49}' },
+    @{ t='alt'; clave=$true },
+    @{ t='op'; g='formato = xlsx' },
+    @{ t='msg'; o='export';   d='export';   n='3.9: _xlsx(headers, rows, title, subtitle, truncated)  {el importe con formato #,##0.00; reporting/exporters.py:104-139}' },
+    @{ t='msg'; o='export';   d='export';   n='3.10: _excel_value(valor)  {Decimal a float; instante con zona a la hora de La Paz; reporting/exporters.py:171-195}' },
+    @{ t='op'; g='formato = pdf' },
+    @{ t='msg'; o='export';   d='export';   n='3.11: _pdf(headers, rows, title, subtitle, truncated)  {reportlab; reporting/exporters.py:247}' },
+    @{ t='fin' },
+    @{ t='msg'; o='export';   d='export';   n='3.12: slugify(texto)  {nombre del archivo; reporting/exporters.py:49, :52}' },
+    @{ t='msg'; o='run';      d='run';      n='3.13: _audit_run(request, report, definicion, formato, filas, saved_report, recipients)  {reporting/views.py:306}' },
+    @{ t='msg'; o='run';      d='pantalla'; n='3.14: 200(archivo, Content-Disposition, X-Report-Rows)  {el navegador lo descarga: Reporte descargado, Reportes.tsx:148-149; reporting/views.py:308-318}'; ret=$true },
     @{ t='fin' }
   )
 }

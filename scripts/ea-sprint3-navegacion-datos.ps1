@@ -34,7 +34,7 @@ $NAVEGACION_SPRINT3 = [ordered]@{
   'Sistema' = @{
     titulo = 'Sistema'
     disposicion = 'columnas'
-    nota = 'Navegación del sistema completo, web y móvil juntas, al 26/10/2026: todas las pantallas que tienen código, una columna por subsistema (P1 a P8; P9 y P10 todavía no tienen pantallas). Sólo pantallas y rutas: los formularios y los controladores de cada pantalla están en los diagramas de subsistema. No es UML: es la extensión UWE (diagrama de clases con estereotipos de navegación). Web: rutas de frontend/src/App.tsx; toda ruta protegida pasa por RutaProtegida (sesión) y cuelga de BarraPlataforma.tsx, cuyas entradas aparecen según el permiso que dice cada guarda (BarraPlataforma.tsx:343-351). Móvil: rutas de mobile/lib/core/router/app_router.dart; la sesión la pide el redirect (:116-132), SoloPacientes (patient_gate.dart:16) y ConPermiso (org_gate.dart:64). Las guardas de la interfaz son cosméticas: la puerta real es el permiso del backend. Sólo web: recuperar contraseña, servicios, pacientes, bloqueos, check-in, atención médica y KPIs. Sólo móvil: dependientes, antecedentes y comprobantes guardados.'
+    nota = 'Navegación del sistema completo, web y móvil juntas, al 26/10/2026: todas las pantallas que tienen código, una columna por subsistema (P1 a P8; P9 y P10 todavía no tienen pantallas). Sólo pantallas y rutas: los formularios y los controladores de cada pantalla están en los diagramas de subsistema. No es UML: es la extensión UWE (diagrama de clases con estereotipos de navegación). Web: rutas de frontend/src/App.tsx; toda ruta protegida pasa por RutaProtegida (sesión) y cuelga de BarraPlataforma.tsx, cuyas entradas aparecen según el permiso que dice cada guarda (BarraPlataforma.tsx:343-351). Móvil: rutas de mobile/lib/core/router/app_router.dart; la sesión la pide el redirect (:116-132), SoloPacientes (patient_gate.dart:16) y ConPermiso (org_gate.dart:64). Las guardas de la interfaz son cosméticas: la puerta real es el permiso del backend. Sólo web: recuperar contraseña, servicios, pacientes, bloqueos, check-in, mostrador (US-23, PR #87), atención médica y KPIs. Sólo móvil: dependientes, antecedentes y comprobantes guardados.'
     actores = @('Usuario') + $WEB_ROLES
     menus = @(
       @{ k='web';  n='BarraPlataforma.tsx'; ruta='/* (ArmazonPlataforma)'; guarda='[sesión]'; actores=$WEB_ROLES },
@@ -105,6 +105,7 @@ $NAVEGACION_SPRINT3 = [ordered]@{
       @{ titulo='P5 Agendamiento y Compra de Fichas'; pantallas=@(
           @{ n='MisFichas.tsx'; ruta='/mis-fichas'; menu='web'; guarda='[appointments.appointment.read]' },
           @{ n='CheckIn.tsx'; ruta='/check-in'; menu='web'; guarda='[appointments.appointment.read]' },
+          @{ n='Mostrador.tsx'; ruta='/mostrador'; menu='web'; guarda='[appointments.appointment.book_at_counter]' },
           @{ n='MyAppointmentsScreen'; ruta='/appointments'; menu='movil'; guarda='[SoloPacientes]' },
           @{ n='AppointmentDetailScreen'; ruta='/appointments/:id'; desde=@('MyAppointmentsScreen', 'AvailabilityScreen') },
           @{ n='RescheduleScreen'; ruta='/appointments/:id/reschedule'; desde='AppointmentDetailScreen' },
@@ -137,7 +138,7 @@ $NAVEGACION_SPRINT3 = [ordered]@{
   # =======================================================================
   'P5' = @{
     titulo = 'P5 Agendamiento y Compra de Fichas'
-    nota = 'Subsistema P5 (CU18 a CU24), web y móvil juntas. Reservar: la web abre ModalReservarFicha.tsx desde Disponibilidad.tsx; el móvil, ConfirmarReservaSheet desde AvailabilityScreen (se llega por Buscar profesionales, P4). Mis fichas: la web hace todo en la lista (MisFichas.tsx: pagar con return_to = web, comprobante, reprogramar, cancelar y confirmar asistencia); el móvil reparte en MyAppointmentsScreen, AppointmentDetailScreen, RescheduleScreen y ReceiptScreen, y guarda los comprobantes para verlos sin red (SavedReceiptsScreen, sin backend). Pagar: las dos abren el Checkout de Stripe (página externa); su submit es el webhook firmado, y return_page devuelve a /mis-fichas (302) o a la app por el deep link centromedico://app/appointments/{id}. Las dos plataformas llegan a los MISMOS archivos del backend. El cobro en ventanilla de CU24 (POST /api/payments/appointments/{id}/cash/, CashPaymentView) no tiene pantalla al 26/10: está como operación del controlador. El check-in es sólo web.'
+    nota = 'Subsistema P5 (CU18 a CU24), web y móvil juntas. Reservar: la web abre ModalReservarFicha.tsx desde Disponibilidad.tsx; el móvil, ConfirmarReservaSheet desde AvailabilityScreen (se llega por Buscar profesionales, P4). Mis fichas: la web hace todo en la lista (MisFichas.tsx: pagar con return_to = web, comprobante, reprogramar, cancelar y confirmar asistencia); el móvil reparte en MyAppointmentsScreen, AppointmentDetailScreen, RescheduleScreen y ReceiptScreen, y guarda los comprobantes para verlos sin red (SavedReceiptsScreen, sin backend). Pagar: las dos abren el Checkout de Stripe (página externa); su submit es el webhook firmado, y return_page devuelve a /mis-fichas (302) o a la app por el deep link centromedico://app/appointments/{id}. Las dos plataformas llegan a los MISMOS archivos del backend. El cobro en ventanilla de CU24 (POST /api/payments/appointments/{id}/cash/, CashPaymentView) no tiene pantalla al 26/10: está como operación del controlador. El check-in es sólo web. Mostrador (US-23, PR #87, sólo web): la recepción busca al paciente (o lo registra con FormularioAltaPaciente), elige un turno de la misma disponibilidad, reserva a su nombre por appointments/counter.py, cobra en efectivo por CashPaymentView y registra la llegada por documento con el mismo CheckInView; la entrada sólo aparece con appointments.appointment.book_at_counter (BarraPlataforma.tsx).'
     actores = @('Paciente', 'Recepcionista')
     menus = @(
       @{ k='web';  n='BarraPlataforma.tsx'; ruta='/* (ArmazonPlataforma)'; guarda='[sesión]'; actores=@('Paciente', 'Recepcionista') },
@@ -151,6 +152,9 @@ $NAVEGACION_SPRINT3 = [ordered]@{
       attend   = @{ n='appointments/attendance.py'; ops=@('ConfirmAttendanceView.post(request, pk)', 'attendance_link_view(request, token)') }
       receipts = @{ n='appointments/receipts.py'; ops=@('ReceiptView.get(request, pk)') }
       checkin  = @{ n='appointments/checkin.py'; ops=@('CheckInView.post(request)') }
+      counter  = @{ n='appointments/counter.py'; ops=@('CounterBookingView.post(request)') }
+      patsearch = @{ n='patients/search.py'; ops=@('PatientSearchViewSet.list(request)') }
+      patadmin = @{ n='patients/admin_ops.py'; ops=@('PatientAdminViewSet.create(request)') }
     }
     bandas = @(
       @{ titulo='Reservar'; pantallas=@(
@@ -174,7 +178,9 @@ $NAVEGACION_SPRINT3 = [ordered]@{
              forms=@( @{ n='return_page'; tipo='navigationClass'; ruta='/api/payments/return/?resultado=&ficha=&origen='; atr=@('302 /mis-fichas', 'centromedico://app/appointments/{id}') } ) }
       ) },
       @{ titulo='Ventanilla'; pantallas=@(
-          @{ n='CheckIn.tsx'; ruta='/check-in'; menu='web'; guarda='[appointments.appointment.read]'; atr=@('document_number', 'qr_code'); ctrl='checkin' }
+          @{ n='CheckIn.tsx'; ruta='/check-in'; menu='web'; guarda='[appointments.appointment.read]'; atr=@('document_number', 'qr_code'); ctrl='checkin' },
+          @{ n='Mostrador.tsx'; ruta='/mostrador'; menu='web'; guarda='[appointments.appointment.book_at_counter]'; atr=@('busqueda', 'profesional', 'dia', 'espacio', 'documento'); ctrl=@('patsearch', 'avail', 'counter', 'payments', 'checkin')
+             forms=@( @{ n='FormularioAltaPaciente'; atr=@('first_name', 'last_name', 'document_number', 'phone'); ctrl='patadmin' } ) }
       ) }
     )
   }

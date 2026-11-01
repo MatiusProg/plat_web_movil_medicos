@@ -47,6 +47,8 @@
 # =========================================================================
 
 . (Join-Path $PSScriptRoot 'ea-sprint3-comun.ps1')
+# CU24 rehecho y CU31 nuevo tras el pull del 01/11 (US-23 y US-30).
+. (Join-Path $PSScriptRoot 'ea-sprint3-casos-us23-us30.ps1')
 . (Join-Path $PSScriptRoot 'ea-sprint3-dinamica.ps1')
 trap { Salir-ConError $_ }
 
