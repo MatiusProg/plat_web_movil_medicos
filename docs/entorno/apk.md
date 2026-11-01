@@ -48,22 +48,65 @@ hay que desinstalar antes.
 
 ## 2 · Publicar una versión nueva
 
+Antes de compilar, subir la versión en `mobile/pubspec.yaml`
+(`version: 1.5.0+5` → `1.5.1+6`: el número después del `+` tiene que crecer
+siempre, o Android no deja instalar encima).
+
 ```bash
 cd mobile
-flutter test                       # 93 pruebas; si alguna falla, no se publica
+flutter test                       # 185 pruebas al 01/11/26; si alguna falla, no se publica
 flutter build apk --release \
-    --dart-define=API_BASE_URL=https://web-production-872fa.up.railway.app/api
+    --dart-define=API_BASE_URL=https://web-production-872fa.up.railway.app/api \
+    --dart-define=FIREBASE_API_KEY=<valor> \
+    --dart-define=FIREBASE_APP_ID=<valor> \
+    --dart-define=FIREBASE_MESSAGING_SENDER_ID=<valor> \
+    --dart-define=FIREBASE_PROJECT_ID=<valor>
 ```
+
+En PowerShell el salto de línea es el acento grave (`` ` ``), no la barra
+invertida; o se escribe todo en una sola línea.
 
 El archivo queda en `mobile/build/app/outputs/flutter-apk/app-release.apk`.
 
-**El `--dart-define` no es opcional.** Sin él la aplicación queda apuntando a
-`http://localhost:8000/api`, que en un teléfono no existe: la pantalla de
-ingreso se ve perfecta y ninguna petición llega a ningún lado. Es el error que
-más fácil se cuela, porque **compila sin una sola advertencia**.
+**El `--dart-define` de la API no es opcional.** Sin él la aplicación queda
+apuntando a `http://localhost:8000/api`, que en un teléfono no existe: la
+pantalla de ingreso se ve perfecta y ninguna petición llega a ningún lado. Es
+el error que más fácil se cuela, porque **compila sin una sola advertencia**.
 
-Después, en GitHub: *Releases → Draft a new release*, etiqueta nueva
-(`movil-v0.3.0` y así), **subir el `.apk` como asset** y publicar.
+**Los cuatro de Firebase activan el push (US-28).** Salen de la consola de
+Firebase: *Configuración del proyecto → General → tu app Android*, o del
+`google-services.json` de esa app (`api_key.current_key`,
+`client_info.mobilesdk_app_id`, `project_info.project_number` y
+`project_info.project_id`). No son secretos como la credencial del backend,
+pero **no van al repositorio**. Sin ellos la APK compila y funciona entera,
+pero el teléfono no se registra y **no recibe avisos**, también sin ninguna
+advertencia. La v1.5.0 salió así.
+
+Para comprobar que la URL quedó adentro antes de publicar:
+
+```bash
+unzip -p build/app/outputs/flutter-apk/app-release.apk lib/arm64-v8a/libapp.so | grep -a -c "web-production-872fa"
+# tiene que dar 1 o más
+```
+
+Después, en GitHub:
+
+1. *Releases → Draft a new release*.
+2. *Choose a tag*: escribir la etiqueta nueva (`v1.5.1`) y *Create new tag on
+   publish*, sobre `main`.
+3. Título `App móvil v1.5.1 — …` y en la descripción qué cambia y cómo se
+   instala (copiar el formato de la anterior).
+4. Renombrar el archivo a `centro-medico-v1.5.1.apk` y **arrastrarlo como
+   asset**. Uno solo.
+5. Dejar marcado **«Set as the latest release»** y *Publish release*.
+
+O desde la terminal, con `gh`:
+
+```bash
+cp build/app/outputs/flutter-apk/app-release.apk centro-medico-v1.5.1.apk
+gh release create v1.5.1 centro-medico-v1.5.1.apk --target main --latest \
+    --title "App móvil v1.5.1 — notificaciones push" --notes "…"
+```
 
 ### El enlace del README no se toca — y esa es la idea
 
