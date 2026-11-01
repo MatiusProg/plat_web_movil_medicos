@@ -53,9 +53,91 @@
 trap { Salir-ConError $_ }
 
 $Y_PRIMERO = -135; $PASO = 35; $AUTO = 15
-$X0 = 230; $GAP = 50; $TOP_LV = -50
+$X0 = 230; $GAP = 70; $TOP_LV = -50
 $NOTA_L = 5; $NOTA_R = 150; $NOTA_ALTO = 50
 $MAX_ROTULO = 250
+$MAX_CORTO = 46     # largo del rotulo dibujado, sin contar el numero
+
+# ---- EL ROTULO CORTO (01/11/26) ----
+#   El guion trae cada mensaje con su anclaje entre llaves (archivo, linea y
+#   SQL) y la firma completa. Dibujado asi, cada flecha era un parrafo y no
+#   se leia la secuencia. El diagrama muestra solo el numero, el nombre y los
+#   argumentos que entran en $MAX_CORTO caracteres, como en la guia
+#   (VioletBoutique, 7.8 f). El texto entero va a las NOTAS del mensaje: sigue
+#   en el modelo para la defensa, solo que no en la imagen.
+#   Revisar-Guion compara el texto entero, asi que el rastreo con la
+#   comunicacion y el diseno de clase no cambia.
+$ROL_SEQ = @{
+    boundary = @{ st = 'interfaz';    color = 0xF5E6D6 }   # celeste
+    control  = @{ st = 'controlador'; color = 0xDCF2DC }   # verde
+    entity   = @{ st = 'entidad';     color = 0xCCF2FF }   # amarillo
+}
+function Acortar-Rotulo([string]$texto) {
+    $base = ($texto -split '  \{')[0].Trim()
+    if ($base -notmatch '^(\S+:)\s*(.*)$') { return $base }
+    $num = $Matches[1]; $resto = $Matches[2]
+    if ($resto.Length -le $MAX_CORTO) { return "$num $resto" }
+    $a = $resto.IndexOf('('); $b = $resto.LastIndexOf(')')
+    if ($a -lt 0 -or $b -lt $a) {
+        return "$num " + $resto.Substring(0, $MAX_CORTO - 1).TrimEnd() + '…'
+    }
+    $cabeza = $resto.Substring(0, $a + 1); $cola = $resto.Substring($b)
+    $dentro = $resto.Substring($a + 1, $b - $a - 1)
+    # Argumentos (o alternativas a | b) enteros mientras entren.
+    $sep = if ($dentro.Contains(', ')) { ', ' } elseif ($dentro.Contains(' | ')) { ' | ' } else { $null }
+    if ($sep) {
+        $partes = $dentro -split [regex]::Escape($sep)
+        $toma = @()
+        foreach ($p in $partes) {
+            $prueba = $cabeza + (($toma + $p) -join $sep) + $sep + '…' + $cola
+            if ($prueba.Length -gt $MAX_CORTO -and $toma.Count -gt 0) { break }
+            $toma += $p
+        }
+        if ($toma.Count -lt $partes.Count) { $dentro = ($toma -join $sep) + $sep + '…' } else { $dentro = $toma -join $sep }
+        $corto = $cabeza + $dentro + $cola
+        if ($corto.Length -le $MAX_CORTO + 6) { return "$num $corto" }
+    }
+    # Una frase (el texto de un error): palabras enteras mientras entren.
+    $lugar = $MAX_CORTO - $cabeza.Length - $cola.Length - 1
+    $palabras = $dentro -split ' '; $toma = ''
+    foreach ($p in $palabras) {
+        $prueba = if ($toma) { "$toma $p" } else { $p }
+        if ($prueba.Length -gt $lugar -and $toma) { break }
+        $toma = $prueba
+    }
+    if ($toma.Length -gt $lugar) { $toma = $toma.Substring(0, [math]::Max(4, $lugar)) }
+    return "$num $cabeza$toma…$cola"
+}
+# La guarda de un operando, con la misma idea: sin las referencias al codigo
+# «(push.py:125-126, ...)», cortada en el primer «:» o «;» si sigue larga, y
+# despues por palabras. La guarda entera queda en el guion de
+# ea-sprint3-dinamica.ps1.
+$MAX_GUARDA = 48
+function Acortar-Guarda([string]$g) {
+    $g = [regex]::Replace($g, '\s*\([^()]*\.(py|dart|ts|tsx)[^()]*\)', '').Trim()
+    if ($g.Length -le $MAX_GUARDA) { return $g }
+    foreach ($sep in ':', ';', ' (') {
+        $i = $g.IndexOf($sep)
+        if ($i -ge 12) { $g = $g.Substring(0, $i).Trim() }
+        if ($g.Length -le $MAX_GUARDA) { return $g }
+    }
+    # Clausulas enteras separadas por coma mientras entren.
+    $partes = $g -split ', '
+    if ($partes.Count -gt 1 -and $partes[0].Length -le $MAX_GUARDA - 3) {
+        $toma = @()
+        foreach ($p in $partes) { if ((($toma + $p) -join ', ').Length -gt $MAX_GUARDA - 3) { break }; $toma += $p }
+        if ($toma.Count -ge 2 -and ($toma -join ', ').Length -ge 30) { return ($toma -join ', ') + ', …' }
+    }
+    # Por palabras, sin dejar colgando un conector.
+    $palabras = New-Object System.Collections.ArrayList
+    foreach ($p in ($g -split ' ')) {
+        if ((($palabras + $p) -join ' ').Length -gt $MAX_GUARDA - 1) { break }
+        [void]$palabras.Add($p)
+    }
+    $sueltas = 'o','y','u','e','con','de','del','en','que','la','el','los','las','sin','por','a','al'
+    while ($palabras.Count -gt 1 -and $sueltas -contains $palabras[$palabras.Count - 1]) { $palabras.RemoveAt($palabras.Count - 1) }
+    return ($palabras -join ' ').TrimEnd(',') + '…'
+}
 
 # El guion contra la lista de Mateo. Devuelve los errores encontrados.
 function Revisar-Guion($c, $guion) {
@@ -206,7 +288,13 @@ foreach ($clave in (Claves-Casos $Caso)) {
             $el = $pkg.Elements.AddNew('', 'Sequence')
             $el.Name = ''
             $el.ClassifierID = $clase[$p.n]
+            # La linea de vida no muestra el estereotipo de su clase: se le da
+            # el suyo, en castellano (en ingles EA dibuja los iconos de
+            # robustez), y el color de su rol (guia 7.8 d-bis).
+            $r = $ROL_SEQ[$p.rol]
+            if ($r) { $el.Stereotype = $r.st; $el.StereotypeEx = $r.st }
             [void]$el.Update()
+            if ($r) { $el.SetAppearance(1, 0, $r.color); [void]$el.Update() }
             $eid = $el.ElementID
         }
         $lv[$p.k] = @{ id = $eid; l = $x; w = $w }
@@ -234,18 +322,19 @@ foreach ($clave in (Claves-Casos $Caso)) {
             'msg' {
                 $yy = $Y_PRIMERO - $PASO * $k
                 $auto = ($item.o -eq $item.d)
-                $msgs += @{ o = $item.o; d = $item.d; n = $item.n; ret = [bool]$item.ret; y = $yy; auto = $auto }
+                $corto = Acortar-Rotulo $item.n
+                $msgs += @{ o = $item.o; d = $item.d; n = $item.n; corto = $corto; ret = [bool]$item.ret; y = $yy; auto = $auto }
                 if ($notaPend) { $notas += @{ txt = $notaPend; y = $yy }; $notaPend = $null }
                 foreach ($f in $pila) {
                     $f.lv[$item.o] = $true; $f.lv[$item.d] = $true
-                    if ($auto) { $f.txt = [math]::Max($f.txt, $item.n.Length) }
+                    if ($auto) { $f.txt = [math]::Max($f.txt, $corto.Length) }
                 }
                 $k++
             }
             { $_ -in 'alt', 'loop' } {
                 $tipo = if ($item.t -eq 'alt') { 0 } else { 4 }
                 $ops = New-Object System.Collections.ArrayList
-                if ($tipo -eq 4) { [void]$ops.Add($item.g) }
+                if ($tipo -eq 4) { [void]$ops.Add((Acortar-Guarda $item.g)) }
                 $f = @{ tipo = $tipo; hondo = $pila.Count; cortes = New-Object System.Collections.ArrayList; ops = $ops; lv = @{}; txt = 0 }
                 [void]$pila.Add($f)
                 [void]$hueco[$k].Add(@{ f = $f; que = 'top' })
@@ -257,7 +346,7 @@ foreach ($clave in (Claves-Casos $Caso)) {
                     [void]$f.cortes.Add(0)
                     [void]$hueco[$k].Add($ficha)
                 }
-                [void]$f.ops.Add($item.g)
+                [void]$f.ops.Add((Acortar-Guarda $item.g))
             }
             'fin' {
                 $f = $pila[$pila.Count - 1]; $pila.RemoveAt($pila.Count - 1)
@@ -333,20 +422,20 @@ foreach ($clave in (Claves-Casos $Caso)) {
         $frags += @{ g = $fr.ElementGUID; tipo = $f.tipo; partes = $f.partes }
         $orden += , @($fr.ElementID, $z); $z++
     }
+    $ley = $pkg.Elements.AddNew('', 'Note')
+    $ley.Notes = "Celeste: «interfaz» (pantalla)  ·  Verde: «controlador»  ·  Amarillo: «entidad» (tabla).`r`nPunteado: retorno. El archivo, la línea y el SQL de cada mensaje están en sus notas, en el modelo."
+    [void]$ley.Update()
+    Poner $dia $ley.ElementID $X0 ($bajo - 20) 640 45
+    $orden += , @($ley.ElementID, $z); $z++
 
     $geo = @(); $seq = 1
     foreach ($m in $msgs) {
-        # t_connector.Name admite 255 caracteres. Con mas, Update() devuelve
-        # False SIN error, el mensaje no se guarda y todos los de abajo suben
-        # un renglon: las cajas quedan encerrando lo que no es (26/10/2026).
-        # Se recorta solo el anclaje entre llaves; el entero va a las notas.
-        $rotulo = $m.n; $notaMsg = ''
-        if ($rotulo.Length -gt $MAX_ROTULO) {
-            $notaMsg = $rotulo
-            $corte = $rotulo.IndexOf('  {')
-            if ($corte -lt 0 -or $corte -gt $MAX_ROTULO - 10) { throw "Rótulo de más de $MAX_ROTULO caracteres sin anclaje que recortar: $rotulo" }
-            $rotulo = $rotulo.Substring(0, $MAX_ROTULO - 2) + '…}'
-        }
+        # El rotulo corto en el dibujo y el texto entero en las notas. (Ademas
+        # t_connector.Name admite 255 caracteres: con mas, Update() devuelve
+        # False SIN error y el mensaje no se guarda, 26/10/2026.)
+        $rotulo = $m.corto
+        $notaMsg = if ($m.n -ne $rotulo) { $m.n } else { '' }
+        if ($rotulo.Length -gt $MAX_ROTULO) { throw "Rótulo de más de $MAX_ROTULO caracteres: $rotulo" }
         $con = $ea.GetElementByID($lv[$m.o].id).Connectors.AddNew($rotulo, 'Sequence')
         $con.SupplierID = $lv[$m.d].id
         $con.Direction  = 'Source -> Destination'
