@@ -80,7 +80,13 @@ Firebase: *Configuración del proyecto → General → tu app Android*, o del
 `project_info.project_id`). No son secretos como la credencial del backend,
 pero **no van al repositorio**. Sin ellos la APK compila y funciona entera,
 pero el teléfono no se registra y **no recibe avisos**, también sin ninguna
-advertencia. La v1.5.0 salió así.
+advertencia. La v1.5.0 salió así; la **v1.5.1** (01/11/26) ya los lleva.
+Para el push hacen falta las dos puntas: estos cuatro en la APK y
+`FIREBASE_CREDENTIALS` (la cuenta de servicio del mismo proyecto) en el
+backend de Railway, que ya está cargada.
+
+Para comprobar que los cuatro quedaron adentro, igual que la URL de abajo:
+`grep -a -c "<FIREBASE_PROJECT_ID>"` sobre `libapp.so` tiene que dar 1 o más.
 
 Para comprobar que la URL quedó adentro antes de publicar:
 
