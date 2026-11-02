@@ -121,3 +121,7 @@ Si la clase tiene nota, súmale: *`reminder_sent_at`: cuándo se mandó el recor
 5. *Layout* → acomoda a mano para que las líneas no crucen las cajas.
 
 Al terminar quedan **3 tablas nuevas, 3 asociaciones nuevas y 1 columna nueva**.
+
+## Pendiente
+
+- [ ] **Cambiar los nombres de las tablas** en el diagrama `2.1.2 Modelo de dominio - Sprint 3`. **Solo los nombres**: las columnas, los tipos, las asociaciones y la disposición del diagrama se quedan como están.
