@@ -69,3 +69,36 @@ class PatientHistoryView(APIView):
                          for n, c in sorted(por_sucursal.items())],
             "encounters": EncounterSerializer(encuentros, many=True).data,
         })
+
+
+class PatientHistorySummaryView(APIView):
+    """US-41 — `GET /api/encounters/history/<paciente>/summary/`
+
+    El resumen del historial, **sólo para el médico con vínculo de atención**.
+    El propio paciente recibe 404 aunque lea su historial: un texto generado
+    no le llega sin que un médico lo apruebe (regla 14 del Sprint 4). Ver
+    `summary.py`.
+
+    Deja el mismo asiento que leer el historial, más quién redactó el texto,
+    y ni una línea del resumen.
+    """
+
+    permission_classes = [IsAuthenticated, CanReadHistory]
+
+    def get(self, request, patient_id):
+        from .summary import summarize
+
+        paciente = Patient.objects.filter(
+            organization=request.user.organization, pk=patient_id,
+        ).first()
+        if services.history_scope(request.user, paciente) != services.PROFESSIONAL:
+            raise Http404
+
+        resumen = summarize(paciente)
+        bitacora.record(
+            request, Action.RECORD_READ, "patients", entity_id=paciente.pk,
+            detail={"origen": "resumen", "alcance": services.PROFESSIONAL,
+                    "encuentros": len(resumen["sources"]),
+                    "generado_por": resumen["generated_by"]},
+        )
+        return Response({"patient": PatientSummarySerializer(paciente).data, **resumen})
