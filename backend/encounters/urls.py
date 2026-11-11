@@ -1,8 +1,8 @@
-"""Rutas de la atención médica: US-24 (registro) y US-25 (historial)."""
+"""Rutas de la atención médica: US-24 (registro), US-25 (historial) y US-41 (resumen)."""
 
 from django.urls import path
 
-from .history_views import PatientHistoryView
+from .history_views import PatientHistorySummaryView, PatientHistoryView
 from .views import (
     AgendaView,
     EncounterAmendView,
@@ -36,4 +36,7 @@ urlpatterns = [
          name="prescription-pdf"),
     # US-25: el historial longitudinal, todas las sucursales.
     path("history/<uuid:patient_id>/", PatientHistoryView.as_view(), name="history"),
+    # US-41: el resumen del historial para el médico, antes de la consulta.
+    path("history/<uuid:patient_id>/summary/", PatientHistorySummaryView.as_view(),
+         name="history-summary"),
 ]

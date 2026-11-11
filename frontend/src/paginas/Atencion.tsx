@@ -9,6 +9,7 @@ import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
 import { PanelReceta } from './RecetaAtencion'
+import { PanelResumenHistorial } from './ResumenHistorial'
 
 type Borrador = Record<Seccion, string>
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
@@ -127,6 +128,7 @@ export function Atencion() {
     {aviso && <AvisoCatalogo mensaje={aviso} onCerrar={() => setAviso(null)} />}
     {error && <ErrorCatalogo mensaje={error} />}
     <PanelAntecedentes datos={antecedentes} />
+    {verHistorialPermitido && <PanelResumenHistorial pacienteId={encuentro.patient.id} />}
 
     <form onSubmit={e => void guardar(e)} className={`${PANEL} space-y-5`}>
       {SECCIONES.map(s => <label key={s.campo} className="block space-y-1.5 text-sm">

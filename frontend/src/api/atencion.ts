@@ -167,6 +167,34 @@ export interface Historial {
 export const verHistorial = (pacienteId: string, contexto: Contexto, senal?: AbortSignal) =>
   pedir<Historial>(`${base}history/${encodeURIComponent(pacienteId)}/`, { ...contexto, senal })
 
+/** US-41: el resumen del historial para el médico. Cada oración cita sus atenciones. */
+export interface AlertaResumen {
+  description: string
+  severity: string | null
+  severity_label: string | null
+}
+
+export interface FuenteResumen {
+  ref: string
+  encounter_id: string
+  date: string
+  branch: string
+  practitioner: string
+  diagnosis: string
+}
+
+export interface ResumenHistorial {
+  patient: PacienteResumen
+  alerts: { allergies: AlertaResumen[]; conditions: AlertaResumen[]; medications: AlertaResumen[] }
+  sources: FuenteResumen[]
+  sentences: { text: string; refs: string[] }[]
+  discarded: number
+  generated_by: 'gemini' | 'plantilla' | 'sin_datos'
+}
+
+export const verResumenHistorial = (pacienteId: string, contexto: Contexto, senal?: AbortSignal) =>
+  pedir<ResumenHistorial>(`${base}history/${encodeURIComponent(pacienteId)}/summary/`, { ...contexto, senal })
+
 // --------------------------------------------------------------------------
 //  US-26 — Receta y órdenes, mientras la atención es borrador
 // --------------------------------------------------------------------------
