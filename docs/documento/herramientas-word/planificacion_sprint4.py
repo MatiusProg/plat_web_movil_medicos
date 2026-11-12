@@ -98,10 +98,8 @@ ops = {}
 # ---------------------------------------------------------------------------
 # 1.1 Objetivos
 # ---------------------------------------------------------------------------
-OBJETIVO = ('Cerrar las dos épicas de inteligencia artificial que faltan —la predicción de inasistencia '
-            'y de demanda (Épica 8) y los textos clínicos generados con la validación del médico (Épica 9)—, '
-            'sumar los dos pedidos de la ingeniera —los reportes transaccionales por voz para el paciente, '
-            'de la revisión del Sprint 3, y el chat entre el paciente atendido y su médico, del 12/11— y dejar '
+OBJETIVO = ('Cerrar las épicas de IA que faltan —predicción de inasistencia y de demanda, y textos clínicos '
+            'validados por el médico—, sumar los reportes por voz del paciente y el chat con su médico, y dejar '
             'todas las IA del sistema terminadas y comprobadas en producción.')
 PRUEBAS = ('Es el último sprint y lo que se presenta es el sistema completo. Por eso las pruebas de este '
            'sprint son vitales y más exhaustivas que en los anteriores: cada historia entra a la rama '
@@ -387,6 +385,76 @@ if len(mich) == 1:
     ops[i_eq + 1] = eq.replace(mich[0], '', 1)
 elif mich:
     raise SystemExit('PARADO: Michael aparece más de una vez en el Equipo Scrum')
+
+# ---------------------------------------------------------------------------
+# 2. Proceso/patrón: los mismos títulos que el Sprint 3, más 2.1.1.3 Diagrama de Redes
+# ---------------------------------------------------------------------------
+# El esqueleto que tenía el Sprint 4 venía del Sprint 0 (Modelo C4, títulos pegados
+# en un mismo párrafo). Se reemplaza entero por los títulos del Sprint 3, clonando
+# el formato de cada nivel, con los CU del Sprint 4 y un párrafo vacío debajo de
+# cada título hoja para pegar el diagrama.
+s3_p2 = buscar(x, E, '2. Proceso/patrón de desarrollo por Historia de Usuario', 'Titulo2', desde=s3, hasta=s4)
+s3_d3 = buscar(x, E, '3. Daily Scrum', 'Titulo2', desde=s3_p2, hasta=s4)
+NIVEL = {}
+for n in range(s3_p2, s3_d3):
+    m = re.search(r'<w:pStyle w:val="([^"]+)"/>', el(n)[:600]) if E[n][0] == 'p' else None
+    if m and m.group(1) not in NIVEL:
+        NIVEL[m.group(1)] = el(n)
+for k in ('Titulo2', 'Titulo3', 'Titulo4', 'titulo5', 'Titulo6'):
+    if k not in NIVEL:
+        raise SystemExit(f'PARADO: el punto 2 del Sprint 3 no tiene un título {k}')
+
+p2 = buscar(x, E, '2. Proceso/patrón de desarrollo por Historia de Usuario', 'Titulo2', desde=i_eq, hasta=fin)
+d3 = buscar(x, E, '3. Daily Scrum', 'Titulo2', desde=p2, hasta=fin)
+for n in range(p2, d3):
+    s = el(n)
+    if tiene_imagen(s) or E[n][0] != 'p':
+        raise SystemExit(f'PARADO: el punto 2 del Sprint 4 ya tiene contenido (elemento {n}); no se pisa')
+    if txt(s).strip() and 'w:pStyle' not in s[:600]:
+        raise SystemExit(f'PARADO: el punto 2 del Sprint 4 tiene texto que no es título (elemento {n})')
+
+TODOS = ['CU36 – Predicción de Riesgo de Inasistencia',
+         'CU37 – Envío de Recordatorios por Riesgo de Inasistencia',
+         'CU38 – Proyección de Demanda de Fichas',
+         'CU39 – Reentrenamiento del Modelo de No-Show',
+         'CU40 – Generación de Resumen de Consulta mediante IA',
+         'CU41 – Generación de Indicaciones de Preparación',
+         'CU42 – Generación de Resumen de Historia Clínica',
+         'CU43 – Validación de Contenido Generado por IA',
+         'CU47 – Consulta de Transacciones por Voz',
+         'CU48 – Chat con el Médico Tratante']
+# estados y tiempo: como en el Sprint 3, sólo los CU con proceso o transacción
+# (fuera las consultas: CU38, CU42 y CU47)
+PROCESOS = [c for c in TODOS if c[:4] not in ('CU38', 'CU42', 'CU47')]
+
+H = lambda nivel, texto: con_texto(NIVEL[nivel], texto)
+VACIO = TPL_EMPTY
+esq = [H('Titulo2', '2. Proceso/patrón de desarrollo por Historia de Usuario'),
+       H('Titulo3', '2.1 Diseño'),
+       H('Titulo4', '2.1.1 Diseñar de la arquitectura')]
+for t in ('2.1.1.1 Diagrama de capas', '2.1.1.2 Diagrama de despliegue', '2.1.1.3 Diagrama de Redes'):
+    esq += [H('titulo5', t), VACIO]
+esq += [H('Titulo4', '2.1.2 Diseño de datos')]
+for t in ('2.1.2.1 Diseño Conceptual', '2.1.2.2 Diseño lógico (Mapeo)', '2.1.2.3 Diseño Físico (Script)'):
+    esq += [H('titulo5', t), VACIO]
+esq += [H('Titulo4', '2.1.3 Diseño de la lógica de negocio'),
+        H('titulo5', '2.1.3.1 Diagrama de comunicación')]
+esq += [p for c in TODOS for p in (H('Titulo6', c), VACIO)]
+esq += [H('Titulo4', '2.1.4 Diseño de procesos')]
+for t, cus in (('2.1.4.1 Diagrama de diseño de clase', TODOS),
+               ('2.1.4.2 Diagrama de secuencia', TODOS),
+               ('2.1.4.3 Diagrama de estados (solo procesos y transacciones)', PROCESOS),
+               ('2.1.4.4 Diagrama de tiempo (procesos en general)', PROCESOS),
+               ('2.1.4.5 Diagrama de navegación', ['Sistema'])):
+    esq += [H('titulo5', t)] + [p for c in cus for p in (H('Titulo6', c), VACIO)]
+esq += [H('Titulo3', '2.2 Implementación'),
+        H('Titulo4', '2.2.1 Componentes y artefactos generados'), VACIO,
+        H('Titulo3', '2.3 Pruebas'),
+        H('Titulo4', '2.3.1 Plan de pruebas (criterios de aceptación - Caja Negra)'), VACIO,
+        H('Titulo4', '2.3.2 Reporte de prueba'), VACIO]
+ops[p2] = ''.join(esq)
+for n in range(p2 + 1, d3):
+    ops[n] = ''
 
 # ---------------------------------------------------------------------------
 # Capítulo 3: backlog, casos de uso y planificación
