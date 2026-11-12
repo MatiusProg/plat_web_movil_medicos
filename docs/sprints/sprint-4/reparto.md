@@ -6,8 +6,11 @@ confirmar con la docente)*
 **Objetivo:** cerrar las épicas de IA que faltan —predicción de inasistencia y
 demanda (Épica 8) y textos clínicos generados con validación del médico
 (Épica 9)—, sumar los **reportes transaccionales por voz** para el paciente y
-dejar **todas las IA del sistema terminadas y comprobadas en producción**. Es
-el último sprint: lo que no esté en `main` el 21/11 no se presenta.
+dejar **todas las IA del sistema terminadas y comprobadas en producción**.
+Además se agrega el **chat entre el paciente atendido y su médico**, que pidió
+la ingeniera el 12/11. Es el último sprint: lo que no esté en `main` el 21/11
+no se presenta, y **lo que no tenga sus pruebas y sus capturas tampoco** (regla
+17).
 
 Este documento es el contrato de trabajo del sprint: dice quién hace qué, en
 qué archivos, de quién depende y para cuándo. Si vas a escribir código —o si le
@@ -33,7 +36,13 @@ A eso se suman **tres pendientes que dejó la revisión del Sprint 3**:
 | **Diagrama de redes** — para el parcial y para el documento del Sprint 4 | Tarea de documentación del SM | 4 |
 | **Todas las IA terminadas correctamente** | Regla 15 (sección 5) para cada dueño, más una tarea de verificación final en producción | 4 |
 
-**Total comprometido: 96 horas.**
+Y un pedido que la ingeniera hizo **el 12/11, ya con el sprint en marcha**:
+
+| Pedido | Cómo entra al sprint | Horas |
+|---|---|---|
+| **Chat con el médico** — *«si un paciente es atendido, debe tener la opción de tener un chat con su doctor, para consultas sobre medicamentos u otras similares»* | Historia nueva: **US-47** (CU48), del SM, que hasta el 14/11 está bloqueado por US-42 | 10 |
+
+**Total comprometido: 106 horas.**
 
 > **Sobre US-46.** Lo que entendimos de la ingeniera: los reportes por voz que
 > ya existen (característica 5) son para el personal del centro. Falta el lado
@@ -51,7 +60,10 @@ A eso se suman **tres pendientes que dejó la revisión del Sprint 3**:
 | Proceso de fondo que recorre organizaciones en `tenant_context` | `appointments/reminders.py`, lanzado por `scripts/start.sh` | US-36, US-38 |
 | Definición escrita de la inasistencia | `../sprint-3/us-29-indicadores.md` | US-35, US-37 |
 | Cliente de Gemini con degradación sin clave | `assistant/generation.py` | US-39, US-40, US-41 |
-| Atención, receta y órdenes | `encounters/` | US-39, US-40, US-41 |
+| Atención, receta y órdenes | `encounters/` | US-39, US-40, US-41, US-47 |
+| Barrera de urgencias por reglas, sin proveedor | `assistant/triage.py` | US-47 |
+| Push por FCM y correo por Brevo, sin propagar errores | `notifications/push.py`, `notifications/services.py` | US-47 |
+| Alcance del paciente: él y sus dependientes | `encounters/services.py::history_scope` | US-46, US-47 |
 
 ---
 
@@ -60,21 +72,23 @@ A eso se suman **tres pendientes que dejó la revisión del Sprint 3**:
 | Integrante | Historias | Backend | Web | Móvil | Horas |
 |---|---|---|---|---|---|
 | Ortega Mancilla, Karen Paola | **US-39, US-42** | US-39, US-42 | US-42 | US-39 | **16** |
-| Hurtado Castro, Luis Mateo *(SM)* | US-40, US-41 · + diagrama de redes + documentación | US-40, US-41 | US-41 | US-40 | **20** |
+| Hurtado Castro, Luis Mateo *(SM)* | US-40, US-41, **US-47** · + diagrama de redes + documentación | US-40, US-41, US-47 | US-41, US-47 | US-40, US-47 | **30** |
 | Aguayo Quiroz, Luis Miguel | **US-35** · + verificación final de las IA | US-35 | US-35 | — | **20** |
 | Osinaga Blanco, Alexander *(PO)* | US-36, **US-46** | US-36, US-46 | US-46 | US-46 | **20** |
 | Iporo Chulque, José Daniel | US-37, US-38 | US-37, US-38 | US-37 | — | **20** |
 
-**Total comprometido: 96 horas** · 5 integrantes · 19,2 h de promedio.
+**Total comprometido: 106 horas** · 5 integrantes · 21,2 h de promedio.
 
 **Criterio:** igual que siempre, cada historia va a quien ya es dueño del
 módulo. Karen sigue con lo que habla con el paciente; el SM con lo que lee la
 atención; Luis Aguayo con la inasistencia, que ya definió en US-29; Alexander
 con recordatorios, pagos y comprobantes. Daniel toma las dos piezas del modelo
 que **no** son el clasificador —la proyección de demanda y el reentrenamiento—,
-así el modelo no queda en una sola cabeza.
+así el modelo no queda en una sola cabeza. US-47 la toma el SM porque el chat
+sale de la atención —su módulo— y porque hasta el 14/11 está bloqueado por
+US-42: es el hueco que la absorbe sin mover a nadie.
 
-**Ritmo.** 14 días corridos y 19,2 h de promedio: ~1,4 h por día y por
+**Ritmo.** 14 días corridos y 21,2 h de promedio: ~1,5 h por día y por
 persona, más que en el Sprint 3. Es el último sprint y no hay deuda; el margen
 del final es para la presentación y el parcial.
 
@@ -91,6 +105,7 @@ del final es para la presentación y el parcial.
 | **US-41** Resumen del historial para el médico | 10 | Síntesis del historial antes de la consulta | Panel en `Atencion.tsx` | — |
 | **US-42** Validar o editar texto de IA | 6 | Estados borrador → aprobado, con quién y cuándo | Bandeja de textos por validar | — |
 | **US-46** Reportes transaccionales por voz | 10 | Consulta de *mis* pagos y fichas desde una frase | Pantalla del paciente | Pantalla del paciente con QR |
+| **US-47** Chat con el médico tratante | 10 | Conversación por atención firmada, con ventana, barrera de urgencias y aviso | Bandeja del médico | Chat del paciente |
 
 ---
 
@@ -137,7 +152,7 @@ tabla de US-42 migrada para el **14/11**.
 
 ---
 
-### Luis Mateo Hurtado *(Scrum Master)* — *lo que se lee de la atención* — 16 h + diagrama de redes + documentación
+### Luis Mateo Hurtado *(Scrum Master)* — *lo que se lee de la atención* — 26 h + diagrama de redes + documentación
 
 **US-41 — Resumen del historial para el médico · 10 h · BACKEND + WEB · 🟢**
 
@@ -172,13 +187,62 @@ y los servicios externos: Gemini, Stripe, Brevo, Firebase Cloud Messaging.
 Con puertos, protocolos y qué tramo va cifrado. Exportado en PNG a
 `docs/diagramas/png/Sprint4/`.
 
+**US-47 — Chat con el médico tratante · 10 h · BACKEND + WEB + MÓVIL · 🟡** *(nueva, CU48)*
+
+Lo pidió la ingeniera el 12/11: *«si un paciente es atendido, debe tener la
+opción de tener un chat con su doctor, para consultas sobre medicamentos u
+otras similares»*. Va primero entre las del SM porque **no depende de US-42**:
+se arranca el 12/11 y ocupa el tiempo en que US-40 está bloqueada.
+
+- **El chat nace de una atención firmada, no de una persona.** Una
+  conversación por atención (`encounter_threads`, con sus mensajes en
+  `encounter_messages`), entre el paciente de esa atención y el médico que la
+  firmó. Sin atención firmada no hay chat: no es un canal para pedir consultas
+  nuevas, es el seguimiento de una que ya pasó. Por eso cada conversación
+  muestra arriba la receta y las órdenes de esa atención, que es de lo que se
+  va a preguntar.
+- **Tiene ventana.** Se puede escribir durante 15 días desde la firma; después
+  queda de sólo lectura y el paciente ve «para una consulta nueva, reservá una
+  ficha» con el botón a la reserva. El médico puede cerrarla antes. Los 15
+  días son una propuesta: se confirman con la ingeniera en la revisión.
+- **No es un canal de urgencias, y el sistema lo hace cumplir.** Cada mensaje
+  del paciente pasa por las reglas de `assistant/triage.py` (la primera capa
+  de US-34, que no depende del proveedor). Si disparan, el mensaje se guarda
+  igual, pero el paciente ve primero la derivación a emergencias y el médico
+  lo ve marcado. El aviso «esto no es para urgencias» está siempre visible.
+- **El mismo alcance que la historia clínica.** Escribe el paciente o el
+  titular de un dependiente (`history_scope`) y el médico firmante de esa
+  organización; nadie más, ni otro médico del mismo centro. Las tablas tienen
+  RLS y clave foránea compuesta con la organización, como `device_tokens`. Las
+  pruebas intentan entrar a la conversación de otro paciente, de otro médico
+  y de otra organización, y se verifican por mutación (*historia clínica con
+  máximo cuidado*).
+- **Sin tiempo real.** Railway corre un solo proceso y no hay canales: la
+  pantalla abierta consulta cada 10 segundos y el mensaje nuevo avisa por
+  **push** al paciente (FCM, el de US-28); el médico, en la web, lo ve como
+  contador en su bandeja. El aviso sale después del COMMIT y sin propagar
+  errores, como los de US-28.
+- **Sólo texto**, hasta 2.000 caracteres, sin adjuntos: un archivo clínico
+  subido por chat es otra historia (almacenamiento, antivirus, retención) que
+  no entra en este sprint. Un mensaje no se edita ni se borra: queda como
+  parte del registro de la atención, con autor y hora.
+- **Pantallas:** en el móvil, la conversación se abre desde la atención en
+  `clinical_record/` (y desde la notificación). En la web, el médico tiene una
+  bandeja *Consultas de pacientes* con las conversaciones abiertas, las que
+  tienen mensajes sin leer arriba, y la conversación también se abre desde
+  `Atencion.tsx`. La web del paciente la muestra en su historial si alcanza
+  el tiempo; el móvil es el compromiso.
+
 **Además, como SM:** el capítulo del Sprint 4 en el documento, Daily, Revisión
 y Retrospectiva, y la release final con la APK.
 
-**Archivos:** `encounters/`, `assistant/` (corpus de US-32),
-`frontend/src/paginas/Atencion.tsx`, `mobile/lib/features/clinical_record/`.
+**Archivos:** `encounters/` (o una app nueva `messaging/` si crece),
+`assistant/triage.py` y el corpus de US-32 (sin copiar), `notifications/`,
+`frontend/src/paginas/Atencion.tsx` y una página nueva para la bandeja,
+`mobile/lib/features/clinical_record/`.
 
-**Depende de:** Karen (tabla de US-42, 14/11).
+**Depende de:** Karen (tabla de US-42, 14/11), sólo para US-40 y US-41. US-47
+no depende de nadie.
 
 ---
 
@@ -310,6 +374,7 @@ US-37 arranca el primer día.
 |---|---|---|
 | **12/11** | Generador de datos con causas; base local y de producción repobladas | Luis Aguayo |
 | **14/11** | US-42 mergeada (la tabla de textos generados) | Karen |
+| **15/11** | US-47 mergeada (backend y web) | SM |
 | **15/11** | US-35 mergeada | Luis Aguayo |
 | **19/11** | Backend completo y congelado; sólo pantallas, documento y pruebas | Todos |
 | **20/11** | Diagrama de redes exportado | SM |
@@ -324,7 +389,7 @@ US-37 arranca el primer día.
 
 Siguen vigentes las del Sprint 1 (`../sprint-1/reparto.md`, sección 5), las
 del Sprint 2 (`../sprint-2/reparto.md`, sección 6) y las del Sprint 3
-(`../sprint-3/reparto.md`, sección 5). Se agregan tres:
+(`../sprint-3/reparto.md`, sección 5). Se agregan cuatro:
 
 14. **Ningún texto generado llega al paciente sin aprobación de un médico.**
     Todo pasa por `ai_generated_texts` y US-42. Un endpoint del paciente que
@@ -344,6 +409,25 @@ del Sprint 2 (`../sprint-2/reparto.md`, sección 6) y las del Sprint 3
 16. **Los modelos se entrenan y se usan dentro de `tenant_context`.** Un modelo
     entrenado con las fichas de todas las organizaciones mezcla datos de
     clientes distintos, que es exactamente lo que el sistema promete no hacer.
+
+17. **Las pruebas de este sprint son la entrega, no un anexo.** Es el último
+    sprint y lo que se presenta es el sistema completo, así que se prueba más
+    que en los anteriores. Cada historia entra a `main` con:
+    1. **Pruebas automatizadas de los bordes, no sólo del camino feliz:** el
+       acceso de otro paciente, de otro rol y de otra organización; la
+       degradación sin proveedor; las entradas vacías, largas o malformadas;
+       y lo que no debe pasar dos veces. Lo que toque la historia clínica o un
+       texto para el paciente se verifica por mutación.
+    2. **Sus casos en el plan de pruebas del documento** (2.3.1), con
+       entrada, resultado esperado y resultado obtenido, también los que
+       fallaron y cómo se corrigieron.
+    3. **Capturas de cada caso de prueba que se ve en pantalla**, web y móvil,
+       en `docs/capturas/sprint-4/` con un `INDICE.md` que diga qué caso
+       muestra cada una. **Tomadas contra producción**, con las cuentas demo,
+       salvo que el caso pida otra cosa. Sin captura, el caso no cuenta como
+       probado en el reporte (2.3.2).
+
+    El PR que no traiga las tres cosas no se mergea, aunque el código ande.
 
 ### Inventario de IA a verificar el 21/11
 
@@ -368,24 +452,35 @@ del Sprint 2 (`../sprint-2/reparto.md`, sección 6) y las del Sprint 3
 
 ## 6. Tareas nuevas para el Sprint Backlog del documento
 
-La numeración del Sprint 3 llegó hasta T-43. El Sprint 4 arranca en T-44.
+La numeración del Sprint 3 llegó hasta **T-44** (el capítulo del Sprint 3 en el
+documento, que no estaba en su reparto). El Sprint 4 arranca en **T-45**.
 
 | ID | Tarea | Tipo | Estimación | Responsable | Prioridad |
 |---|---|---|---|---|---|
-| T-44 | Clasificar cada ficha por riesgo de inasistencia | Historia | 16 horas | Aguayo Quiroz, L.M. | Must have |
-| T-45 | Recordatorios reforzados por riesgo alto | Historia | 10 horas | Osinaga Blanco, A. | Should have |
-| T-46 | Proyección de demanda por especialidad y franja | Historia | 10 horas | Iporo Chulque, J.D. | Could have |
-| T-47 | Reentrenamiento periódico del modelo | Historia | 10 horas | Iporo Chulque, J.D. | Could have |
-| T-48 | Resumen claro de la consulta | Historia | 10 horas | Ortega Mancilla, K.P. | Should have |
-| T-49 | Instrucciones de preparación para estudios | Historia | 6 horas | Hurtado Castro, L.M. | Could have |
-| T-50 | Resumen del historial para el médico | Historia | 10 horas | Hurtado Castro, L.M. | Could have |
-| T-51 | Validar o editar texto generado por IA | Historia | 6 horas | Ortega Mancilla, K.P. | Must have |
-| T-52 | Reportes transaccionales por voz del paciente | Historia | 10 horas | Osinaga Blanco, A. | Should have |
-| T-53 | Diagrama de redes | Documentación | 4 horas | Hurtado Castro, L.M. | Must have |
-| T-54 | Verificación final de las IA en producción | Pruebas | 4 horas | Aguayo Quiroz, L.M. | Must have |
+| T-45 | Clasificar cada ficha por riesgo de inasistencia | Historia | 16 horas | Aguayo Quiroz, L.M. | Must have |
+| T-46 | Recordatorios reforzados por riesgo alto | Historia | 10 horas | Osinaga Blanco, A. | Should have |
+| T-47 | Proyección de demanda por especialidad y franja | Historia | 10 horas | Iporo Chulque, J.D. | Could have |
+| T-48 | Reentrenamiento periódico del modelo | Historia | 10 horas | Iporo Chulque, J.D. | Could have |
+| T-49 | Resumen claro de la consulta | Historia | 10 horas | Ortega Mancilla, K.P. | Should have |
+| T-50 | Instrucciones de preparación para estudios | Historia | 6 horas | Hurtado Castro, L.M. | Could have |
+| T-51 | Resumen del historial para el médico | Historia | 10 horas | Hurtado Castro, L.M. | Could have |
+| T-52 | Validar o editar texto generado por IA | Historia | 6 horas | Ortega Mancilla, K.P. | Must have |
+| T-53 | Reportes transaccionales por voz del paciente | Historia | 10 horas | Osinaga Blanco, A. | Should have |
+| T-54 | Diagrama de redes | Documentación | 4 horas | Hurtado Castro, L.M. | Must have |
+| T-55 | Verificación final de las IA en producción | Pruebas | 4 horas | Aguayo Quiroz, L.M. | Must have |
+| T-56 | Chat con el médico tratante | Historia | 10 horas | Hurtado Castro, L.M. | Should have |
+| T-57 | Capítulo del Sprint 4, diagramas y capturas | Técnica | Fuera de las 106 h | Hurtado Castro, L.M. | Must have |
 
-**US-46 en el Product Backlog** (para agregar al 3.6 del documento):
+**US-46 y US-47 en el Product Backlog** (para agregar al 3.6 del documento):
 
 | ID | Sprint | Rol | Historia | Prioridad | Horas |
 |---|---|---|---|---|---|
 | US-46 | Sprint 4 | Paciente | Consultar por voz mis pagos, fichas y comprobantes recientes y ver el QR de cada uno. | 🟡 | **10 h** |
+| US-47 | Sprint 4 | Paciente | Escribirle al médico que me atendió para consultas sobre la medicación o las indicaciones de esa atención. | 🟡 | **10 h** |
+
+**Casos de uso nuevos** (para la lista del documento, que llega hasta CU46):
+
+| CU | Nombre | Web | Móvil | Actor | Historia |
+|---|---|---|---|---|---|
+| CU47 | Consulta de Transacciones por Voz | X | X | Paciente | US-46 |
+| CU48 | Chat con el Médico Tratante | X | X | Paciente / Médico | US-47 |
