@@ -92,6 +92,13 @@ class Action:
     ENCOUNTER_SIGN = "encounter.sign"
     ENCOUNTER_AMEND = "encounter.amend"
 
+    # ---------- Textos generados por IA — US-42 -------------------------
+    # Lo que decidió el médico sobre un texto de la IA. Tampoco acá va el
+    # texto: sólo el tipo y si lo corrigió antes de aprobarlo.
+    AI_TEXT_EDIT = "ai_text.edit"
+    AI_TEXT_APPROVE = "ai_text.approve"
+    AI_TEXT_DISCARD = "ai_text.discard"
+
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
     BACKUP_DOWNLOAD = "backup.download"
@@ -141,6 +148,9 @@ LABELS = {
     Action.ENCOUNTER_OPEN: "Atención iniciada sobre una ficha",
     Action.ENCOUNTER_SIGN: "Encuentro clínico firmado",
     Action.ENCOUNTER_AMEND: "Enmienda agregada a un encuentro firmado",
+    Action.AI_TEXT_EDIT: "Texto generado por IA corregido por el médico",
+    Action.AI_TEXT_APPROVE: "Texto generado por IA aprobado",
+    Action.AI_TEXT_DISCARD: "Texto generado por IA descartado",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",

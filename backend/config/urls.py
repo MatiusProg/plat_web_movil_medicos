@@ -27,6 +27,9 @@ la ruta crítica del sprint y no podía esperar a que ``payments`` y
 
 **Sprint 3.** ``notifications`` entra con US-28 (push), por la misma excepción.
 
+**Sprint 4.** ``ai`` entra con US-42: la tabla única de textos generados y su
+validación. US-39 y US-40 escriben ahí sin abrir este archivo.
+
     tu historia toca…          agregá la ruta en…
     organizaciones y planes    tenancy/urls.py       (US-43, US-44, US-45)
     usuarios, roles, login     accounts/urls.py      (US-01, US-02, US-04)
@@ -41,6 +44,7 @@ la ruta crítica del sprint y no podía esperar a que ``payments`` y
     asistente                  assistant/urls.py     (US-31, US-32, US-34)
     atención médica            encounters/urls.py    (US-24, US-25)
     notificaciones push        notifications/urls.py (US-28)
+    textos generados por IA    ai/urls.py            (US-39, US-40, US-42)
 """
 
 from django.urls import include, path
@@ -85,4 +89,5 @@ urlpatterns = [
     path("api/encounters/", include("encounters.urls")),
     path("api/payments/", include("payments.urls")),
     path("api/notifications/", include("notifications.urls")),
+    path("api/ai/", include("ai.urls")),
 ]
