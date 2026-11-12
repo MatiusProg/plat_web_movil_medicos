@@ -1,0 +1,56 @@
+/**
+ * US-42: los textos que escribe la IA para el paciente y su validación.
+ *
+ * El médico los ve en su bandeja con el texto del modelo, su corrección y la
+ * diferencia entre los dos. El paciente sólo recibe los aprobados (regla 14
+ * del Sprint 4): eso lo garantiza el backend, no esta pantalla.
+ */
+import { pedir, type Contexto } from './cliente'
+import { pedirPagina } from './paginacion'
+
+export type TipoTexto = 'consultation_summary' | 'preparation' | 'history_summary'
+export type EstadoTexto = 'draft' | 'approved' | 'discarded'
+
+export interface TramoDiferencia {
+  op: 'equal' | 'insert' | 'delete'
+  text: string
+}
+
+export interface TextoIa {
+  id: string
+  kind: TipoTexto
+  kind_display: string
+  status: EstadoTexto
+  status_display: string
+  patient: string
+  patient_name: string
+  encounter: string | null
+  encounter_date: string | null
+  medical_order: string | null
+  order_description: string | null
+  generated_text: string
+  final_text: string
+  generated_by: string
+  was_edited: boolean
+  diff: TramoDiferencia[]
+  reviewed_by_name: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
+const base = '/ai/texts/'
+const ruta = (id: string, resto = '') => `${base}${encodeURIComponent(id)}/${resto}`
+
+export const verBandeja = (estado: EstadoTexto | 'all', pagina: number, contexto: Contexto, senal?: AbortSignal) =>
+  pedirPagina<TextoIa>(base, pagina, contexto, senal, { status: estado })
+
+export const corregirTexto = (id: string, final_text: string, contexto: Contexto) =>
+  pedir<TextoIa>(ruta(id), { ...contexto, metodo: 'PATCH', cuerpo: { final_text } })
+
+export const aprobarTexto = (id: string, final_text: string | undefined, contexto: Contexto) =>
+  pedir<TextoIa>(ruta(id, 'approve/'), {
+    ...contexto, metodo: 'POST', cuerpo: final_text === undefined ? {} : { final_text },
+  })
+
+export const descartarTexto = (id: string, contexto: Contexto) =>
+  pedir<TextoIa>(ruta(id, 'discard/'), { ...contexto, metodo: 'POST' })

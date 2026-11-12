@@ -102,6 +102,9 @@ INSTALLED_APPS = [
     "assistant",
     # US-28: los tokens de los teléfonos y el envío de push por Firebase.
     "notifications",
+    # US-42: todo texto que la IA escribe para un paciente pasa por acá y no
+    # le llega sin que el médico lo apruebe (regla 14 del Sprint 4).
+    "ai",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con

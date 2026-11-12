@@ -238,6 +238,15 @@ const items: ItemMenu[] = [
         requiere: 'encounters.encounter.read',
     },
 
+    // US-42 — los textos de la IA que el médico valida antes de que los lea el paciente.
+    {
+        etiqueta: 'Textos por validar',
+        ruta: '/textos-ia',
+        seccion: 'Atención',
+        icono: 'historia',
+        requiere: 'ai.text.review',
+    },
+
     // US-13 a US-16 — agendas y catálogo.
     {
         etiqueta: 'Agendas',
