@@ -387,3 +387,14 @@ def test_otra_organizacion_no_ve_ni_aprueba(borrador, org_b, branch_b):
 def test_la_rls_esconde_los_textos_de_otra_organizacion(borrador, org_b):
     with tenant_context(org_b.id):
         assert AiGeneratedText.objects.count() == 0
+
+
+def test_la_diferencia_separa_la_puntuacion_de_las_palabras():
+    # Salió de probarlo en pantalla: «días.» → «días, aunque…» tachaba la
+    # palabra entera cuando lo único que cambió fue el punto.
+    tramos = services.diff("durante 7 días. Tomar", "durante 7 días, aunque te sientas mejor. Tomar")
+    assert tramos == [
+        {"op": "equal", "text": "durante 7 días"},
+        {"op": "insert", "text": ", aunque te sientas mejor"},
+        {"op": "equal", "text": ". Tomar"},
+    ]

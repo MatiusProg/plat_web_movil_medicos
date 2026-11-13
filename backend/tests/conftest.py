@@ -77,6 +77,16 @@ def sin_firebase_real(settings):
     settings.FIREBASE_CREDENTIALS = ""
 
 
+@pytest.fixture(autouse=True)
+def sin_gemini_real(settings):
+    """US-39: firmar una atención le pide el resumen al modelo. Ninguna prueba
+    gasta cuota ni depende de la red por eso, aunque el `.env` de quien las
+    corre tenga la clave. Las que prueban el modelo lo simulan y ponen su
+    clave falsa con `override_settings`, que gana sobre esto."""
+    settings.ASSISTANT_CHAT_PROVIDER = "local"
+    settings.GEMINI_API_KEY = ""
+
+
 @pytest.fixture
 def platform_admin(db):
     """El Superadministrador de Plataforma: sin organización, por definición."""

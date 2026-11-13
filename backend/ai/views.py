@@ -7,11 +7,13 @@ Médico (permiso ``ai.text.review`` **y** ser el médico de la atención):
 - ``PATCH /api/ai/texts/<id>/``               guarda la corrección, sigue pendiente
 - ``POST /api/ai/texts/<id>/approve/``        aprueba (con o sin corrección)
 - ``POST /api/ai/texts/<id>/discard/``        descarta
+- ``POST /api/ai/encounters/<id>/summary/``   US-39: reintenta el resumen
 
 Paciente (permiso ``encounters.history.read``):
 
 - ``GET  /api/ai/texts/mine/``                sus textos **aprobados** y los
-  de sus dependientes; ``?encounter=`` o ``?kind=`` para filtrar.
+  de sus dependientes; ``?patient=``, ``?encounter=`` o ``?kind=`` para
+  filtrar.
 
 El texto de otro médico, o de otra organización, da 404 y no 403: decir que
 existe ya es decir algo de un paciente ajeno.
@@ -112,6 +114,38 @@ class DiscardView(APIView):
         return Response(ReviewSerializer(texto).data)
 
 
+class ConsultationSummaryView(APIView):
+    """US-39 — ``POST /api/ai/encounters/<id>/summary/``
+
+    Vuelve a pedir el resumen de una atención firmada: cuando al firmar la IA
+    no estaba disponible, o cuando el médico descartó el anterior. Sólo el
+    médico de la atención. Si ya hay uno vivo, no genera otro.
+    """
+
+    permission_classes = [IsAuthenticated, CanReviewTexts]
+
+    def post(self, request, encounter_id):
+        from encounters.models import Encounter
+        from encounters.services import is_own
+
+        from .consultation_summary import generate
+
+        encuentro = (Encounter.objects
+                     .filter(organization=request.user.organization, pk=encounter_id)
+                     .prefetch_related("prescription_items", "orders")
+                     .first())
+        if encuentro is None or not is_own(request.user, encuentro):
+            raise Http404
+        if not encuentro.is_signed:
+            raise services.Conflict("El resumen se genera sobre una atención firmada.")
+        resultado = generate(encuentro)
+        bitacora.record(
+            request, Action.AI_TEXT_GENERATE, "encounters", entity_id=encuentro.pk,
+            detail={"tipo": "consultation_summary", "resultado": resultado["status"]},
+        )
+        return Response(resultado)
+
+
 class PatientTextsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, CanReadOwnHistory]
     serializer_class = PatientTextSerializer
@@ -124,4 +158,9 @@ class PatientTextsView(generics.ListAPIView):
         tipo = self.request.query_params.get("kind")
         if tipo:
             textos = textos.filter(kind=tipo)
+        # El titular elige de quién ver (él o un dependiente). Igual sólo
+        # puede elegir entre los suyos: el filtro va sobre `approved_for`.
+        paciente = self.request.query_params.get("patient")
+        if paciente:
+            textos = textos.filter(patient_id=paciente)
         return textos.order_by("-reviewed_at")

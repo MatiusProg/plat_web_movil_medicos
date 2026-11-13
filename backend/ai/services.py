@@ -94,6 +94,8 @@ def inbox_for(user):
         .filter(organization=user.organization, practitioner=profesional)
         .select_related("patient", "encounter__appointment", "medical_order",
                         "reviewed_by")
+        # US-39: las advertencias del resumen miran la receta.
+        .prefetch_related("encounter__prescription_items")
     )
 
 
@@ -161,7 +163,9 @@ def discard(texto, user):
 #  Lo que corrigió el médico
 # --------------------------------------------------------------------------
 
-_TOKEN = re.compile(r"\s+|[^\s]+")
+# Espacios, palabras y cada signo por separado: si el médico cambia «días.»
+# por «días, aunque…», lo que cambió es el punto, no la palabra.
+_TOKEN = re.compile(r"\s+|\w+|[^\w\s]")
 
 
 def diff(original, final):

@@ -96,6 +96,9 @@ class Action:
     # Lo que decidió el médico sobre un texto de la IA. Tampoco acá va el
     # texto: sólo el tipo y si lo corrigió antes de aprobarlo.
     AI_TEXT_EDIT = "ai_text.edit"
+    # US-39: se pidió un texto al modelo. Con el resultado (generado, no
+    # disponible, falló), para medir cuánto falla en producción.
+    AI_TEXT_GENERATE = "ai_text.generate"
     AI_TEXT_APPROVE = "ai_text.approve"
     AI_TEXT_DISCARD = "ai_text.discard"
 
@@ -149,6 +152,7 @@ LABELS = {
     Action.ENCOUNTER_SIGN: "Encuentro clínico firmado",
     Action.ENCOUNTER_AMEND: "Enmienda agregada a un encuentro firmado",
     Action.AI_TEXT_EDIT: "Texto generado por IA corregido por el médico",
+    Action.AI_TEXT_GENERATE: "Texto pedido a la IA para un paciente",
     Action.AI_TEXT_APPROVE: "Texto generado por IA aprobado",
     Action.AI_TEXT_DISCARD: "Texto generado por IA descartado",
     Action.BACKUP_CREATE: "Copia de seguridad generada",

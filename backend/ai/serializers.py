@@ -30,6 +30,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     reviewed_by_name = serializers.SerializerMethodField()
     was_edited = serializers.BooleanField(read_only=True)
     diff = serializers.SerializerMethodField()
+    warnings = serializers.SerializerMethodField()
 
     class Meta:
         model = AiGeneratedText
@@ -38,6 +39,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "patient", "patient_name", "encounter", "encounter_date",
             "medical_order", "order_description",
             "generated_text", "final_text", "generated_by", "was_edited", "diff",
+            "warnings",
             "reviewed_by_name", "reviewed_at", "created_at",
         ]
         read_only_fields = fields
@@ -54,6 +56,15 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def get_diff(self, obj):
         return services.diff(obj.generated_text, obj.final_text)
+
+    def get_warnings(self, obj):
+        """US-39: lo que conviene mirar dos veces. Sólo en lo pendiente."""
+        if (obj.status != AiGeneratedText.Status.DRAFT
+                or obj.kind != AiGeneratedText.Kind.CONSULTATION_SUMMARY
+                or obj.encounter is None):
+            return []
+        from .consultation_summary import warnings
+        return warnings(obj.encounter, obj.final_text or obj.generated_text)
 
 
 class FinalTextSerializer(serializers.Serializer):
