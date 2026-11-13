@@ -323,6 +323,7 @@ class _TarjetaAtencion extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Divider(height: 1),
+            if (atencion.resumen != null) _Resumen(resumen: atencion.resumen!),
             for (final (campo, etiqueta) in secciones) ...[
               const SizedBox(height: 12),
               Text(etiqueta, style: theme.textTheme.labelLarge),
@@ -369,6 +370,44 @@ class _TarjetaAtencion extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// US-39 — El resumen de la consulta en palabras simples, aprobado por el
+/// médico. Va primero: es lo que el paciente entiende sin saber medicina; lo
+/// firmado sigue debajo, completo.
+class _Resumen extends StatelessWidget {
+  const _Resumen({required this.resumen});
+
+  final ResumenConsulta resumen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final suave = theme.colorScheme.onSurfaceVariant;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Resumen de tu consulta', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 6),
+          Text(resumen.texto, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 8),
+          Text(
+            'Redactado con IA y revisado por ${resumen.aprobadoPor}'
+            '${resumen.aprobadoEl == null ? '' : ' · ${_fechaHora(resumen.aprobadoEl)}'}',
+            style: theme.textTheme.labelSmall?.copyWith(color: suave),
+          ),
+        ],
       ),
     );
   }
