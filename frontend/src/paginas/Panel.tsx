@@ -127,6 +127,7 @@ export function Panel() {
   const accesos = [
     { a: '/atencion', texto: 'Atención del día', ok: puede('encounters.encounter.read') },
     { a: '/textos-ia', texto: 'Textos por validar', ok: puede('ai.text.review') },
+    { a: '/consultas', texto: 'Consultas de pacientes', ok: puede('encounters.chat') && puede('encounters.encounter.read') },
     { a: '/buscar-profesionales', texto: 'Reservar una ficha', ok: puede('appointments.appointment.create') },
     { a: '/mis-fichas', texto: 'Mis fichas', ok: puede('appointments.appointment.read') },
     { a: '/mi-historia', texto: 'Mi historia clínica', ok: esPaciente && puede('encounters.history.read') },

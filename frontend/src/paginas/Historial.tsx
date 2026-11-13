@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SECCIONES, verHistorial, type Historial as DatosHistorial } from '@/api/atencion'
 import { useTitulo } from '@/rutas/useTitulo'
@@ -61,7 +61,11 @@ export function Historial() {
  * firmado, que nunca se reemplaza. La receta y las órdenes (US-26) van al
  * pie de cada atención, con su PDF (US-27).
  */
-export function LineaDeTiempo({ datos }: { datos: DatosHistorial }) {
+export function LineaDeTiempo({ datos, pie }: {
+  datos: DatosHistorial
+  /** Algo más al pie de cada atención; MiHistoria pone el enlace al chat (US-47). */
+  pie?: (e: DatosHistorial['encounters'][number]) => ReactNode
+}) {
   const [sucursal, setSucursal] = useState<string>('todas')
   const encuentros = datos.encounters.filter(e => sucursal === 'todas' || e.branch_name === sucursal)
 
@@ -93,6 +97,7 @@ export function LineaDeTiempo({ datos }: { datos: DatosHistorial }) {
           </dl>
           <RecetaDeLaAtencion encuentro={e} />
           <p className="mt-3 text-xs text-tinta-500">Firmada por {e.signed_by_name} · {e.signed_at && fechaHora(e.signed_at)}</p>
+          {pie?.(e)}
         </article>
       </li>)}
     </ol>}

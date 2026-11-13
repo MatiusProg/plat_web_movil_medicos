@@ -154,12 +154,12 @@ class Push implements DeviceRegistrar {
 
       FirebaseMessaging.onMessage.listen(_mostrarConLaAppAbierta);
       FirebaseMessaging.onMessageOpenedApp
-          .listen((mensaje) => _abrir(mensaje.data['appointment_id']));
+          .listen((mensaje) => _abrir(destinoDe(mensaje.data)));
 
       // La app estaba cerrada y se abrió tocando el aviso: el de FCM, o uno
       // que mostró esta misma clase antes de que la cerraran.
       final inicial = await FirebaseMessaging.instance.getInitialMessage();
-      if (inicial != null) _abrir(inicial.data['appointment_id']);
+      if (inicial != null) _abrir(destinoDe(inicial.data));
       final lanzada = await _locales.getNotificationAppLaunchDetails();
       if (lanzada?.didNotificationLaunchApp ?? false) {
         _abrir(lanzada!.notificationResponse?.payload);
@@ -265,8 +265,19 @@ class Push implements DeviceRegistrar {
           priority: Priority.high,
         ),
       ),
-      payload: mensaje.data['appointment_id'],
+      payload: destinoDe(mensaje.data),
     ));
+  }
+
+  /// A dónde lleva tocar un aviso: el id de la ficha (US-28) o, si es una
+  /// respuesta del médico en el chat (US-47), `chat:<id de la atención>`.
+  @visibleForTesting
+  static String? destinoDe(Map<String, dynamic> data) {
+    if (data['event'] == 'chat') {
+      final atencion = data['encounter_id'] as String?;
+      return atencion == null || atencion.isEmpty ? null : 'chat:$atencion';
+    }
+    return data['appointment_id'] as String?;
   }
 
   /// Lo mismo que pasa al tocar un aviso, para las pruebas.

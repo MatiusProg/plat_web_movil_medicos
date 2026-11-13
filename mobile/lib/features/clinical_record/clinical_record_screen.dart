@@ -15,6 +15,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
@@ -366,6 +367,13 @@ class _TarjetaAtencion extends StatelessWidget {
               'Firmada por ${atencion.signedByName} · '
               '${_fechaHora(atencion.signedAt)}',
               style: theme.textTheme.labelSmall?.copyWith(color: suave),
+            ),
+            // US-47: las dudas sobre esta atención, con el médico que la firmó.
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/chat/${atencion.id}'),
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+              label: const Text('Escribir al médico'),
             ),
           ],
         ),
