@@ -47,7 +47,10 @@ class _CentroMedicoAppState extends State<CentroMedicoApp> {
   void _abrirFicha(String appointmentId) {
     final session = widget.session;
     void ir() => WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _router.go('/appointments/$appointmentId'),
+          (_) => appointmentId.startsWith('chat:')
+              // US-47: la respuesta del médico abre esa conversación.
+              ? _router.go('/chat/${appointmentId.substring(5)}')
+              : _router.go('/appointments/$appointmentId'),
         );
 
     if (session.isSignedIn) {

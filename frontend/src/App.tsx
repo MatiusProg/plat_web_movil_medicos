@@ -30,6 +30,7 @@ import { Especialidades } from '@/paginas/Especialidades'
 import { Servicios } from '@/paginas/Servicios'
 import { AgendaAtencion } from '@/paginas/AgendaAtencion'
 import { TextosPorValidar } from '@/paginas/TextosPorValidar'
+import { ConsultaChat, ConsultasPacientes } from '@/paginas/ChatAtencion'
 import { Atencion } from '@/paginas/Atencion'
 import { Historial } from '@/paginas/Historial'
 import { MiHistoria } from '@/paginas/MiHistoria'
@@ -221,6 +222,9 @@ export default function App() {
                         <Route path="/atencion/:id" element={<Atencion />} />
                         {/* US-42: textos de la IA que el médico valida antes de que los lea el paciente */}
                         <Route path="/textos-ia" element={<TextosPorValidar />} />
+                        {/* US-47: chat entre el paciente atendido y su médico */}
+                        <Route path="/consultas" element={<ConsultasPacientes />} />
+                        <Route path="/consultas/:encuentroId" element={<ConsultaChat />} />
                         {/* US-25: historial clínico longitudinal */}
                         <Route path="/historial/:pacienteId" element={<Historial />} />
                         {/* US-25: la misma historia, vista por el paciente */}

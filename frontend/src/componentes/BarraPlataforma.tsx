@@ -247,6 +247,16 @@ const items: ItemMenu[] = [
         requiere: 'ai.text.review',
     },
 
+    // US-47 — lo que escriben los pacientes atendidos. El Paciente también tiene
+    // `encounters.chat`; la bandeja es del médico, por eso pide el de la atención.
+    {
+        etiqueta: 'Consultas de pacientes',
+        ruta: '/consultas',
+        seccion: 'Atención',
+        icono: 'historia',
+        requiere: 'encounters.encounter.read',
+    },
+
     // US-13 a US-16 — agendas y catálogo.
     {
         etiqueta: 'Agendas',

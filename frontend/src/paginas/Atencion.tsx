@@ -10,6 +10,7 @@ import { useSesion } from '@/sesion/useSesion'
 import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
 import { PanelReceta } from './RecetaAtencion'
 import { PanelResumenHistorial } from './ResumenHistorial'
+import { PanelChat } from './ChatAtencion'
 import { AvisoResumenPaciente, PedirResumenPaciente } from './TextosPorValidar'
 import type { ResultadoResumen } from '@/api/textos_ia'
 
@@ -155,6 +156,8 @@ export function Atencion() {
     </form>
 
     <PanelReceta encuentro={encuentro} onCambio={setEncuentro} />
+    {/* US-47: las consultas del paciente después de la atención firmada */}
+    {firmado && puede('encounters.chat') && <PanelChat encuentroId={encuentro.id} />}
 
     {firmado && enmendar && <form onSubmit={e => void enviarEnmienda(e)} className={`${PANEL} space-y-4`}>
       <div><h2 className="font-semibold text-tinta-900 dark:text-tinta-100">Agregar una enmienda</h2><p className="mt-1 text-sm text-tinta-500">La atención firmada no se modifica. La corrección queda al lado del texto original, con tu nombre y la fecha.</p></div>

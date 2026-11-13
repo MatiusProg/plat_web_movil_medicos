@@ -105,6 +105,8 @@ INSTALLED_APPS = [
     # US-42: todo texto que la IA escribe para un paciente pasa por acá y no
     # le llega sin que el médico lo apruebe (regla 14 del Sprint 4).
     "ai",
+    # US-47: el chat entre el paciente atendido y el médico de esa atención.
+    "messaging",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con

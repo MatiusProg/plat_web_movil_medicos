@@ -11,6 +11,7 @@
  * registró y firmó un médico, y acá sólo se lee.
  */
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { verHistorial, type Historial as DatosHistorial } from '@/api/atencion'
 import { listarOpcionesDePaciente, type OpcionDePaciente } from '@/api/pacientes'
 import { useTitulo } from '@/rutas/useTitulo'
@@ -19,8 +20,9 @@ import { ErrorCatalogo, PANEL, mensajeError } from './catalogo_comun'
 import { LineaDeTiempo, resumenHistorial } from './Historial'
 
 export function MiHistoria() {
-  const { token } = useSesion()
+  const { token, puede } = useSesion()
   useTitulo('Mi historia clínica')
+  const chat = puede('encounters.chat')
   const [opciones, setOpciones] = useState<OpcionDePaciente[] | null>(null)
   const [elegido, setElegido] = useState<string>('')
   const [datos, setDatos] = useState<DatosHistorial | null>(null)
@@ -75,7 +77,9 @@ export function MiHistoria() {
       </p>
       {datos.encounters.length === 0
         ? <div className={`${PANEL} text-center text-sm text-tinta-500`}>Cuando un médico atienda y firme la consulta, aparece acá.</div>
-        : <LineaDeTiempo key={elegido} datos={datos} />}
+        : <LineaDeTiempo key={elegido} datos={datos} pie={chat ? e => <Link to={`/consultas/${e.id}`}
+          className="mt-3 inline-flex text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">
+          Escribir al médico sobre esta atención →</Link> : undefined} />}
     </>}
   </main>
 }

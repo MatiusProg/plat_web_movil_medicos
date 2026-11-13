@@ -145,6 +145,11 @@ TABLES: tuple[Table, ...] = (
     # historia clínica. Un texto que la base ya tiene —aunque después se haya
     # aprobado o descartado— se deja como está.
     Table("ai", "AiGeneratedText", "Textos generados por IA", strategy=APPEND),
+    # US-47: el chat con el médico. Los mensajes son lo que se le dijo al
+    # paciente y la base no deja editarlos ni borrarlos: sólo se agregan. La
+    # conversación tampoco se borra; si ya existe, queda como está.
+    Table("messaging", "EncounterThread", "Conversaciones con el médico", strategy=APPEND),
+    Table("messaging", "EncounterMessage", "Mensajes del chat", strategy=APPEND),
 
     # ---------- Reportes ----------
     Table("reporting", "SavedReport", "Reportes guardados"),

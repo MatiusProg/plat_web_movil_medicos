@@ -45,6 +45,7 @@ validación. US-39 y US-40 escriben ahí sin abrir este archivo.
     atención médica            encounters/urls.py    (US-24, US-25)
     notificaciones push        notifications/urls.py (US-28)
     textos generados por IA    ai/urls.py            (US-39, US-40, US-42)
+    chat con el médico         messaging/urls.py     (US-47)
 """
 
 from django.urls import include, path
@@ -90,4 +91,5 @@ urlpatterns = [
     path("api/payments/", include("payments.urls")),
     path("api/notifications/", include("notifications.urls")),
     path("api/ai/", include("ai.urls")),
+    path("api/messaging/", include("messaging.urls")),
 ]

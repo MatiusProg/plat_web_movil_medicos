@@ -22,6 +22,7 @@ import '../../features/availability/availability_screen.dart';
 import '../../features/backups/backups_screen.dart';
 import '../../features/dependents/dependent_form_screen.dart';
 import '../../features/dependents/dependents_screen.dart';
+import '../../features/chat/chat_screen.dart';
 import '../../features/clinical_record/clinical_record_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/metrics/metrics_screen.dart';
@@ -75,6 +76,7 @@ class Routes {
   static const String dependentForm = 'dependent-form';
   static const String history = 'history';
   static const String clinicalRecord = 'clinical-record';
+  static const String chat = 'chat';
   static const String assistant = 'assistant';
   static const String profile = 'profile';
   static const String appointments = 'appointments';
@@ -352,6 +354,16 @@ GoRouter buildRouter(Session session) {
         builder: (context, state) => const SoloPacientes(
           titulo: 'Mi historia clínica',
           child: ClinicalRecordScreen(),
+        ),
+      ),
+
+      // ---------- US-47 (SM): el chat con el médico de una atención --------
+      GoRoute(
+        path: '/chat/:encounterId',
+        name: Routes.chat,
+        builder: (context, state) => SoloPacientes(
+          titulo: 'Chat con tu médico',
+          child: ChatScreen(encounterId: state.pathParameters['encounterId']!),
         ),
       ),
 
