@@ -17,8 +17,11 @@ El texto de otro médico, o de otra organización, da 404 y no 403: decir que
 existe ya es decir algo de un paciente ajeno.
 """
 
+import uuid
+
 from django.http import Http404
 from rest_framework import generics
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -120,6 +123,11 @@ class PatientTextsView(generics.ListAPIView):
         textos = services.approved_for(self.request.user)
         encuentro = self.request.query_params.get("encounter")
         if encuentro:
+            # Un id que no es UUID llegaba al ORM y devolvía un 500.
+            try:
+                encuentro = uuid.UUID(encuentro)
+            except ValueError:
+                raise ValidationError({"encounter": "No es un identificador válido."})
             textos = textos.filter(encounter_id=encuentro)
         tipo = self.request.query_params.get("kind")
         if tipo:
