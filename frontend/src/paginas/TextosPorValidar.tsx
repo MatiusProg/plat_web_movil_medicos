@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
-  aprobarTexto, corregirTexto, descartarTexto, verBandeja,
-  type EstadoTexto, type TextoIa, type TramoDiferencia,
+  aprobarTexto, corregirTexto, descartarTexto, reintentarResumen, verBandeja,
+  type EstadoTexto, type ResultadoResumen, type TextoIa, type TramoDiferencia,
 } from '@/api/textos_ia'
 import { Boton } from '@/componentes/Boton'
 import { Paginador } from '@/componentes/Paginador'
@@ -75,9 +76,14 @@ function Pendiente({ texto, onDecidido }: { texto: TextoIa; onDecidido: (t: Text
 
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-tinta-700 dark:text-tinta-300">Texto para el paciente</span>
-      <textarea className={`${INPUT} min-h-32 resize-y leading-7`} value={valor} maxLength={4000}
+      <textarea className={`${INPUT} min-h-72 resize-y leading-7`} value={valor} maxLength={4000}
         onChange={e => setValor(e.target.value)} />
     </label>
+
+    {actual.warnings.length > 0 && <div role="note" className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+      <p className="font-medium">Revísalo antes de aprobar:</p>
+      <ul className="mt-1 list-disc pl-5">{actual.warnings.map(w => <li key={w}>{w}</li>)}</ul>
+    </div>}
 
     {actual.was_edited && !sinGuardar && <details className="text-sm">
       <summary className="cursor-pointer font-medium text-tinta-700 dark:text-tinta-300">Qué cambiaste respecto de lo que escribió la IA</summary>
@@ -111,6 +117,64 @@ function Pendiente({ texto, onDecidido }: { texto: TextoIa; onDecidido: (t: Text
       </div>
     </div>
   </article>
+}
+
+/**
+ * US-39 — Qué pasó con el resumen para el paciente al firmar la atención.
+ *
+ * Si quedó generado, lleva a la bandeja; si la IA no estaba, lo dice (no hay
+ * plantilla de reemplazo) y deja reintentar.
+ */
+export function AvisoResumenPaciente({ encuentroId, resultado, onCambio }: {
+  encuentroId: string
+  resultado: ResultadoResumen
+  onCambio: (r: ResultadoResumen) => void
+}) {
+  const { token, puede } = useSesion()
+  const [reintentando, setReintentando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const listo = resultado.status === 'generated' || resultado.status === 'exists'
+
+  const reintentar = async () => {
+    setReintentando(true); setError(null)
+    try { onCambio(await reintentarResumen(encuentroId, { token })) }
+    catch (e) { setError(mensajeError(e)) }
+    finally { setReintentando(false) }
+  }
+
+  return <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border px-4 py-3 text-sm ${listo
+    ? 'border-marca-200 bg-marca-50 text-marca-800 dark:border-marca-800 dark:bg-marca-950 dark:text-marca-200'
+    : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'}`}>
+    <span className="mr-auto">{resultado.message}{error && ` ${error}`}</span>
+    {listo && puede('ai.text.review') && <Link to="/textos-ia" className="font-semibold underline-offset-2 hover:underline">Revisarlo ahora →</Link>}
+    {!listo && puede('ai.text.review') && <button type="button" className={SECONDARY} disabled={reintentando}
+      onClick={() => void reintentar()}>{reintentando ? 'Generando…' : 'Reintentar'}</button>}
+  </div>
+}
+
+/**
+ * US-39 — En una atención ya firmada, sin aviso a la vista: pedir el resumen
+ * para el paciente. Si ya hay uno, el backend lo dice y no genera otro.
+ */
+export function PedirResumenPaciente({ encuentroId, onResultado }: {
+  encuentroId: string
+  onResultado: (r: ResultadoResumen) => void
+}) {
+  const { token, puede } = useSesion()
+  const [pidiendo, setPidiendo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  if (!puede('ai.text.review')) return null
+  const pedir = async () => {
+    setPidiendo(true); setError(null)
+    try { onResultado(await reintentarResumen(encuentroId, { token })) }
+    catch (e) { setError(mensajeError(e)) }
+    finally { setPidiendo(false) }
+  }
+  return <div className="flex flex-wrap items-center gap-3 text-sm text-tinta-500">
+    <button type="button" className={SECONDARY} disabled={pidiendo} onClick={() => void pedir()}>
+      {pidiendo ? 'Generando…' : 'Resumen para el paciente'}</button>
+    <span>{error ?? 'La IA lo redacta desde esta atención; nadie lo ve hasta que lo apruebes.'}</span>
+  </div>
 }
 
 /** Un texto ya decidido: qué se aprobó, quién y cuándo, y qué se corrigió. */

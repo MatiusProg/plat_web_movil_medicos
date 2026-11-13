@@ -8,9 +8,14 @@
 ///
 /// US-27: cada atención trae además la receta y las órdenes que el médico
 /// emitió (US-26), y la receta se baja en PDF con [descargarReceta].
+///
+/// US-39: y, si su médico lo aprobó, el resumen de la consulta en palabras
+/// simples. Sale de `GET /api/ai/texts/mine/`, que **sólo devuelve textos
+/// aprobados** (regla 14 del Sprint 4): un borrador nunca llega al teléfono.
 library;
 
 import 'package:mobile/core/api/client.dart';
+import 'package:mobile/core/api/errors.dart';
 
 /// Las secciones de una atención, en el orden en que las escribe el médico.
 /// Las mismas palabras que `SECCIONES` en `frontend/src/api/atencion.ts`.
@@ -99,6 +104,7 @@ class Atencion {
     required this.enmiendas,
     this.medicamentos = const [],
     this.ordenes = const [],
+    this.resumen,
   });
 
   final String id;
@@ -113,6 +119,23 @@ class Atencion {
   final List<Enmienda> enmiendas;
   final List<Medicamento> medicamentos;
   final List<Orden> ordenes;
+
+  /// US-39: el resumen aprobado por el médico, o `null` si no hay.
+  final ResumenConsulta? resumen;
+
+  Atencion conResumen(ResumenConsulta? resumen) => Atencion(
+        id: id,
+        startsAt: startsAt,
+        practitionerName: practitionerName,
+        branchName: branchName,
+        secciones: secciones,
+        signedByName: signedByName,
+        signedAt: signedAt,
+        enmiendas: enmiendas,
+        medicamentos: medicamentos,
+        ordenes: ordenes,
+        resumen: resumen,
+      );
 
   /// Hay algo que bajar en PDF.
   bool get tieneReceta => medicamentos.isNotEmpty || ordenes.isNotEmpty;
@@ -142,6 +165,28 @@ class Atencion {
             .whereType<Map<String, dynamic>>()
             .map(Orden.fromJson)
             .toList(),
+      );
+}
+
+/// US-39 — El resumen de una consulta, tal como lo aprobó el médico.
+class ResumenConsulta {
+  const ResumenConsulta({
+    required this.encounterId,
+    required this.texto,
+    required this.aprobadoPor,
+    required this.aprobadoEl,
+  });
+
+  final String encounterId;
+  final String texto;
+  final String aprobadoPor;
+  final DateTime? aprobadoEl;
+
+  factory ResumenConsulta.fromJson(Map<String, dynamic> json) => ResumenConsulta(
+        encounterId: json['encounter'] as String? ?? '',
+        texto: (json['text'] as String? ?? '').trim(),
+        aprobadoPor: json['practitioner_name'] as String? ?? '',
+        aprobadoEl: DateTime.tryParse(json['approved_at'] as String? ?? ''),
       );
 }
 
@@ -181,9 +226,50 @@ Future<HistoriaClinica> verHistoriaClinica(
 }) async {
   final data = await client
       .get('/encounters/history/${Uri.encodeComponent(patientId)}/');
-  return HistoriaClinica.fromJson(
+  final historia = HistoriaClinica.fromJson(
     data is Map<String, dynamic> ? data : const <String, dynamic>{},
   );
+  if (historia.atenciones.isEmpty) return historia;
+
+  final resumenes = await verResumenesAprobados(client, patientId: patientId);
+  return HistoriaClinica(
+    patientName: historia.patientName,
+    sucursales: historia.sucursales,
+    atenciones: [
+      for (final a in historia.atenciones) a.conResumen(resumenes[a.id]),
+    ],
+  );
+}
+
+/// US-39 — Los resúmenes aprobados de las consultas de un paciente, por
+/// atención.
+///
+/// Si no se pueden traer, la historia se muestra igual sin ellos: el resumen
+/// es una ayuda, la historia clínica es lo que el paciente vino a ver.
+Future<Map<String, ResumenConsulta>> verResumenesAprobados(
+  ApiClient client, {
+  required String patientId,
+}) async {
+  try {
+    final query = Uri(queryParameters: {
+      'patient': patientId,
+      'kind': 'consultation_summary',
+      'page_size': '100',
+    }).query;
+    final data = await client.get('/ai/texts/mine/?$query');
+    final filas = data is Map<String, dynamic>
+        ? (data['results'] as List? ?? const [])
+        : const [];
+    return {
+      for (final r in filas
+          .whereType<Map<String, dynamic>>()
+          .map(ResumenConsulta.fromJson)
+          .where((r) => r.texto.isNotEmpty))
+        r.encounterId: r,
+    };
+  } on ApiError {
+    return const {};
+  }
 }
 
 /// US-27 — La receta firmada de una atención, en PDF.

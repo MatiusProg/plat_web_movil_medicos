@@ -118,12 +118,31 @@ Future<List<String>> _abrir(
   Map<String, Map<String, dynamic>> historias, {
   GuardadoDeArchivos? guardado,
   AbridorDeArchivos? abridor,
+  List<Map<String, dynamic>> resumenes = const [],
+  int estadoResumenes = 200,
 }) async {
   final pedidos = <String>[];
   final client = ApiClient(
     httpClient: MockClient((request) async {
       pedidos.add(request.url.path);
       if (request.url.path.endsWith('/patient-options/')) return _json(_opciones);
+      // US-39: los resúmenes aprobados, filtrados por la persona elegida.
+      if (request.url.path.endsWith('/ai/texts/mine/')) {
+        if (estadoResumenes != 200) {
+          return http.Response('{"detail": "No tienes permiso."}', estadoResumenes,
+              headers: {'content-type': 'application/json'});
+        }
+        final paciente = request.url.queryParameters['patient'];
+        return _json({
+          'count': resumenes.length,
+          'next': null,
+          'previous': null,
+          'results': [
+            for (final r in resumenes)
+              if (r['patient'] == paciente) r,
+          ],
+        });
+      }
       if (request.url.path.endsWith('/prescription.pdf')) {
         return http.Response.bytes(
           utf8.encode('%PDF-1.4 receta'),
@@ -151,7 +170,62 @@ Future<List<String>> _abrir(
   return pedidos;
 }
 
+Map<String, dynamic> _resumen(String encuentro, String paciente, String texto) => {
+      'id': 'r-$encuentro',
+      'kind': 'consultation_summary',
+      'kind_display': 'Resumen de la consulta',
+      'text': texto,
+      'patient': paciente,
+      'patient_name': 'Ana Ríos',
+      'practitioner_name': 'Dra. Paz',
+      'encounter': encuentro,
+      'encounter_date': '2026-09-20T14:00:00Z',
+      'medical_order': null,
+      'order_description': null,
+      'approved_at': '2026-09-20T16:00:00Z',
+    };
+
 void main() {
+  testWidgets('US-39: muestra el resumen aprobado en su atención',
+      (tester) async {
+    _pantallaGrande(tester);
+    final pedidos = await _abrir(
+      tester,
+      {
+        't1': _historia('Ana Ríos', [
+          _atencion('e1', 'Sede Central', 'Migraña.'),
+          _atencion('e2', 'Sede Central', 'Gastritis.'),
+        ]),
+      },
+      resumenes: [
+        _resumen('e1', 't1', 'Qué encontramos: tienes migraña.'),
+        // De otra persona: aunque llegara, no se pega a esta historia.
+        _resumen('e2', 'd1', 'Qué encontramos: otra cosa.'),
+      ],
+    );
+
+    expect(pedidos, contains('/api/ai/texts/mine/'));
+    expect(find.text('Resumen de tu consulta'), findsOneWidget);
+    expect(find.text('Qué encontramos: tienes migraña.'), findsOneWidget);
+    expect(find.textContaining('revisado por Dra. Paz'), findsOneWidget);
+    expect(find.text('Qué encontramos: otra cosa.'), findsNothing);
+    // Lo firmado sigue a la vista, debajo del resumen.
+    expect(find.text('Migraña.'), findsOneWidget);
+  });
+
+  testWidgets('US-39: si no se pueden traer los resúmenes, la historia se ve igual',
+      (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(
+      tester,
+      {'t1': _historia('Ana Ríos', [_atencion('e1', 'Sede Central', 'Migraña.')])},
+      estadoResumenes: 403,
+    );
+
+    expect(find.text('Migraña.'), findsOneWidget);
+    expect(find.text('Resumen de tu consulta'), findsNothing);
+  });
+
   testWidgets('muestra la línea de tiempo con la enmienda debajo de lo firmado',
       (tester) async {
     _pantallaGrande(tester);
@@ -206,13 +280,16 @@ void main() {
       't1': _historia('Ana Ríos', [_atencion('e1', 'Sede Central', 'Migraña.')]),
       'd1': _historia('Mateo Ríos', []),
     });
-    expect(pedidos.last, endsWith('/encounters/history/t1/'));
+    // US-39: después del historial se piden sus resúmenes aprobados.
+    expect(pedidos.where((p) => p.contains('/encounters/history/')).last,
+        endsWith('/encounters/history/t1/'));
 
     await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mateo Ríos · Hijo/a').last);
     await tester.pumpAndSettle();
 
+    // Sin atenciones no hay resúmenes que pedir: el historial es lo último.
     expect(pedidos.last, endsWith('/encounters/history/d1/'));
     expect(find.text('Todavía no hay atenciones firmadas.'), findsOneWidget);
     expect(find.text('Migraña.'), findsNothing);
