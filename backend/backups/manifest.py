@@ -139,6 +139,12 @@ TABLES: tuple[Table, ...] = (
           strategy=APPEND, draft_only_parent="encounter"),
     Table("encounters", "MedicalOrder", "Órdenes médicas",
           strategy=APPEND, draft_only_parent="encounter"),
+    # US-42: lo que la IA escribió para el paciente y lo que el médico validó.
+    # Es parte de lo que se le dijo al paciente, y la base no deja borrarlo ni
+    # cambiar lo decidido (trigger de `ai/0002`): sólo se agrega, como la
+    # historia clínica. Un texto que la base ya tiene —aunque después se haya
+    # aprobado o descartado— se deja como está.
+    Table("ai", "AiGeneratedText", "Textos generados por IA", strategy=APPEND),
 
     # ---------- Reportes ----------
     Table("reporting", "SavedReport", "Reportes guardados"),
