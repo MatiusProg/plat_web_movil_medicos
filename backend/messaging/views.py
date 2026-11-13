@@ -34,6 +34,21 @@ from .models import EncounterMessage
 
 MAX_MESSAGES = 300
 
+# El mismo límite dicho a cada uno: al paciente, que no es para urgencias; al
+# médico, que el sistema ya deriva lo que suena a urgencia y se lo marca.
+AVISO = {
+    services.PATIENT: (
+        "Este chat es para consultas sobre tu atención, como la medicación o las "
+        "indicaciones. No es para urgencias: ante una urgencia ve al servicio de "
+        "emergencias más cercano."
+    ),
+    services.PRACTITIONER: (
+        "Consultas del paciente sobre esta atención, como la medicación o las "
+        "indicaciones. No es un canal de urgencias: si un mensaje suena a urgencia, "
+        "al paciente se le indica ir a emergencias y acá aparece marcado."
+    ),
+}
+
 
 class CanChat(RequiresPermission):
     code = "encounters.chat"
@@ -95,9 +110,7 @@ def _conversacion(encounter, lado, thread):
         "can_write": abierta,
         "closed_reason": motivo,
         "window_days": services.window_days(),
-        "notice": "Este chat es para consultas sobre tu atención, como la medicación o las "
-                  "indicaciones. No es para urgencias: ante una urgencia ve al servicio de "
-                  "emergencias más cercano.",
+        "notice": AVISO[lado],
         "prescription": [
             {"medication": p.medication, "dose": p.dose, "frequency": p.frequency,
              "duration": p.duration, "instructions": p.instructions}

@@ -61,8 +61,10 @@ export function Historial() {
  * firmado, que nunca se reemplaza. La receta y las órdenes (US-26) van al
  * pie de cada atención, con su PDF (US-27).
  */
-export function LineaDeTiempo({ datos, pie }: {
+export function LineaDeTiempo({ datos, cabeza, pie }: {
   datos: DatosHistorial
+  /** Algo arriba de lo firmado; MiHistoria pone el resumen aprobado (US-39). */
+  cabeza?: (e: DatosHistorial['encounters'][number]) => ReactNode
   /** Algo más al pie de cada atención; MiHistoria pone el enlace al chat (US-47). */
   pie?: (e: DatosHistorial['encounters'][number]) => ReactNode
 }) {
@@ -85,6 +87,7 @@ export function LineaDeTiempo({ datos, pie }: {
             <h2 className="font-semibold text-tinta-900 dark:text-tinta-100">{fecha(e.appointment_starts_at)}</h2>
             <p className="text-sm text-tinta-500">{e.branch_name} · {e.practitioner_name}</p>
           </header>
+          {cabeza?.(e)}
           <dl className="mt-3 space-y-3 text-sm">
             {SECCIONES.filter(s => e[s.campo] || e.amendments.some(a => a.section === s.campo)).map(s => <div key={s.campo}>
               <dt className="font-medium text-tinta-700 dark:text-tinta-300">{s.etiqueta}</dt>

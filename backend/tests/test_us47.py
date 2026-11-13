@@ -130,6 +130,14 @@ def test_la_conversacion_muestra_la_receta_y_el_aviso(encuentro, pedro):
     assert datos["window_days"] == 15
 
 
+def test_el_aviso_le_habla_a_cada_uno(encuentro, pedro, laura):
+    # Al paciente, de «tu atención»; al médico no, que la atención no es suya.
+    paciente = ver(pedro, encuentro).json()["notice"]
+    medico = ver(laura, encuentro).json()["notice"]
+    assert "tu atención" in paciente and "ve al servicio de emergencias" in paciente
+    assert "tu atención" not in medico and "marcado" in medico
+
+
 def test_ver_sin_mensajes_no_crea_la_conversacion(encuentro, pedro, org_a):
     ver(pedro, encuentro)
     with tenant_context(org_a.id):

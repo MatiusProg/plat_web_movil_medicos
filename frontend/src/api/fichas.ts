@@ -20,6 +20,17 @@ export type EstadoFicha =
   | 'expired'
   | 'no_show'
 
+/** Cómo se lee el estado en pantalla; el backend manda el código en inglés. */
+export const ETIQUETA_ESTADO_FICHA: Record<EstadoFicha, string> = {
+  pending_payment: 'Pendiente de pago',
+  confirmed: 'Confirmada',
+  attended: 'Atendida',
+  cancelled: 'Cancelada',
+  rescheduled: 'Reprogramada',
+  expired: 'Vencida',
+  no_show: 'Ausente',
+}
+
 export interface Ficha {
   id: string
   patient: string

@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { verHistorial, type Historial as DatosHistorial } from '@/api/atencion'
 import { listarOpcionesDePaciente, type OpcionDePaciente } from '@/api/pacientes'
+import { verResumenesAprobados, type ResumenAprobado } from '@/api/textos_ia'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { ErrorCatalogo, PANEL, mensajeError } from './catalogo_comun'
@@ -44,6 +45,17 @@ export function MiHistoria() {
       .catch(e => { if (!(e instanceof DOMException)) setError(mensajeError(e)) })
     return () => c.abort()
   }, [elegido, token])
+
+  // US-39: los resúmenes que su médico aprobó, igual que en el móvil. Si no
+  // se pueden traer, la historia se ve igual sin ellos: son una ayuda.
+  const [resumenes, setResumenes] = useState<Map<string, ResumenAprobado>>(new Map())
+  useEffect(() => {
+    setResumenes(new Map())
+    if (!elegido || !datos?.encounters.length) return
+    const c = new AbortController()
+    verResumenesAprobados(elegido, { token }, c.signal).then(setResumenes).catch(() => {})
+    return () => c.abort()
+  }, [elegido, token, datos])
 
   // La línea de tiempo se remonta al cambiar de persona (`key={elegido}`):
   // así el filtro no queda en una sucursal que la otra persona no tiene.
@@ -77,9 +89,25 @@ export function MiHistoria() {
       </p>
       {datos.encounters.length === 0
         ? <div className={`${PANEL} text-center text-sm text-tinta-500`}>Cuando un médico atienda y firme la consulta, aparece acá.</div>
-        : <LineaDeTiempo key={elegido} datos={datos} pie={chat ? e => <Link to={`/consultas/${e.id}`}
+        : <LineaDeTiempo key={elegido} datos={datos}
+          cabeza={e => { const r = resumenes.get(e.id); return r && <ResumenDeLaConsulta resumen={r} /> }}
+          pie={chat ? e => <Link to={`/consultas/${e.id}`}
           className="mt-3 inline-flex text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">
           Escribir al médico sobre esta atención →</Link> : undefined} />}
     </>}
   </main>
+}
+
+/** US-39: el resumen en palabras simples, arriba de lo firmado, que sigue completo debajo. */
+function ResumenDeLaConsulta({ resumen }: { resumen: ResumenAprobado }) {
+  const aprobado = resumen.approved_at
+    ? new Date(resumen.approved_at).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
+    : null
+  return <section className="mt-3 rounded-xl bg-marca-50 px-4 py-3 dark:bg-marca-950/40" aria-label="Resumen de tu consulta">
+    <h3 className="text-sm font-semibold text-marca-800 dark:text-marca-200">Resumen de tu consulta</h3>
+    <p className="mt-1.5 whitespace-pre-wrap text-sm text-tinta-800 dark:text-tinta-100">{resumen.text}</p>
+    <p className="mt-2 text-xs text-tinta-500">
+      Redactado con IA y revisado por {resumen.practitioner_name}{aprobado && ` · ${aprobado}`}
+    </p>
+  </section>
 }

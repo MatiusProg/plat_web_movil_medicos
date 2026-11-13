@@ -14,8 +14,8 @@ import { useSearchParams } from 'react-router-dom'
 
 import type { Espacio } from '@/api/disponibilidad'
 import {
-  cancelarFicha, confirmarAsistencia, iniciarPago, misFichas, reprogramarFicha,
-  type Ficha,
+  cancelarFicha, confirmarAsistencia, ETIQUETA_ESTADO_FICHA as ETIQUETA_ESTADO, iniciarPago,
+  misFichas, reprogramarFicha, type Ficha,
 } from '@/api/fichas'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
@@ -23,16 +23,6 @@ import { ModalComprobante } from '@/componentes/ModalComprobante'
 import { ModalReprogramarFicha } from '@/componentes/ModalReprogramarFicha'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
-
-const ETIQUETA_ESTADO: Record<Ficha['status'], string> = {
-  pending_payment: 'Pendiente de pago',
-  confirmed: 'Confirmada',
-  attended: 'Atendida',
-  cancelled: 'Cancelada',
-  rescheduled: 'Reprogramada',
-  expired: 'Vencida',
-  no_show: 'Ausente',
-}
 
 const COLOR_ESTADO: Record<Ficha['status'], string> = {
   pending_payment: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',

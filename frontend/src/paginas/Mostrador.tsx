@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { buscarPacientes, crearPaciente, type PacienteResumen, type PacienteGuardar } from '@/api/pacientes'
 import { listarProfesionalesTodos, type ProfesionalTarjeta } from '@/api/catalogo'
 import { disponibilidadConsolidada, type Espacio } from '@/api/disponibilidad'
-import { realizarCheckIn, type Ficha } from '@/api/fichas'
+import { ETIQUETA_ESTADO_FICHA, realizarCheckIn, type Ficha } from '@/api/fichas'
 import { reservarEnMostrador, cobrarEnMostrador } from '@/api/mostrador'
 import { useSesion } from '@/sesion/useSesion'
 
@@ -88,7 +88,7 @@ export function Mostrador() {
       {profesional && espacios.length===0 && <p>No hay turnos disponibles para esta fecha.</p>}
       <button disabled={!paciente || !espacio || ocupado || !!ficha} className="rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white disabled:opacity-40" onClick={() => ejecutar(async () => { if (!espacio) return; const creada = await reservarEnMostrador({patient:paciente,practitioner:profesional,branch:espacio.branch.id,schedule:espacio.schedule.id,startsAt:espacio.start},contexto);setFicha(creada);setDocumento(seleccionado?.document_number ?? '');setMensaje('Ficha reservada. Registrá el cobro antes de 15 minutos.') })}>Reservar a nombre del paciente</button>
     </section>
-    {ficha && <section className="space-y-3 rounded-2xl border p-5"><h2 className="text-xl font-semibold">3. Cobro en ventanilla</h2><p>{ficha.patient_name} · {ficha.practitioner_name}</p><p>Estado: {ficha.status}</p><p className="text-2xl font-bold">{ficha.fee.amount} {ficha.fee.currency}</p>
+    {ficha && <section className="space-y-3 rounded-2xl border p-5"><h2 className="text-xl font-semibold">3. Cobro en ventanilla</h2><p>{ficha.patient_name} · {ficha.practitioner_name}</p><p>Estado: {ETIQUETA_ESTADO_FICHA[ficha.status] ?? ficha.status}</p><p className="text-2xl font-bold">{ficha.fee.amount} {ficha.fee.currency}</p>
       <p className="text-sm">El importe lo determina el servidor. Verificá que recibiste el efectivo antes de confirmar.</p>
       <button disabled={ocupado || ficha.status !== 'pending_payment' || !puede('payments.payment.register_cash')} onClick={() => ejecutar(async () => { const cobro=await cobrarEnMostrador(ficha.id,contexto);setFicha(cobro.appointment);setMensaje(`Cobrado: ${cobro.amount} ${cobro.currency}. Ficha confirmada.`) })} className="rounded-xl bg-green-700 px-5 py-3 font-semibold text-white disabled:opacity-40">Confirmar cobro en efectivo</button>
       {ficha.status === 'confirmed' && <div className="space-y-3 border-t pt-4"><h2 className="text-xl font-semibold">4. Check-in por documento</h2><input aria-label="Número de documento" value={documento} onChange={e => setDocumento(e.target.value)} className={`w-full ${campoMostrador}`} placeholder="Número de documento" /><button disabled={!documento.trim() || ocupado} className="rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white disabled:opacity-40" onClick={() => ejecutar(async () => { await realizarCheckIn({document_number:documento.trim()},contexto);setFicha({...ficha,status:'attended'});setMensaje('Check-in realizado correctamente.') })}>Registrar llegada sin QR</button></div>}
