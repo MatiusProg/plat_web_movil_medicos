@@ -99,6 +99,11 @@ class Action:
     AI_TEXT_APPROVE = "ai_text.approve"
     AI_TEXT_DISCARD = "ai_text.discard"
 
+    # US-47: el chat con el médico. Que hubo un mensaje y de qué lado, nunca
+    # lo que dice.
+    CHAT_MESSAGE = "chat.message"
+    CHAT_CLOSE = "chat.close"
+
     # ---------- Respaldo — característica general 6 ---------------------
     BACKUP_CREATE = "backup.create"
     BACKUP_DOWNLOAD = "backup.download"
@@ -151,6 +156,8 @@ LABELS = {
     Action.AI_TEXT_EDIT: "Texto generado por IA corregido por el médico",
     Action.AI_TEXT_APPROVE: "Texto generado por IA aprobado",
     Action.AI_TEXT_DISCARD: "Texto generado por IA descartado",
+    Action.CHAT_MESSAGE: "Mensaje en el chat con el médico",
+    Action.CHAT_CLOSE: "Chat con el médico cerrado",
     Action.BACKUP_CREATE: "Copia de seguridad generada",
     Action.BACKUP_DOWNLOAD: "Copia de seguridad descargada",
     Action.BACKUP_RESTORE: "Restauración ejecutada",
