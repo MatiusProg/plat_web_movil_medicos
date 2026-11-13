@@ -68,3 +68,27 @@ export const reintentarResumen = (encuentroId: string, contexto: Contexto) =>
   pedir<ResultadoResumen>(`/ai/encounters/${encodeURIComponent(encuentroId)}/summary/`, {
     ...contexto, metodo: 'POST',
   })
+
+/**
+ * US-39: lo que ve el paciente. `/ai/texts/mine/` sólo devuelve textos
+ * **aprobados** por su médico (regla 14): un borrador nunca llega acá.
+ */
+export interface ResumenAprobado {
+  id: string
+  encounter: string | null
+  text: string
+  practitioner_name: string
+  approved_at: string | null
+}
+
+/** Los resúmenes aprobados de las consultas de una persona, por atención. */
+export async function verResumenesAprobados(paciente: string, contexto: Contexto, senal?: AbortSignal) {
+  const query = new URLSearchParams({ patient: paciente, kind: 'consultation_summary', page_size: '100' })
+  const datos = await pedir<{ results: ResumenAprobado[] }>(`${base}mine/?${query}`, { ...contexto, senal })
+  const porAtencion = new Map<string, ResumenAprobado>()
+  // Vienen del más reciente al más viejo: si hubiera dos, queda el último aprobado.
+  for (const r of datos.results ?? []) {
+    if (r.encounter && r.text.trim() && !porAtencion.has(r.encounter)) porAtencion.set(r.encounter, r)
+  }
+  return porAtencion
+}
