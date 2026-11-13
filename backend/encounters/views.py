@@ -170,7 +170,16 @@ class EncounterSignView(APIView):
         encuentro = _own_encounter(request, pk)
         services.sign(encuentro, request.user)
         _audit(request, Action.ENCOUNTER_SIGN, encuentro)
-        return Response(EncounterSerializer(_own_encounter(request, pk)).data)
+        firmado = _own_encounter(request, pk)
+        # US-39: el resumen para el paciente. Nunca hace fallar la firma; si
+        # no se pudo generar, la respuesta lo dice y se reintenta desde `ai/`.
+        from ai.consultation_summary import generate
+        resumen = generate(firmado)
+        bitacora.record(
+            request, Action.AI_TEXT_GENERATE, "encounters", entity_id=firmado.pk,
+            detail={"tipo": "consultation_summary", "resultado": resumen["status"]},
+        )
+        return Response({**EncounterSerializer(firmado).data, "patient_summary": resumen})
 
 
 class EncounterAmendView(APIView):

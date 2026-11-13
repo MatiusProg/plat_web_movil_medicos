@@ -11,6 +11,8 @@ import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } f
 import { PanelReceta } from './RecetaAtencion'
 import { PanelResumenHistorial } from './ResumenHistorial'
 import { PanelChat } from './ChatAtencion'
+import { AvisoResumenPaciente, PedirResumenPaciente } from './TextosPorValidar'
+import type { ResultadoResumen } from '@/api/textos_ia'
 
 type Borrador = Record<Seccion, string>
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
@@ -54,6 +56,7 @@ export function Atencion() {
   const [antecedentes, setAntecedentes] = useState<Antecedentes | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [resumenPaciente, setResumenPaciente] = useState<ResultadoResumen | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [confirmarFirma, setConfirmarFirma] = useState(false)
   const [enmienda, setEnmienda] = useState<{ section: SeccionEnmendable; text: string }>({ section: 'reason', text: '' })
@@ -88,7 +91,7 @@ export function Atencion() {
     setConfirmarFirma(false)
     if (cambios && !(await guardar())) return
     setGuardando(true); setError(null)
-    try { const f = await firmarEncuentro(encuentro.id, { token }); setEncuentro(f); setBorrador(aBorrador(f)); setAviso('Atención firmada. Ya no se puede editar: las correcciones van como enmienda.') }
+    try { const { patient_summary, ...f } = await firmarEncuentro(encuentro.id, { token }); setEncuentro(f); setBorrador(aBorrador(f)); setResumenPaciente(patient_summary ?? null); setAviso('Atención firmada. Ya no se puede editar: las correcciones van como enmienda.') }
     catch (err) { setError(mensajeError(err)) }
     finally { setGuardando(false) }
   }
@@ -127,6 +130,9 @@ export function Atencion() {
       </div>
     </div>
     {aviso && <AvisoCatalogo mensaje={aviso} onCerrar={() => setAviso(null)} />}
+    {resumenPaciente
+      ? <AvisoResumenPaciente encuentroId={encuentro.id} resultado={resumenPaciente} onCambio={setResumenPaciente} />
+      : firmado && <PedirResumenPaciente encuentroId={encuentro.id} onResultado={setResumenPaciente} />}
     {error && <ErrorCatalogo mensaje={error} />}
     <PanelAntecedentes datos={antecedentes} />
     {verHistorialPermitido && <PanelResumenHistorial pacienteId={encuentro.patient.id} />}

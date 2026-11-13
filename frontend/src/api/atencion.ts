@@ -1,5 +1,6 @@
 /** US-24: la agenda del profesional, el encuentro clínico y sus enmiendas. */
 import { pedir, type Contexto } from './cliente'
+import type { ResultadoResumen } from './textos_ia'
 import { ErrorApi, type CodigoError } from './tipos'
 
 const BASE =
@@ -142,8 +143,10 @@ export const verEncuentro = (id: string, contexto: Contexto, senal?: AbortSignal
 export const guardarBorrador = (id: string, datos: Partial<Record<Seccion, string>>, contexto: Contexto) =>
   pedir<Encuentro>(`${base}${encodeURIComponent(id)}/`, { ...contexto, metodo: 'PATCH', cuerpo: datos })
 
+/** US-39: firmar también pide el resumen para el paciente, y dice cómo le fue. */
 export const firmarEncuentro = (id: string, contexto: Contexto) =>
-  pedir<Encuentro>(`${base}${encodeURIComponent(id)}/sign/`, { ...contexto, metodo: 'POST' })
+  pedir<Encuentro & { patient_summary?: ResultadoResumen }>(
+    `${base}${encodeURIComponent(id)}/sign/`, { ...contexto, metodo: 'POST' })
 
 export const agregarEnmienda = (id: string, section: SeccionEnmendable, text: string, contexto: Contexto) =>
   pedir<Enmienda>(`${base}${encodeURIComponent(id)}/amendments/`, {

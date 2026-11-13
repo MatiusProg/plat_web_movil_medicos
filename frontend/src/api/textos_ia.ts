@@ -33,6 +33,8 @@ export interface TextoIa {
   generated_by: string
   was_edited: boolean
   diff: TramoDiferencia[]
+  /** US-39: lo que conviene mirar dos veces antes de aprobar. */
+  warnings: string[]
   reviewed_by_name: string | null
   reviewed_at: string | null
   created_at: string
@@ -54,3 +56,15 @@ export const aprobarTexto = (id: string, final_text: string | undefined, context
 
 export const descartarTexto = (id: string, contexto: Contexto) =>
   pedir<TextoIa>(ruta(id, 'discard/'), { ...contexto, metodo: 'POST' })
+
+/** US-39: qué pasó con el resumen para el paciente al firmar (o al reintentar). */
+export interface ResultadoResumen {
+  status: 'generated' | 'exists' | 'unavailable' | 'failed'
+  message: string
+  text_id: string | null
+}
+
+export const reintentarResumen = (encuentroId: string, contexto: Contexto) =>
+  pedir<ResultadoResumen>(`/ai/encounters/${encodeURIComponent(encuentroId)}/summary/`, {
+    ...contexto, metodo: 'POST',
+  })
