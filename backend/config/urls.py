@@ -92,4 +92,5 @@ urlpatterns = [
     path("api/notifications/", include("notifications.urls")),
     path("api/ai/", include("ai.urls")),
     path("api/messaging/", include("messaging.urls")),
+    path("api/noshow/", include("noshow.urls")),
 ]

@@ -107,6 +107,9 @@ INSTALLED_APPS = [
     "ai",
     # US-47: el chat entre el paciente atendido y el médico de esa atención.
     "messaging",
+    # US-35: el riesgo de inasistencia de cada ficha futura. Un modelo por
+    # organización, entrenado y usado dentro de su `tenant_context`.
+    "noshow",
 ]
 
 # Sin AuthenticationMiddleware ni SessionMiddleware: esto es una API pura con
@@ -292,6 +295,9 @@ FIREBASE_CREDENTIALS = env("FIREBASE_CREDENTIALS", default="")
 APPOINTMENT_REMINDERS = env("APPOINTMENT_REMINDERS", default="on")
 # Cuántas horas antes de la ficha sale el recordatorio.
 APPOINTMENT_REMINDER_HOURS = env.int("APPOINTMENT_REMINDER_HOURS", default=24)
+# US-35: el proceso que recalcula el riesgo de inasistencia de las fichas
+# futuras corre junto a gunicorn (scripts/start.sh). "off" lo apaga.
+NOSHOW_SCORING = env("NOSHOW_SCORING", default="on")
 
 # --------------------------------------------------------------------------
 #  US-18 — Pago en línea

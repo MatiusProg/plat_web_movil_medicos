@@ -222,13 +222,17 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
 
     US-47 suma ``encounters.chat`` en ``messaging/0003_permiso_chat``, para el
     Médico y el Paciente: el chat de una atención con el médico tratante.
+
+    US-35 suma ``appointments.noshow.read`` en
+    ``noshow/0003_seed_permiso_riesgo``, sólo para la Administración: ver el
+    riesgo de inasistencia de las fichas.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
         # US-23 agrega appointments.appointment.book_at_counter
         # para reservar citas desde recepción.
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1 + 1 + 1
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()

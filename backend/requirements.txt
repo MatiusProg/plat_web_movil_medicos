@@ -39,6 +39,11 @@ pgvector==0.5.0
 # embeddings es lo que consume el RAG, y ahí es donde importa que no cobre.
 google-genai==2.23.0
 
+# US-35: el modelo de riesgo de inasistencia (regresión logística, un modelo por
+# organización). Se usa SÓLO para entrenar: lo que se guarda son coeficientes en
+# JSON y predecir es aritmética, sin pickle. Trae numpy, scipy y joblib.
+scikit-learn==1.7.2
+
 # ---------- Seguridad ----------
 # RNF-04: las contraseñas se almacenan con hash y salt.
 argon2-cffi==25.1.0

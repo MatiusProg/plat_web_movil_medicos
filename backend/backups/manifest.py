@@ -190,6 +190,13 @@ EXCLUDED = {
     # US-28: la app vuelve a registrar el token de su teléfono al iniciar
     # sesión, y uno viejo restaurado mandaría avisos a teléfonos ajenos.
     "notifications.DeviceToken": "direcciones de los teléfonos; la app las registra sola",
+    # US-35: lo que el modelo de inasistencia dedujo de las fichas. No es un
+    # dato que el centro cargó sino un cálculo sobre los que cargó: restaurar un
+    # modelo viejo sobre fichas nuevas daría predicciones de otro momento.
+    # `manage.py train_noshow` y `score_noshow` lo regeneran desde las fichas,
+    # que sí van en la copia.
+    "noshow.ModelVersion": "modelos derivados de las fichas; se regeneran con train_noshow",
+    "noshow.NoShowPrediction": "predicciones derivadas de las fichas; se recalculan con score_noshow",
 }
 
 BY_KEY = {table.key: table for table in TABLES}

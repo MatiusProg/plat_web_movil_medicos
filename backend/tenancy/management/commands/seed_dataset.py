@@ -1,8 +1,9 @@
-"""Dataset de demostración: cinco organizaciones completas.
+"""Dataset de demostración: seis organizaciones completas.
 
     python manage.py seed_dataset --password '<clave común de demostración>'
     python manage.py seed_dataset --dry-run
     python manage.py seed_dataset --enrich morita2 --enrich kolping3k
+    python manage.py seed_dataset --history morita2 --history kolping3k
 
 El modo `--enrich` nutre organizaciones que **ya existen** (las de los
 primeros sprints, que sólo tenían el catálogo de `seed_catalog`): servicios,
@@ -12,7 +13,38 @@ crea especialidades, y las fichas nuevas se reparten sólo entre los
 pacientes nuevos —los que ya estaban pueden ser cuentas de prueba de alguien
 del equipo—.
 
-Puebla la plataforma con cinco centros médicos ficticios que se pueden
+**La inasistencia tiene causas (US-35).** El desenlace de cada ficha pasada ya
+no se sortea 78/12/10 al azar: una ficha se cancela con ~10 % de probabilidad
+y, si no, el paciente se ausenta con la probabilidad que da
+`_causas_inasistencia.probabilidad_ausencia` —días de anticipación, pago por
+adelantado, faltas previas del paciente, día de la semana y hora—. Los turnos
+se deciden en orden cronológico, así que las «faltas previas» son las
+anteriores de verdad, y `created_at` de cada ficha queda en la fecha de la
+reserva (anticipación real), no en la del alta. Quien pagó por adelantado
+tiene un pago simulado hecho al reservar (con 24 h o más de margen); el resto,
+un pago en efectivo minutos antes del turno. Un modelo de riesgo entrenado
+con esto tiene algo que aprender.
+
+**`--history SLUG`: más historial para una organización que ya tiene datos.**
+Agrega fichas pasadas en la ventana de hace 210 a hace 61 días (con las mismas
+causas, y las atendidas con su atención firmada), repartidas sólo entre los
+pacientes que la organización ya tiene. Usa las agendas activas tal cual
+—día, horas y duración del turno— pero ignora su `valid_from` y no las
+modifica. Es idempotente: si la organización ya tiene alguna ficha de hace más
+de 60 días, no hace nada y lo informa. **Sólo agrega.** No se puede
+«repoblar» borrando las fichas viejas para volver a sembrarlas: las atenciones
+firmadas tienen triggers (US-24/26) que prohíben el `DELETE`, y con razón.
+
+**Un límite que conviene saber.** Esto agrega historial *por detrás* de lo que
+ya hay, y lo ya sembrado no sabe de él: sus «faltas previas» empezaron en cero.
+Si lo ya sembrado es del generador viejo (desenlaces al azar) o del nuevo sin
+historial, el modelo ve ausencias que el generador no usó como causa y puede
+quedar rechazado por descalibrado. Para una organización **nueva** no hace
+falta: `fichas()` siembra `DIAS_DE_HISTORIA` días en una sola pasada. `--history`
+es para una organización que ya existe y todavía no tiene fichas de hace más de
+60 días.
+
+Puebla la plataforma con seis centros médicos ficticios que se pueden
 recorrer de punta a punta: sucursales con horario, especialidades,
 profesionales con agenda, servicios con precio y preparación, recepción,
 pacientes con cuenta y dependientes, antecedentes, fichas pasadas y futuras, y
@@ -70,10 +102,14 @@ from tenancy.context import platform_admin_context, tenant_context
 from tenancy.models import Organization, SubscriptionPlan
 from tenancy.services import create_organization
 
+from ._causas_inasistencia import (
+    HISTORIAL_DESDE_DIAS, HISTORIAL_HASTA_DIAS, probabilidad_ausencia,
+)
+
 LA_PAZ = "America/La_Paz"
 
 # --------------------------------------------------------------------------
-#  Las cinco organizaciones
+#  Las seis organizaciones
 # --------------------------------------------------------------------------
 
 ORGANIZATIONS = [
@@ -124,6 +160,20 @@ ORGANIZATIONS = [
                      ("Sede Mercado Campesino", "Av. Jaime Mendoza 1100", "4-6460200", False)],
         "specialties": ["Medicina general", "Pediatría", "Ginecología",
                         "Endocrinología", "Otorrinolaringología", "Traumatología"],
+    },
+    # US-35: la organización para mostrar el riesgo de inasistencia. Premium
+    # (el único plan que incluye `noshow_prediction`) y sembrada con las causas
+    # de ausencia en una sola pasada, así que su modelo aprende. Las que se
+    # sembraron antes de US-35 tienen los desenlaces al azar.
+    {
+        "slug": "urbari", "name": "Clínica Urbari",
+        "legal_name": "Clínica Urbari S.R.L.", "tax_id": "900100606",
+        "city": "Santa Cruz", "address": "Av. Banzer, 4.º Anillo 1850", "plan": "premium",
+        "branches": [("Sede Central", "Av. Banzer, 4.º Anillo 1850", "3-3440100", True),
+                     ("Sede Norte", "Av. Virgen de Cotoca 2210", "3-3440200", True),
+                     ("Sede Sur", "Av. Santos Dumont 3900", "3-3440300", False)],
+        "specialties": ["Medicina general", "Pediatría", "Cardiología", "Ginecología",
+                        "Endocrinología", "Traumatología", "Dermatología", "Neumología"],
     },
 ]
 
@@ -206,14 +256,43 @@ OPENING_HOURS = [("08:00", "12:00"), ("14:00", "19:00")]
 SATURDAY_HOURS = [("08:00", "12:00")]
 SLOT_MINUTES = 30
 
-# Cien pacientes por centro, sesenta con cuenta en la aplicación. Con la
-# ocupación de abajo quedan unas seis o siete fichas por paciente en dos
-# meses y medio: lo bastante para que el historial de US-25 tenga varias
-# atenciones, sin que cada paciente viva en el consultorio.
-PATIENTS = 100
+# Doscientos cincuenta pacientes por centro, sesenta con cuenta en la
+# aplicación. Con la ocupación de abajo quedan unas siete u ocho fichas por
+# paciente en seis meses: lo bastante para que el historial de US-25 tenga
+# varias atenciones, sin que cada paciente viva en el consultorio.
+#
+# El número importa para US-35. Con cien pacientes y seis meses de fichas
+# (unas 21 por paciente) todos acumulaban faltas hasta saturar el riesgo: el
+# 55 % de las fichas futuras salía en nivel «alto» y la tasa de ausencia subía
+# al 23 % en lo más reciente. Un nivel que marca a más de la mitad no sirve para
+# priorizar. Con 250 la tasa base es ~12 % y los niveles se reparten ~22 % alto,
+# ~17 % medio y ~61 % bajo (medido sobre `urbari`).
+PATIENTS = 250
 PATIENTS_WITH_ACCOUNT = 60
 OCCUPANCY_PAST = 0.25
 OCCUPANCY_FUTURE = 0.18
+
+# Cuánto pasado siembra una organización nueva, **en una sola pasada** (US-35).
+# No son dos ventanas pegadas a propósito: las «faltas previas» de un paciente
+# son una causa de su próxima ausencia, y sólo valen si el generador las contó
+# desde el principio. Con el pasado reciente por un lado y el historial por el
+# otro, el modelo veía faltas que el generador no había usado y se descalibraba
+# (predecía 24 % de ausencias donde había 16 %, y quedaba rechazado). Medido
+# sobre `losandes`: con una sola pasada, las dos mitades del tiempo se
+# explican con el mismo modelo.
+DIAS_DE_HISTORIA = 180
+
+# Lo que no depende de causas: una ficha se cancela con ~10 % de probabilidad,
+# sin importar nada más (una cancelación no es una ausencia: el turno se libera).
+TASA_CANCELACION = 0.10
+# Cuánta gente paga al reservar, si la reserva tiene 24 h o más de margen.
+PAGO_ADELANTADO = 0.65
+# Peso de cada día de anticipación, de 0 a 40: lo normal es reservar de 1 a 14
+# días antes; hay menos reservas a último momento y pocas con más de dos semanas.
+PESOS_ANTICIPACION = [3] + [6] * 14 + [1.5] * 26
+# Un pago por adelantado tiene que quedar al menos 24 h antes del turno. El pago
+# llega hasta 30 min después de reservar, así que hacen falta 24 h y 30 min.
+MINUTOS_MIN_ADELANTO = 24 * 60 + 30
 
 
 def _t(texto):
@@ -358,7 +437,8 @@ class Sembrador:
                 organization=self.org, practitioner=prof, branch=sede, weekday=dia,
                 start_time=_t("08:00" if manana else "14:00"),
                 end_time=_t("12:00" if manana else "18:00"),
-                slot_minutes=SLOT_MINUTES, valid_from=self.hoy - dt.timedelta(days=90),
+                slot_minutes=SLOT_MINUTES,
+                valid_from=self.hoy - dt.timedelta(days=DIAS_DE_HISTORIA),
             )
         self._contar("profesionales")
         return prof
@@ -410,92 +490,223 @@ class Sembrador:
     # ---- Fichas y atenciones -------------------------------------------
 
     def fichas(self, pacientes):
-        """Recorre cada agenda día por día y ocupa una parte de sus turnos.
+        """Ocupa una parte de los turnos de cada agenda, de 180 días atrás a 14 adelante.
 
         Sólo si la organización no tiene ninguna ficha todavía: es lo que
-        hace repetible al `--enrich`. Respeta la vigencia de cada agenda.
+        hace repetible al `--enrich`. Respeta la vigencia de cada agenda, así
+        que a una organización que ya existía le siembra lo que sus agendas
+        cubren. Todo el pasado sale **en una sola pasada cronológica**
+        (`DIAS_DE_HISTORIA`): las faltas previas de cada paciente son una
+        causa, y sólo valen si se contaron desde el principio.
         Lo pasado queda con desenlace —atendida (con su atención firmada),
         ausente o cancelada—, que es justo el dato que el modelo de
-        inasistencia del Sprint 4 necesita. Lo futuro queda confirmado o
-        pendiente de pago.
+        inasistencia del Sprint 4 necesita; cómo se decide, en `_crear_fichas`.
+        Lo futuro queda confirmado o pendiente de pago.
         """
         if Appointment.objects.filter(organization=self.org).exists() or not pacientes:
             return
-        tz = ZoneInfo(LA_PAZ)
         ahora = timezone.now()
-        especialidad_de = {
-            ps.practitioner_id: ps.specialty.name
-            for ps in PractitionerSpecialty.objects.filter(organization=self.org)
-            .select_related("specialty")
-        }
-        usuarios_paciente = {p.id: p.user for p in pacientes if p.user_id}
-        nuevas_fichas, nuevas_atenciones, desenlaces = [], [], {}
-        nuevos_pagos = []
+        turnos = self._turnos(self.hoy - dt.timedelta(days=DIAS_DE_HISTORIA),
+                              self.hoy + dt.timedelta(days=14), ahora,
+                              respetar_vigencia=True)
+        self._crear_fichas(turnos, pacientes, ahora)
 
+    def historial(self):
+        """Agrega fichas pasadas (US-35) a una organización que ya tiene datos.
+
+        Usa la ventana `[hoy - 210 d, hoy - 61 d]`, las mismas causas de
+        ausencia y **sólo los pacientes que la organización ya tiene**. Las
+        agendas se usan tal cual (día de la semana, horas, duración del
+        turno), pero se ignora su `valid_from`: la ficha de hace seis meses
+        nunca existió en la agenda de hoy y no hay por qué tocar la agenda
+        para sembrarla.
+
+        Es idempotente: si la organización ya tiene alguna ficha de hace más
+        de 60 días, no hace nada. Eso cubre tanto la segunda corrida como una
+        organización cuyo historial real ya empezó antes.
+        """
+        tz = ZoneInfo(LA_PAZ)
+        corte = dt.datetime.combine(self.hoy - dt.timedelta(days=60), dt.time.min, tzinfo=tz)
+        if Appointment.objects.filter(organization=self.org, starts_at__lt=corte).exists():
+            self.resumen["historial"] = "ya hay fichas de hace más de 60 días: no se agrega nada"
+            return
+        pacientes = list(Patient.objects.filter(organization=self.org, is_active=True)
+                         .select_related("user"))
+        if not pacientes:
+            self.resumen["historial"] = "la organización no tiene pacientes: no se agrega nada"
+            return
+        ahora = timezone.now()
+        turnos = self._turnos(self.hoy - dt.timedelta(days=HISTORIAL_DESDE_DIAS),
+                              self.hoy - dt.timedelta(days=HISTORIAL_HASTA_DIAS),
+                              ahora, respetar_vigencia=False)
+        self._crear_fichas(turnos, pacientes, ahora)
+
+    def _turnos(self, desde, hasta, ahora, respetar_vigencia):
+        """Los turnos ocupados `(inicio, agenda)` de todas las agendas activas.
+
+        Sólo decide *cuáles* se ocupan (la ocupación pasada es mayor que la
+        futura). El desenlace y el paciente se deciden después, con los turnos
+        ya ordenados en el tiempo.
+        """
+        tz = ZoneInfo(LA_PAZ)
+        turnos = []
         agendas = (Schedule.objects.filter(organization=self.org, is_active=True)
                    .select_related("practitioner"))
         for agenda in agendas:
             if agenda.practitioner.user_id is None:
                 continue
-            dia = self.hoy - dt.timedelta(days=60)
-            while dia <= self.hoy + dt.timedelta(days=14):
-                vigente = agenda.valid_from <= dia and (
-                    agenda.valid_until is None or dia <= agenda.valid_until)
+            dia = desde
+            while dia <= hasta:
+                vigente = not respetar_vigencia or (
+                    agenda.valid_from <= dia and (
+                        agenda.valid_until is None or dia <= agenda.valid_until))
                 if dia.weekday() == agenda.weekday and vigente:
                     inicio = dt.datetime.combine(dia, agenda.start_time, tzinfo=tz)
                     fin = dt.datetime.combine(dia, agenda.end_time, tzinfo=tz)
                     while inicio < fin:
                         ocupacion = OCCUPANCY_PAST if inicio < ahora else OCCUPANCY_FUTURE
                         if self.rnd.random() < ocupacion:
-                            pac = self.rnd.choice(pacientes)
-                            titular = pac.guardian if pac.guardian_id else pac
-                            reservo = usuarios_paciente.get(titular.id) or self.admin
-                            if inicio >= ahora:
-                                estado = self.rnd.choices(["confirmed", "pending_payment"], [3, 1])[0]
-                            else:
-                                estado = self.rnd.choices(["attended", "no_show", "cancelled"],
-                                                          [78, 12, 10])[0]
-                            cancelada = estado == "cancelled"
-                            ficha = Appointment(
-                                organization=self.org, patient=pac, booked_by=reservo,
-                                practitioner=agenda.practitioner, branch_id=agenda.branch_id,
-                                schedule=agenda, starts_at=inicio,
-                                ends_at=inicio + dt.timedelta(minutes=agenda.slot_minutes),
-                                status=estado,
-                                cancelled_at=(inicio - dt.timedelta(days=1)) if cancelada else None,
-                                cancellation_reason="patient" if cancelada else "",
-                                refund_eligible=True if cancelada else None,
-                            )
-                            nuevas_fichas.append(ficha)
-                            desenlaces[estado] = desenlaces.get(estado, 0) + 1
-                            # US-29: una ficha confirmada, atendida o ausente
-                            # está pagada; el panel de ingresos lo necesita.
-                            if estado in ("confirmed", "attended", "no_show"):
-                                nuevos_pagos.append(Payment(
-                                    organization=self.org, appointment=ficha,
-                                    created_by=reservo,
-                                    amount=Decimal(self.rnd.choice([80, 100, 120, 150])),
-                                    currency="BOB", provider="simulated",
-                                    status="succeeded",
-                                    paid_at=min(ahora, inicio - dt.timedelta(days=1)),
-                                ))
-                            if estado == "attended":
-                                nuevas_atenciones.append(self._atencion(
-                                    ficha, agenda.practitioner,
-                                    especialidad_de.get(agenda.practitioner_id, "Medicina general"),
-                                ))
+                            turnos.append((inicio, agenda))
                         inicio += dt.timedelta(minutes=agenda.slot_minutes)
                 dia += dt.timedelta(days=1)
+        return turnos
+
+    def _minutos_de_anticipacion(self, inicio, ahora):
+        """Cuánto antes del turno se reservó, en minutos.
+
+        Se sortean días enteros (más peso a 1–14) y un resto de media hora a
+        diez horas, para que la hora de la reserva no caiga siempre en la hora
+        del turno. Una ficha futura no puede haberse reservado más adelante
+        que ahora: se acorta a lo ya transcurrido.
+        """
+        dias = self.rnd.choices(range(len(PESOS_ANTICIPACION)), PESOS_ANTICIPACION)[0]
+        minutos = dias * 1440 + self.rnd.randint(30, 600)
+        if inicio - dt.timedelta(minutes=minutos) > ahora - dt.timedelta(minutes=5):
+            hasta_el_turno = int((inicio - ahora).total_seconds() // 60)
+            minutos = hasta_el_turno + self.rnd.randint(5, 4320)
+        return minutos
+
+    def _crear_fichas(self, turnos, pacientes, ahora):
+        """Decide el desenlace de cada turno ocupado y lo inserta.
+
+        **En orden cronológico**, para que las «faltas previas» de un paciente
+        sean de verdad las anteriores en el tiempo. El desenlace pasado no es
+        un sorteo parejo: una ficha se cancela con probabilidad fija y, si no,
+        el paciente se ausenta con `probabilidad_ausencia` (anticipación,
+        pago por adelantado, faltas previas, día y hora). Es lo que le da al
+        modelo de US-35 algo que aprender.
+
+        Pagos: quien pagó por adelantado lo hizo al reservar (simulado, con al
+        menos 24 h de margen); el resto paga en efectivo en ventanilla minutos
+        antes del turno. Una ficha pendiente de pago o cancelada no tiene pago.
+        """
+        especialidad_de = {
+            ps.practitioner_id: ps.specialty.name
+            for ps in PractitionerSpecialty.objects.filter(organization=self.org)
+            .select_related("specialty")
+        }
+        usuarios_paciente = {p.id: p.user for p in pacientes if p.user_id}
+        # Quien cobra el efectivo es recepción; si no hay, el que reservó.
+        cobradores = list(User.objects.filter(organization=self.org,
+                                              user_roles__role__code="receptionist")
+                          .distinct().order_by("created_at"))
+        sin_titular = self.admin or self.superadmin
+        faltas = {}                                   # paciente -> ausencias hasta ahora
+        ausencia = {True: [0, 0], False: [0, 0]}      # pagó adelantado -> [fichas, ausentes]
+        desenlaces = {}
+        nuevas_fichas, nuevas_atenciones, nuevos_pagos, creadas = [], [], [], []
+
+        for inicio, agenda in sorted(turnos, key=lambda t: (t[0], str(t[1].pk))):
+            pac = self.rnd.choice(pacientes)
+            reservo = usuarios_paciente.get(pac.guardian_id or pac.id) or sin_titular
+            minutos = self._minutos_de_anticipacion(inicio, ahora)
+            creada = inicio - dt.timedelta(minutes=minutos)
+            # Un adelanto con menos de un día de margen no es adelanto. Se
+            # sortea siempre, para no cambiar el resto de la serie aleatoria.
+            adelantado = self.rnd.random() < PAGO_ADELANTADO and minutos >= MINUTOS_MIN_ADELANTO
+
+            if inicio >= ahora:
+                estado = self.rnd.choices(["confirmed", "pending_payment"], [3, 1])[0]
+            elif self.rnd.random() < TASA_CANCELACION:
+                estado = "cancelled"
+            else:
+                p = probabilidad_ausencia(minutos / 1440, adelantado, faltas.get(pac.id, 0),
+                                          inicio.weekday(), inicio.hour)
+                ausente = self.rnd.random() < p
+                estado = "no_show" if ausente else "attended"
+                ausencia[adelantado][0] += 1
+                if ausente:
+                    ausencia[adelantado][1] += 1
+                    faltas[pac.id] = faltas.get(pac.id, 0) + 1
+
+            cancelada = estado == "cancelled"
+            ficha = Appointment(
+                organization=self.org, patient=pac, booked_by=reservo,
+                practitioner=agenda.practitioner, branch_id=agenda.branch_id,
+                schedule=agenda, starts_at=inicio,
+                ends_at=inicio + dt.timedelta(minutes=agenda.slot_minutes),
+                status=estado,
+                # Cancela el día anterior, pero nunca antes de haber reservado.
+                cancelled_at=(max(creada + dt.timedelta(minutes=10),
+                                  inicio - dt.timedelta(days=1)) if cancelada else None),
+                cancellation_reason="patient" if cancelada else "",
+                refund_eligible=True if cancelada else None,
+            )
+            nuevas_fichas.append(ficha)
+            creadas.append(creada)
+            desenlaces[estado] = desenlaces.get(estado, 0) + 1
+
+            # US-29: una ficha confirmada, atendida o ausente está pagada; el
+            # panel de ingresos lo necesita.
+            if estado in ("confirmed", "attended", "no_show"):
+                if adelantado:
+                    proveedor, cobra = "simulated", reservo
+                    pagado = creada + dt.timedelta(minutes=self.rnd.randint(2, 30))
+                else:
+                    proveedor = "cash"
+                    cobra = self.rnd.choice(cobradores) if cobradores else reservo
+                    # Minutos antes del turno, y nunca antes de haber reservado.
+                    pagado = max(inicio - dt.timedelta(minutes=self.rnd.randint(10, 20)),
+                                 creada + dt.timedelta(minutes=1))
+                nuevos_pagos.append(Payment(
+                    organization=self.org, appointment=ficha, created_by=cobra,
+                    amount=Decimal(self.rnd.choice([80, 100, 120, 150])),
+                    currency="BOB", provider=proveedor, status="succeeded",
+                    paid_at=min(ahora, pagado),
+                ))
+            if estado == "attended":
+                nuevas_atenciones.append(self._atencion(
+                    ficha, agenda.practitioner,
+                    especialidad_de.get(agenda.practitioner_id, "Medicina general"),
+                ))
 
         # En bloque: contra una base remota, miles de INSERT de a uno son
         # minutos de pura latencia.
         Appointment.objects.bulk_create(nuevas_fichas, batch_size=500)
         Encounter.objects.bulk_create(nuevas_atenciones, batch_size=500)
         Payment.objects.bulk_create(nuevos_pagos, batch_size=500)
+
+        # `created_at` es `auto_now_add`: el INSERT lo pisa con «ahora» y toda
+        # la ficha parecería reservada hoy. La anticipación es justo la causa
+        # que el modelo tiene que leer, así que se corrige después del alta.
+        # `bulk_update` no pasa por `pre_save`, o sea que no dispara el
+        # `auto_now` de `updated_at`: sólo se escribe la columna pedida.
+        for ficha, creada in zip(nuevas_fichas, creadas):
+            ficha.created_at = creada
+        Appointment.objects.bulk_update(nuevas_fichas, ["created_at"], batch_size=500)
+        for pago in nuevos_pagos:
+            pago.created_at = pago.paid_at          # el cobro nace cuando se paga
+        Payment.objects.bulk_update(nuevos_pagos, ["created_at"], batch_size=500)
+
         self._contar("pagos", len(nuevos_pagos))
         self._contar("fichas", len(nuevas_fichas))
         self._contar("atenciones firmadas", len(nuevas_atenciones))
         self.resumen["desenlaces"] = ", ".join(f"{k} {v}" for k, v in sorted(desenlaces.items()))
+        for adelanto, etiqueta in ((True, "ausencia con pago adelantado"),
+                                   (False, "ausencia sin pago adelantado")):
+            total, ausentes = ausencia[adelanto]
+            if total:
+                self.resumen[etiqueta] = f"{ausentes} de {total} ({ausentes / total:.1%})"
 
     def _atencion(self, ficha, profesional, especialidad):
         """La atención firmada de una ficha atendida, lista para insertar.
@@ -515,30 +726,36 @@ class Sembrador:
 
 
 class Command(BaseCommand):
-    help = "Siembra cinco organizaciones de demostración, o nutre una existente."
+    help = "Siembra seis organizaciones de demostración, o nutre una existente."
 
     def add_arguments(self, parser):
         parser.add_argument("--password", help="Clave común de todas las cuentas "
                             "(si no, la variable DATASET_PASSWORD).")
         parser.add_argument("--dry-run", action="store_true",
                             help="Muestra qué se crearía, sin escribir nada.")
-        parser.add_argument("--only", help="Sembrar sólo este slug de las cinco.")
+        parser.add_argument("--only", help="Sembrar sólo este slug de las seis.")
         parser.add_argument("--enrich", metavar="SLUG", action="append",
                             help="Nutrir una organización que ya existe (repetible). "
                                  "Sólo agrega: no modifica ni borra nada.")
+        parser.add_argument("--history", metavar="SLUG", action="append",
+                            help="Agregar fichas pasadas (de hace 210 a 61 días) a una "
+                                 "organización que ya existe (repetible). Sólo agrega, "
+                                 "y no hace nada si ya tiene fichas de hace más de 60 días.")
 
     def handle(self, *args, **opciones):
         import os
 
-        if opciones["enrich"] and opciones["only"]:
-            raise CommandError("Usá --only o --enrich, no los dos.")
+        if sum(bool(opciones[k]) for k in ("only", "enrich", "history")) > 1:
+            raise CommandError("Usá --only, --enrich o --history: uno solo.")
 
         orgs = [o for o in ORGANIZATIONS if not opciones["only"] or o["slug"] == opciones["only"]]
         if opciones["only"] and not orgs:
             raise CommandError(f"No hay ninguna organización con slug «{opciones['only']}».")
 
         if opciones["dry_run"]:
-            if opciones["enrich"]:
+            if opciones["history"]:
+                self.stdout.write("Se agregaría historial a: " + ", ".join(opciones["history"]))
+            elif opciones["enrich"]:
                 self.stdout.write("Se nutrirían: " + ", ".join(opciones["enrich"]))
             else:
                 for o in orgs:
@@ -546,14 +763,17 @@ class Command(BaseCommand):
                                       f"{len(o['branches'])} sedes · {len(o['specialties'])} especialidades")
             return
 
-        clave = opciones["password"] or os.environ.get("DATASET_PASSWORD")
-        if not clave or len(clave) < 10:
-            raise CommandError("Falta la clave común (--password o DATASET_PASSWORD), "
-                               "de 10 caracteres o más. No se versiona.")
-        # Un solo hash para todas las cuentas: Argon2 es lento a propósito, y
-        # calcularlo cientos de veces convierte un comando de segundos en uno
-        # de minutos sin ganar nada.
-        hash_clave = make_password(clave)
+        # `--history` no crea cuentas: no necesita la clave.
+        hash_clave = None
+        if not opciones["history"]:
+            clave = opciones["password"] or os.environ.get("DATASET_PASSWORD")
+            if not clave or len(clave) < 10:
+                raise CommandError("Falta la clave común (--password o DATASET_PASSWORD), "
+                                   "de 10 caracteres o más. No se versiona.")
+            # Un solo hash para todas las cuentas: Argon2 es lento a propósito, y
+            # calcularlo cientos de veces convierte un comando de segundos en uno
+            # de minutos sin ganar nada.
+            hash_clave = make_password(clave)
 
         with platform_admin_context():
             superadmin = User.objects.filter(is_platform_admin=True).order_by("created_at").first()
@@ -562,6 +782,14 @@ class Command(BaseCommand):
         if superadmin is None:
             raise CommandError("No hay superadministrador: crealo con createsuperuser.")
 
+        if opciones["history"]:
+            for slug in opciones["history"]:
+                if slug not in existentes:
+                    raise CommandError(f"No existe la organización «{slug}».")
+            for slug in opciones["history"]:
+                self._informar(existentes[slug].name, slug,
+                               self._agregar_historial(existentes[slug], superadmin))
+            return
         if opciones["enrich"]:
             for slug in opciones["enrich"]:
                 if slug not in existentes:
@@ -619,6 +847,17 @@ class Command(BaseCommand):
                     s.profesional(nombre_esp, sedes, f"MP-{datos['tax_id'][-3:]}{matricula:03d}")
                     matricula += 1
             s.fichas(s.pacientes(PATIENTS, PATIENTS_WITH_ACCOUNT))
+        return s.resumen
+
+    @transaction.atomic
+    def _agregar_historial(self, organizacion, superadmin):
+        """Fichas pasadas para una organización que ya existe, sin tocar lo que tiene."""
+        with tenant_context(organizacion.id):
+            admin = (User.objects.filter(organization=organizacion,
+                                         user_roles__role__code="org_admin")
+                     .order_by("created_at").first())
+            s = Sembrador(organizacion, None, superadmin, admin)
+            s.historial()
         return s.resumen
 
     @transaction.atomic
