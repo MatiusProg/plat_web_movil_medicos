@@ -52,7 +52,8 @@ PLAN_RULES = {
     "report_export": ("aplicado", "reporting/views.py · salidas CSV, Excel, HTML y PDF y envío por correo"),
     "backup_interval_hours": ("aplicado", "backups/policy.py y automatic.py · frecuencia de copias manuales y automáticas"),
     "backup_retention": ("aplicado", "backups/automatic.py · cuántas copias automáticas se conservan"),
-    "noshow_prediction": ("pendiente", "predicción de inasistencia, US-35 a US-38 (Sprint 4)"),
+    "noshow_prediction": ("aplicado", "noshow/views.py · listado y modelo de riesgo de inasistencia (US-35); "
+                                      "noshow/scoring.py y el comando train_noshow omiten a las organizaciones sin la función"),
     "ai_summaries": ("pendiente", "resúmenes por IA, US-39 a US-42 (Sprint 4)"),
     "online_payment": ("aplicado", "payments/views.py · checkout del pago en línea (US-18)"),
     "storage_mb": ("no_aplica", "el sistema no guarda archivos de la organización: "

@@ -164,6 +164,15 @@ const items: ItemMenu[] = [
         icono: 'indicadores',
         requiere: 'reporting.kpi.read',
     },
+    // US-35 — qué fichas futuras tienen más riesgo de inasistencia (plan Premium).
+    {
+        etiqueta: 'Riesgo de inasistencia',
+        ruta: '/riesgo-inasistencia',
+        requierePlan: 'noshow_prediction',
+        seccion: 'Organización',
+        icono: 'reloj',
+        requiere: 'appointments.noshow.read',
+    },
     // Característica general 6 — la frecuencia depende del plan.
     {
         etiqueta: 'Copias de seguridad',

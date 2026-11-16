@@ -44,6 +44,13 @@ python -u manage.py run_automatic_backups --loop &
 echo "==> Lanzando los recordatorios de fichas en segundo plano"
 python -u manage.py send_appointment_reminders --loop &
 
+# US-35: el riesgo de inasistencia de las fichas futuras. Una vuelta por hora,
+# idempotente (actualiza la misma fila de cada ficha). Sólo puntúa a las
+# organizaciones cuyo plan lo incluye y que ya tienen un modelo vigente
+# (`manage.py train_noshow`). Se apaga con NOSHOW_SCORING=off.
+echo "==> Lanzando la predicción de inasistencia en segundo plano"
+python -u manage.py score_noshow --loop &
+
 echo "==> Levantando gunicorn en el puerto ${PORT:-8000}"
 # exec: gunicorn reemplaza al script y recibe las señales de la plataforma
 # directamente. Sin exec, un reinicio de Railway mata el shell y deja el
