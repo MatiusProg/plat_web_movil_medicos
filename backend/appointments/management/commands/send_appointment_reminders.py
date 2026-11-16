@@ -8,6 +8,10 @@ de las próximas `APPOINTMENT_REMINDER_HOURS` horas (ver
 ``appointments/reminders.py``). Es idempotente: correrla de más no repite
 ningún recordatorio.
 
+US-36: la misma vuelta manda además el **recordatorio reforzado** a las fichas
+con riesgo alto de inasistencia (`APPOINTMENT_REINFORCED_REMINDER_HOURS` horas
+antes, 3 por omisión). Lee la predicción de US-35; no la calcula.
+
 **En producción corre con ``--loop`` junto a gunicorn**, lanzado por
 ``scripts/start.sh``, igual que ``run_automatic_backups``. Se apaga con
 ``APPOINTMENT_REMINDERS=off``.
@@ -66,7 +70,10 @@ class Command(BaseCommand):
             time.sleep(pausa)
 
     def _vuelta(self):
-        avisadas = reminders.run_due()
+        avisadas, reforzadas = reminders.run_cycle()
         self.stdout.write(self.style.SUCCESS(
             f"Recordatorios de fichas: {avisadas} enviado(s).",
+        ))
+        self.stdout.write(self.style.SUCCESS(
+            f"Recordatorios reforzados: {reforzadas} enviado(s).",
         ))

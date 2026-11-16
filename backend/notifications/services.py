@@ -1,12 +1,17 @@
 """US-28 — Los avisos de la ficha: push y correo.
 
-Tres eventos. Para cada uno sale un push a todos los teléfonos del
+Cuatro eventos. Para cada uno sale un push a todos los teléfonos del
 destinatario y un correo:
 
     confirmacion   se pagó la ficha       el correo es el de US-21: comprobante
                                           y enlace para confirmar asistencia
     recordatorio   unas horas antes       lo dispara `appointments/reminders.py`
+    recordatorio_reforzado                US-36: el segundo aviso, más cerca de
+                   la hora                la hora; lo dispara el mismo módulo
     cancelacion    se canceló la ficha    dice si se devolvió el pago
+
+El texto del recordatorio reforzado **no dice por qué** se manda: el paciente
+no ve cómo lo califica el centro (US-35).
 
 El destinatario es el paciente o, si es un dependiente sin cuenta, su titular
 (`appointments.attendance.recipient_user`, el mismo criterio que el correo).
@@ -33,8 +38,9 @@ logger = logging.getLogger(__name__)
 
 CONFIRMED = "confirmacion"
 REMINDER = "recordatorio"
+REINFORCED_REMINDER = "recordatorio_reforzado"
 CANCELLED = "cancelacion"
-EVENTS = (CONFIRMED, REMINDER, CANCELLED)
+EVENTS = (CONFIRMED, REMINDER, REINFORCED_REMINDER, CANCELLED)
 
 
 def notify(event: str, appointment_id, organization_id) -> None:
@@ -112,6 +118,10 @@ def _push_text(event: str, appointment) -> tuple[str, str]:
     if event == REMINDER:
         return ("Recordatorio de tu ficha",
                 f"{_cuando(appointment)} con {profesional} en {sucursal}.")
+    if event == REINFORCED_REMINDER:
+        return ("Tu ficha empieza pronto",
+                f"{_cuando(appointment)} con {profesional} en {sucursal}. "
+                "Si no puedes ir, cancélala para liberar el turno.")
     devolucion = _devolucion(appointment)
     return ("Tu ficha fue cancelada",
             f"La del {inicio:%d/%m} a las {inicio:%H:%M} con {profesional}."
@@ -145,6 +155,19 @@ def _email(event: str, appointment) -> tuple[str, str]:
         cuerpo += ("Si no puedes ir, cancélala desde la aplicación para liberar "
                    "el turno.\n")
         return f"Recordatorio: tu ficha del {inicio:%d/%m}", cuerpo
+
+    if event == REINFORCED_REMINDER:
+        cuerpo = (
+            saludo
+            + f"Tu ficha en {organizacion.name} empieza pronto.\n\n"
+            + _datos(appointment) + "\n"
+        )
+        if appointment.attendance_confirmed_at is None:
+            cuerpo += ("Confirma que vas a asistir con este enlace:\n\n"
+                       f"  {attendance_link(appointment)}\n\n")
+        cuerpo += ("Si no puedes ir, cancélala ahora desde la aplicación: "
+                   "otro paciente podrá usar el turno.\n")
+        return f"Tu ficha de {_cuando(appointment).lower()}", cuerpo
 
     devolucion = _devolucion(appointment)
     cuerpo = (
