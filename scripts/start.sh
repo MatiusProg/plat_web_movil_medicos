@@ -41,6 +41,8 @@ python -u manage.py run_automatic_backups --loop &
 # US-28: los recordatorios de fichas. Mismo esquema que las copias: una vuelta
 # cada 15 minutos, idempotente (cada ficha se marca al avisarla). Se apaga con
 # APPOINTMENT_REMINDERS=off. Ver appointments/reminders.py.
+# US-36: la misma vuelta manda el segundo recordatorio a las fichas con riesgo
+# alto de inasistencia (lee la predicción de US-35, no la calcula).
 echo "==> Lanzando los recordatorios de fichas en segundo plano"
 python -u manage.py send_appointment_reminders --loop &
 

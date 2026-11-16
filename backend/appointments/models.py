@@ -121,6 +121,15 @@ class Appointment(models.Model):
         blank=True,
     )
 
+    # US-36 — cuándo salió el segundo recordatorio, el de las fichas con riesgo
+    # alto de inasistencia (US-35). Marca propia, independiente de la anterior:
+    # una ficha puede recibir los dos. Se pone en la misma transacción que lo
+    # envía (ver `appointments/reminders.py`).
+    reinforced_reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     # Vence la reserva `pending_payment`: pasado este momento, el turno se
     # considera libre aunque la fila siga existiendo con este estado hasta que
     # algo la marque `expired` (lectura perezosa, sin tarea en segundo plano).

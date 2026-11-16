@@ -295,6 +295,13 @@ FIREBASE_CREDENTIALS = env("FIREBASE_CREDENTIALS", default="")
 APPOINTMENT_REMINDERS = env("APPOINTMENT_REMINDERS", default="on")
 # Cuántas horas antes de la ficha sale el recordatorio.
 APPOINTMENT_REMINDER_HOURS = env.int("APPOINTMENT_REMINDER_HOURS", default=24)
+# US-36: el segundo recordatorio, sólo para las fichas con riesgo alto de
+# inasistencia. Sale esta cantidad de horas antes de la ficha; tiene que ser
+# menor que la anterior para que llegue "más cerca de la hora". Va en el mismo
+# proceso: se apaga con APPOINTMENT_REMINDERS=off.
+APPOINTMENT_REINFORCED_REMINDER_HOURS = env.int(
+    "APPOINTMENT_REINFORCED_REMINDER_HOURS", default=3,
+)
 # US-35: el proceso que recalcula el riesgo de inasistencia de las fichas
 # futuras corre junto a gunicorn (scripts/start.sh). "off" lo apaga.
 NOSHOW_SCORING = env("NOSHOW_SCORING", default="on")
