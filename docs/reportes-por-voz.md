@@ -73,6 +73,11 @@ temporales y no hay nada que borrar después.
 | Constructor del móvil | `mobile/lib/features/reporting/reports_screen.dart` |
 | Pruebas del móvil | `mobile/test/reporting_voz_test.dart` |
 
+**La misma voz, para el paciente.** US-46 la reutiliza para que el paciente pida
+sus comprobantes (`voice.ask_model` y la normalización de `catalog`), con otra
+lista cerrada y otro alcance. Está en
+`sprints/sprint-4/us-46-reportes-transaccionales-por-voz.md`.
+
 ## Frases que sirven para probar
 
 - «pacientes mujeres dadas de alta en septiembre, con nombre, documento y teléfono, en Excel»
