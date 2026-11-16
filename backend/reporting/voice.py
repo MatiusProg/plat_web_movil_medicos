@@ -156,7 +156,7 @@ def interpret(text: str, user, *, dataset_code: str = "") -> dict:
 
 def _propuesta_del_modelo(texto, catalogo, dataset_code) -> tuple[dict | None, str]:
     """Lo que devolvió Gemini, o `None` si no se pudo preguntar."""
-    if settings.ASSISTANT_CHAT_PROVIDER != "gemini" or not settings.GEMINI_API_KEY:
+    if not proveedor_disponible():
         return None, "plantilla"
     try:
         crudo = _call_model(_pedido(texto, catalogo, dataset_code))
@@ -168,7 +168,39 @@ def _propuesta_del_modelo(texto, catalogo, dataset_code) -> tuple[dict | None, s
     return (crudo, "gemini") if isinstance(crudo, dict) else (None, "plantilla")
 
 
+def proveedor_disponible() -> bool:
+    """¿Hay con quién hablar? Sólo con el proveedor elegido y su clave."""
+    return settings.ASSISTANT_CHAT_PROVIDER == "gemini" and bool(settings.GEMINI_API_KEY)
+
+
+def ask_model(system_prompt: str, prompt: str) -> tuple[dict | None, str]:
+    """Pregunta al proveedor con un `system_prompt` propio y degrada si no puede.
+
+    Es la misma regla de `_propuesta_del_modelo` —sin proveedor, o ante
+    cualquier error, `(None, "plantilla")`— para quien traduce otra cosa con
+    otra lista cerrada: US-46 la usa para las consultas del paciente sin copiar
+    el gate ni la llamada. Devuelve `(respuesta, "gemini")` o `(None,
+    "plantilla")`; nunca lanza.
+    """
+    if not proveedor_disponible():
+        return None, "plantilla"
+    try:
+        crudo = _call_model_with(system_prompt, prompt)
+    except Exception:
+        return None, "plantilla"
+    return (crudo, "gemini") if isinstance(crudo, dict) else (None, "plantilla")
+
+
 def _call_model(prompt: str) -> dict | None:
+    """La llamada del reporte del personal, con su prompt de siempre.
+
+    Su firma no cambia: las pruebas de la característica 5 la simulan por su
+    nombre y con un solo argumento.
+    """
+    return _call_model_with(SYSTEM_PROMPT, prompt)
+
+
+def _call_model_with(system_prompt: str, prompt: str) -> dict | None:
     """La llamada al proveedor, sola, para que las pruebas la simulen."""
     from google import genai
     from google.genai import types
@@ -178,7 +210,7 @@ def _call_model(prompt: str) -> dict | None:
         model=settings.ASSISTANT_CHAT_MODEL,
         contents=prompt,
         config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
+            system_instruction=system_prompt,
             # Cero y no 0,2 como el asistente: acá no se redacta nada, se
             # traduce. La misma frase tiene que dar la misma definición.
             temperature=0,
