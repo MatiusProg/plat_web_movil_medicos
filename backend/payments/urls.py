@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from . import views
+from . import views, views_mine
 
 app_name = "payments"
 
@@ -28,5 +28,16 @@ urlpatterns = [
         "simulated/<str:token>/",
         views.simulated_checkout,
         name="simulated-checkout",
+    ),
+    # ---------- US-46 — Mis comprobantes, por voz o escritos ------------
+    path(
+        "mine/receipts/interpret/",
+        views_mine.MyReceiptsInterpretView.as_view(),
+        name="mine-receipts-interpret",
+    ),
+    path(
+        "mine/receipts/",
+        views_mine.MyReceiptsView.as_view(),
+        name="mine-receipts",
     ),
 ]

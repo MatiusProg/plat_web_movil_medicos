@@ -66,6 +66,12 @@ class Action:
     # filtros, que es donde corresponde.
     REPORT_VOICE = "report.voice"
     REPORT_DELETE = "report.delete"
+    # US-46 — el paciente pidió sus comprobantes hablando o escribiendo, y los
+    # bajó en PDF. Como `REPORT_VOICE`, se asienta el hecho y lo que se
+    # interpretó, **nunca la frase dictada**: un pedido hablado puede nombrar a
+    # una persona.
+    PATIENT_VOICE_QUERY = "patient.voice.query"
+    PATIENT_RECEIPTS_EXPORT = "patient.receipts.export"
 
     # ---------- Asistente — US-31, US-32 y US-34 ------------------------
     # Se audita la consulta, nunca su texto: quien le cuenta sus síntomas a un
@@ -146,6 +152,8 @@ LABELS = {
     Action.REPORT_VOICE: "Reporte pedido por voz",
     Action.REPORT_SAVE: "Reporte guardado",
     Action.REPORT_DELETE: "Reporte eliminado",
+    Action.PATIENT_VOICE_QUERY: "Comprobantes consultados por voz o texto",
+    Action.PATIENT_RECEIPTS_EXPORT: "Comprobantes descargados en PDF",
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
     Action.ASSISTANT_EMERGENCY: "Derivación a emergencia por el asistente",
     Action.ASSISTANT_REINDEX: "Catálogo del asistente reindexado",
