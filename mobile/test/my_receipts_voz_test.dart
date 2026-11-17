@@ -53,6 +53,38 @@ const _propuesta = {
   'generated_by': 'plantilla',
 };
 
+Map<String, dynamic> _propuestaAgrupada(String por) => {
+  'understood': true,
+  'consulta': {
+    'tipo': 'pagos',
+    'cantidad': null,
+    'desde': '2026-08-16',
+    'hasta': '2026-11-16',
+    'especialidad': null,
+    'especialidad_nombre': null,
+    'agrupar': por,
+  },
+  'spoken_summary':
+      'Pagos con comprobante · desde el 16/08/2026 hasta el 16/11/2026 · '
+      'agrupados por $por',
+  'unresolved': <String>[],
+  'generated_by': 'plantilla',
+};
+
+Map<String, dynamic> _grupo(
+  String etiqueta,
+  List<Map<String, dynamic>> items, {
+  String total = '0.00',
+}) => {
+  'key': etiqueta,
+  'label': etiqueta,
+  'count': items.length,
+  'totals': [
+    {'currency': 'BOB', 'amount': total},
+  ],
+  'items': items,
+};
+
 Map<String, dynamic> _item({
   String id = 'p1',
   String code = 'MC1.AAAA',
@@ -77,12 +109,16 @@ Map<String, dynamic> _item({
   'paid_at': '2026-10-12T15:00:00Z',
 };
 
-Map<String, dynamic> _lista(List<Map<String, dynamic>> items) => {
+Map<String, dynamic> _lista(
+  List<Map<String, dynamic>> items, {
+  List<Map<String, dynamic>> grupos = const [],
+}) => {
   'tipo': 'pagos',
   'count': items.length,
   'limit': 20,
   'truncated': false,
   'summary': 'Pagos con comprobante',
+  'groups': grupos,
   'items': items,
 };
 
@@ -145,7 +181,10 @@ class _Servidor {
     this.interpretacion = _propuesta,
     List<Map<String, dynamic>>? items,
     this.errorAlInterpretar,
+    this.grupos = const [],
   }) : items = items ?? [_item(), _item(id: 'p2', code: 'MC1.BBBB')];
+
+  final List<Map<String, dynamic>> grupos;
 
   final Map<String, dynamic> interpretacion;
   final List<Map<String, dynamic>> items;
@@ -173,7 +212,7 @@ class _Servidor {
         },
       );
     }
-    return _json(_lista(items), 200);
+    return _json(_lista(items, grupos: grupos), 200);
   });
 }
 
@@ -426,6 +465,7 @@ void main() {
       hasta: '2026-10-31',
       especialidad: 'id-cardio',
       especialidadNombre: 'Cardiología',
+      agrupar: 'sucursal',
     );
 
     final partes = Uri.splitQueryString(consulta.parametros('pdf'));
@@ -437,6 +477,58 @@ void main() {
       'desde': '2026-10-01',
       'hasta': '2026-10-31',
       'especialidad': 'id-cardio',
+      'agrupar': 'sucursal',
     });
+  });
+
+  testWidgets('agrupada, cada sección dice cuántos tiene y cuánto suma', (
+    tester,
+  ) async {
+    final a = _item(id: 'a', code: 'MC1.AAAA', monto: '100.00');
+    final b = _item(id: 'b', code: 'MC1.BBBB', monto: '50.00');
+    final c = _item(id: 'c', code: 'MC1.CCCC', monto: '80.00');
+    final servidor = _Servidor(
+      interpretacion: _propuestaAgrupada('sucursal'),
+      items: [a, b, c],
+      grupos: [
+        _grupo('Sede Centro', [a, c], total: '180.00'),
+        _grupo('Sede Norte', [b], total: '50.00'),
+      ],
+    );
+    await _abrir(tester, servidor);
+
+    await _escribirYBuscar(
+      tester,
+      'mis facturas de los últimos 3 meses agrupadas por sucursal',
+    );
+
+    // Lo entendido incluye cómo se agrupa, y la consulta viaja con ello.
+    expect(find.textContaining('agrupados por sucursal'), findsOneWidget);
+    expect(servidor.listados.single.queryParameters['agrupar'], 'sucursal');
+    expect(servidor.listados.single.queryParameters['desde'], '2026-08-16');
+    // Una sección por sucursal, con su cuenta y su total. El nombre también
+    // sale en cada tarjeta, así que lo que identifica a la sección es su
+    // resumen, que es único.
+    expect(find.text('2 comprobantes · Bs 180.00'), findsOneWidget);
+    expect(find.text('1 comprobante · Bs 50.00'), findsOneWidget);
+    expect(find.byType(Divider), findsNWidgets(2));
+    // Las secciones van en el orden que mandó el backend.
+    expect(
+      tester.getTopLeft(find.text('2 comprobantes · Bs 180.00')).dy,
+      lessThan(tester.getTopLeft(find.text('1 comprobante · Bs 50.00')).dy),
+    );
+    // Y los QR de todos, en el orden de los grupos.
+    expect(_codigosDeQr(tester), ['MC1.AAAA', 'MC1.CCCC', 'MC1.BBBB']);
+  });
+
+  testWidgets('sin pedir agrupar no hay secciones', (tester) async {
+    await _abrir(tester, _Servidor());
+
+    await _escribirYBuscar(tester, 'mis últimas 2 facturas');
+
+    // Ni encabezados con totales ni separadores entre secciones.
+    expect(find.byType(Divider), findsNothing);
+    expect(find.textContaining('Bs 180'), findsNothing);
+    expect(_codigosDeQr(tester), hasLength(2));
   });
 }

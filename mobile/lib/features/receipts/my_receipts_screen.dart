@@ -17,6 +17,10 @@
 /// 3. **Solo lo propio.** La pantalla nunca manda de quién son los datos: lo
 ///    decide el backend con la sesión, y son los de la persona y sus
 ///    dependientes. Por eso cada comprobante dice a quién pertenece.
+///
+/// **Agrupar es solo cómo se muestra.** «Mis facturas de los últimos 3 meses
+/// agrupadas por sucursal» trae los mismos comprobantes que sin agrupar,
+/// repartidos en secciones que dicen cuántos tienen y cuánto suman.
 library;
 
 import 'dart:io' show FileSystemException;
@@ -459,8 +463,54 @@ class _Resultados extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 8),
-        for (final item in lista.items)
-          _TarjetaDeComprobante(item: item, tipo: lista.tipo, onAbrir: onAbrir),
+        if (lista.grupos.isNotEmpty)
+          for (final grupo in lista.grupos)
+            _SeccionDeGrupo(grupo: grupo, tipo: lista.tipo, onAbrir: onAbrir)
+        else
+          for (final item in lista.items)
+            _TarjetaDeComprobante(
+              item: item,
+              tipo: lista.tipo,
+              onAbrir: onAbrir,
+            ),
+      ],
+    );
+  }
+}
+
+/// Un grupo: su nombre, cuántos comprobantes tiene y cuánto suman.
+class _SeccionDeGrupo extends StatelessWidget {
+  const _SeccionDeGrupo({
+    required this.grupo,
+    required this.tipo,
+    required this.onAbrir,
+  });
+
+  final GrupoDeComprobantes grupo;
+  final String tipo;
+  final void Function(ComprobanteDeLista item)? onAbrir;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cuantos = grupo.cantidad == 1
+        ? '1 comprobante'
+        : '${grupo.cantidad} comprobantes';
+    final resumen = [cuantos, ...grupo.totales].join(' · ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        // `header` para que el lector de pantalla salte de grupo en grupo.
+        Semantics(
+          header: true,
+          child: Text(grupo.etiqueta, style: theme.textTheme.titleMedium),
+        ),
+        Text(resumen, style: theme.textTheme.bodySmall),
+        const Divider(),
+        for (final item in grupo.items)
+          _TarjetaDeComprobante(item: item, tipo: tipo, onAbrir: onAbrir),
       ],
     );
   }

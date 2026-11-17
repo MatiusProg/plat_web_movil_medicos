@@ -24,6 +24,7 @@ class ConsultaDeComprobantes {
     this.hasta,
     this.especialidad,
     this.especialidadNombre,
+    this.agrupar,
   });
 
   /// `pagos` o `fichas`.
@@ -40,6 +41,10 @@ class ConsultaDeComprobantes {
   /// Solo para mostrarla; no viaja al listado.
   final String? especialidadNombre;
 
+  /// Cómo agrupar la lista: `mes`, `sucursal` o `especialidad`. Es solo
+  /// presentación: no cambia qué entra. Lo decide el backend desde la frase.
+  final String? agrupar;
+
   factory ConsultaDeComprobantes.fromJson(Map<String, dynamic> json) =>
       ConsultaDeComprobantes(
         tipo: json['tipo'] as String? ?? 'pagos',
@@ -48,6 +53,7 @@ class ConsultaDeComprobantes {
         hasta: json['hasta'] as String?,
         especialidad: json['especialidad'] as String?,
         especialidadNombre: json['especialidad_nombre'] as String?,
+        agrupar: json['agrupar'] as String?,
       );
 
   /// Los parámetros de la URL. El nombre es `formato` y no `format`: DRF
@@ -58,6 +64,7 @@ class ConsultaDeComprobantes {
     if (desde != null) partes['desde'] = desde!;
     if (hasta != null) partes['hasta'] = hasta!;
     if (especialidad != null) partes['especialidad'] = especialidad!;
+    if (agrupar != null) partes['agrupar'] = agrupar!;
     return Uri(queryParameters: partes).query;
   }
 }
@@ -160,12 +167,50 @@ class ComprobanteDeLista {
       );
 }
 
+/// Un grupo de la lista, con lo que suma. Cada comprobante cae en uno solo.
+class GrupoDeComprobantes {
+  const GrupoDeComprobantes({
+    required this.clave,
+    required this.etiqueta,
+    required this.cantidad,
+    required this.totales,
+    required this.items,
+  });
+
+  final String clave;
+  final String etiqueta;
+  final int cantidad;
+
+  /// Lo cobrado por moneda, ya escrito: «Bs 180.00». Vacío en las fichas.
+  final List<String> totales;
+  final List<ComprobanteDeLista> items;
+
+  factory GrupoDeComprobantes.fromJson(
+    Map<String, dynamic> json,
+  ) => GrupoDeComprobantes(
+    clave: '${json['key'] ?? ''}',
+    etiqueta: json['label'] as String? ?? '',
+    cantidad: json['count'] as int? ?? 0,
+    totales: [
+      for (final t in (json['totals'] as List<dynamic>? ?? const []))
+        if (t is Map<String, dynamic>)
+          '${t['currency'] == 'BOB' ? 'Bs' : t['currency']} '
+              '${double.tryParse('${t['amount']}')?.toStringAsFixed(2) ?? t['amount']}',
+    ],
+    items: [
+      for (final item in (json['items'] as List<dynamic>? ?? const []))
+        if (item is Map<String, dynamic>) ComprobanteDeLista.fromJson(item),
+    ],
+  );
+}
+
 class ListaDeComprobantes {
   const ListaDeComprobantes({
     required this.tipo,
     required this.cantidad,
     required this.truncada,
     required this.items,
+    this.grupos = const [],
   });
 
   final String tipo;
@@ -173,7 +218,12 @@ class ListaDeComprobantes {
 
   /// Había más de lo pedido.
   final bool truncada;
+
+  /// La lista completa, siempre.
   final List<ComprobanteDeLista> items;
+
+  /// Vacío si no se pidió agrupar.
+  final List<GrupoDeComprobantes> grupos;
 
   factory ListaDeComprobantes.fromJson(Map<String, dynamic> json) =>
       ListaDeComprobantes(
@@ -183,6 +233,11 @@ class ListaDeComprobantes {
         items: [
           for (final item in (json['items'] as List<dynamic>? ?? const []))
             if (item is Map<String, dynamic>) ComprobanteDeLista.fromJson(item),
+        ],
+        grupos: [
+          for (final grupo in (json['groups'] as List<dynamic>? ?? const []))
+            if (grupo is Map<String, dynamic>)
+              GrupoDeComprobantes.fromJson(grupo),
         ],
       );
 }

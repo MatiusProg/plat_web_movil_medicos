@@ -13,6 +13,11 @@ El paciente pide, hablando o escribiendo, *«mis últimas 2 facturas»*, *«los
 pagos de octubre»* o *«mis fichas de cardiología»* y ve la lista con el **código
 QR del comprobante** de cada una. También puede bajar el PDF con los QR.
 
+Y puede pedir un período corrido y que la lista salga **agrupada**: *«mis
+facturas de los últimos 3 meses agrupadas por sucursal»*. Se agrupa por mes, por
+sucursal o por especialidad, y cada grupo dice cuántos comprobantes tiene y, en
+los pagos, cuánto suman.
+
 Está en la web (`/mis-comprobantes`) y en el móvil (tarjeta «Mis comprobantes»
 del inicio). Escribir siempre alcanza: la voz es una comodidad y depende del
 navegador o del reconocedor del teléfono.
@@ -92,7 +97,7 @@ siempre `200` con las mismas claves, aunque no haya entendido nada.
   "understood": true,
   "consulta": {
     "tipo": "pagos", "cantidad": 2, "desde": null, "hasta": null,
-    "especialidad": null, "especialidad_nombre": null
+    "especialidad": null, "especialidad_nombre": null, "agrupar": null
   },
   "spoken_summary": "Pagos con comprobante · últimos 2",
   "unresolved": [],
@@ -104,7 +109,7 @@ Si no entendió, `understood` es `false`, `consulta` es `null` y `unresolved`
 dice por qué. Con `understood = true`, `unresolved` puede traer avisos que no
 impiden nada, por ejemplo que se recortó la cantidad.
 
-### `GET ?tipo=&cantidad=&desde=&hasta=&especialidad=&formato=json|pdf`
+### `GET ?tipo=&cantidad=&desde=&hasta=&especialidad=&agrupar=&formato=`
 
 | Parámetro | Valor | Observación |
 | --- | --- | --- |
@@ -112,6 +117,7 @@ impiden nada, por ejemplo que se recortó la cantidad.
 | `cantidad` | 1 a 50 | Sin cantidad, 20 |
 | `desde`, `hasta` | `AAAA-MM-DD` | Entre 2000 y el año que viene; `desde` no puede ser posterior a `hasta` |
 | `especialidad` | UUID | De una especialidad activa **del centro del paciente** |
+| `agrupar` | `mes`, `sucursal` o `especialidad` | Solo cómo se presenta; no cambia qué entra |
 | `formato` | `json` o `pdf` | Por omisión `json` |
 
 El parámetro se llama `formato` y no `format` porque DRF reserva `?format=`
@@ -133,11 +139,46 @@ Cada ítem de la lista:
 | `amount`, `currency`, `provider`, `paid_at` | Solo en los pagos; nulos en fichas |
 | `status` | `confirmed` o `attended` |
 
-Más `count`, `limit`, `truncated` (había más de lo pedido) y `summary`. Con
+Más `count`, `limit`, `truncated` (había más de lo pedido), `summary`, `agrupar`
+y `groups`. Con
 `formato=pdf` la respuesta es el archivo, con `Content-Disposition` y los
 encabezados `X-Report-Rows` y `X-Report-Truncated`. **El PDF del paciente no
 depende del plan de exportación**: es su propio comprobante, no un reporte del
 centro.
+
+### Agrupar
+
+Con `agrupar`, `items` sigue siendo la lista completa y `groups` la reparte.
+Cada comprobante cae en **un solo grupo**, así que ningún pago se cuenta dos
+veces.
+
+```json
+{
+  "agrupar": "sucursal",
+  "groups": [
+    {
+      "key": "Sede Calacoto", "label": "Sede Calacoto", "count": 2,
+      "totals": [{"currency": "BOB", "amount": "220.00"}],
+      "items": ["..."]
+    }
+  ]
+}
+```
+
+| Agrupar por | Etiqueta del grupo | Orden de los grupos |
+| --- | --- | --- |
+| `mes` | «Octubre de 2026», en hora de La Paz | Del más reciente al más antiguo |
+| `sucursal` | El nombre de la sucursal | Alfabético, sin tildes |
+| `especialidad` | Las especialidades del profesional | Alfabético, sin tildes |
+
+- **Un profesional con dos especialidades forma un grupo propio** con las dos
+  («Neurología, Pediatría»). Si su pago contara en cada especialidad, los
+  totales sumarían de más.
+- **`totals` va por moneda.** No se mezclan bolivianos con dólares. En las
+  fichas está vacío: se cuentan, no se suman.
+- **Sin cantidad, una consulta agrupada trae hasta 50** y una sin agrupar, 20.
+  Cortar un grupo a la mitad daría un total que nadie pidió.
+- **Cómo se agrupa no lo decide el modelo** (ver «El analizador local»).
 
 ## Quién ve qué
 
@@ -170,6 +211,8 @@ red). Lee lo que el paciente dijo **explícitamente**; no adivina.
 | Cantidad | «últimas 2», «las 3 últimas», «2 facturas», «quince fichas». «Última ficha» es una. Más de 50 se recorta y se avisa; cero no se entiende |
 | Mes | «octubre», con o sin año. Sin año: el actual, o el anterior si ese mes todavía no llegó |
 | Relativas | «este mes», «el mes pasado», «este año», «el año pasado» y un año solo |
+| Meses corridos | «los últimos 3 meses», «el último mes»: desde la misma fecha de hace N meses hasta hoy. Entre 1 y 36 |
+| Agrupar | «agrupadas por sucursal», «por mes», «de cada especialidad», «mes a mes», «desglosadas por sede». Una sola cosa a la vez |
 | Rango | «de agosto a octubre», «desde agosto hasta octubre», «entre agosto y octubre». «De enero y marzo» son dos meses sueltos y no se entiende |
 | Especialidad | Coincide con el nombre de una especialidad del centro, sin tildes ni mayúsculas. La de nombre más largo gana. «De neurología» sin esa especialidad no se ignora: se avisa |
 
@@ -182,6 +225,20 @@ Ejemplos, con hoy = 16/11/2026:
 | mis pagos de diciembre | pagos, del 01/12/2025 al 31/12/2025 |
 | mis fichas de cardiología | fichas, especialidad Cardiología |
 | mis últimas 2 facturas de cardiología en octubre | pagos, cantidad 2, octubre, Cardiología |
+| mis facturas de los últimos 3 meses agrupadas por sucursal | pagos, del 16/08/2026 al 16/11/2026, por sucursal |
+| mis fichas por especialidad | fichas, por especialidad |
+
+**«Los últimos 3 meses» son corridos, no meses calendario.** El 16/11/2026
+empiezan el 16/08, no el 01/08. Si una fecha de hace N meses no existe, se usa
+el último día de ese mes (31/05 menos 3 meses es 28/02). Con «por mes» el mes
+más antiguo puede salir incompleto: es lo que pasa en esos días.
+
+**Agrupar lo decide Python, no el modelo.** Es vocabulario cerrado y se detecta
+en la frase con o sin proveedor. El modelo recibe la frase **sin** esa parte y
+no tiene una clave `agrupar`: no puede inventar una agrupación que nadie pidió
+ni dejar sin efecto una que sí. Por eso «sucursal» en «agrupadas por sucursal»
+no se toma por un filtro por sucursal, ni «por especialidad» por una
+especialidad que falte en el catálogo.
 
 ### Lo que hoy no se puede pedir
 
@@ -190,9 +247,11 @@ puede saltarse esta lista.
 
 | Pedido | Mensaje |
 | --- | --- |
-| Días, semanas, «hoy», «ayer», «los últimos 3 meses» | Por ahora se pide por mes o por año |
+| Días, semanas, «hoy», «ayer», trimestres | Por ahora se pide por mes o por año |
+| «Hace 3 meses», «3 meses atrás» | No entendí el período: pide «los últimos 3 meses» o un mes |
+| Agrupar por dos cosas, o «agrupados» sin decir por qué | Agrupa por una sola cosa a la vez: mes, sucursal o especialidad |
 | Pagos devueltos, pendientes, fallidos; fichas canceladas | Solo se muestran los que tienen comprobante |
-| Un profesional o una sucursal | Por ahora no se filtra por profesional ni por sucursal |
+| Un profesional o **una** sucursal | Por ahora no se filtra por profesional ni por sucursal. Agrupar por sucursal sí se puede |
 | Un monto | Por ahora no se filtra por monto |
 | Una persona | No se filtra por persona: se muestran los tuyos y los de tus dependientes |
 
@@ -218,15 +277,25 @@ firma de `export()` tampoco.
   de 32 mm de lado y con corrección de errores media.
 - Las columnas QR llevan ancho fijo. Medido por contenido, el código de unos
   150 caracteres se llevaría media página.
-- **Se comprobó que se lee**: se renderizó el PDF a 200 ppp y OpenCV decodificó
-  los QR con el texto exacto del código.
+- **Se comprobó que se lee**: con los 10 códigos reales de una paciente, cada
+  QR del PDF decodificado por separado (200 ppp, OpenCV) dio el texto exacto,
+  10 de 10, y la firma de cada uno es válida (`read_code`).
+- **El código cambia cada segundo.** `signing.dumps` incluye la hora, así que el
+  mismo comprobante da un texto distinto en cada petición. Es normal y todos
+  siguen siendo válidos; por eso las pruebas verifican la **firma** con
+  `read_code` y no el texto.
+
+**PDF agrupado.** Cada grupo abre con una fila de encabezado combinada y
+sombreada («Sede Calacoto · 2 comprobantes · Bs 220.00»). En el exportador es
+una `FilaDeGrupo`, que en CSV, Excel y HTML es una fila común y **no cuenta como
+dato** en el pie «N fila(s)».
 
 ## Bitácora
 
 | Acción | Cuándo | Qué se asienta |
 | --- | --- | --- |
-| `patient.voice.query` | Al interpretar una frase | Si se entendió, el tipo, cuántos filtros y quién lo generó |
-| `patient.receipts.export` | Al bajar el PDF | El tipo, las filas y cuántos filtros |
+| `patient.voice.query` | Al interpretar una frase | Si se entendió, el tipo, cuántos filtros, cómo se agrupó y quién lo generó |
+| `patient.receipts.export` | Al bajar el PDF | El tipo, las filas, cuántos filtros y cómo se agrupó |
 
 **Nunca la frase dictada**: un pedido hablado puede nombrar a una persona. Ver
 la lista en pantalla no se audita, como el resto de las lecturas propias del
@@ -243,7 +312,8 @@ paciente.
 | PDF | `descargarArchivo` en `api/cliente.ts` | `client.download`, Descargas y `open_filex` |
 
 En las dos, **primero se muestra qué entendió el sistema** y recién después la
-lista. Si no entendió, dice qué no pudo y no muestra nada. En el móvil, tocar un
+lista. Agrupada, la lista sale en secciones con su nombre, su cuenta y su total.
+Si no entendió, dice qué no pudo y no muestra nada. En el móvil, tocar un
 comprobante abre `ReceiptScreen` en grande, que además lo guarda para verlo sin
 conexión.
 
@@ -253,11 +323,15 @@ conexión.
    fichas pagadas.
 2. Escribir y dictar «mis últimas 2 facturas», «los pagos de octubre» y «mis
    fichas de cardiología». Comprobar el «Entendí:» y la lista.
-3. Probar lo que no se entiende: «mis pagos devueltos», «los pagos de mi
+3. Agrupar: «mis facturas de los últimos 3 meses agrupadas por sucursal», y lo
+   mismo por especialidad y por mes. Los totales de cada agrupación tienen que
+   sumar lo mismo.
+4. Probar lo que no se entiende: «mis pagos devueltos», «los pagos de mi
    hijo», «mis fichas de neurología». Tiene que decir por qué y no mostrar nada.
-4. Bajar el PDF y **escanear un QR** con el lector del check-in.
-5. En el móvil, tocar un comprobante y volver: tiene que quedar en «guardados».
-6. Sin `GEMINI_API_KEY` todo tiene que funcionar igual.
+5. Bajar el PDF, agrupado y sin agrupar, y **escanear un QR** con el lector del
+   check-in.
+6. En el móvil, tocar un comprobante y volver: tiene que quedar en «guardados».
+7. Sin `GEMINI_API_KEY` todo tiene que funcionar igual.
 
 ## Limitaciones conocidas
 
@@ -267,15 +341,18 @@ conexión.
   resumen dice el año resuelto («octubre de 2026») para que no sorprenda.
 - **Un dependiente dado de baja sigue apareciendo** en la lista del titular: es
   su historial. Un titular dado de baja recibe `403`.
-- **No se filtra por profesional, sucursal, monto, días ni persona.** Hoy se
-  dice y no se ejecuta.
+- **No se filtra por profesional, una sucursal concreta, monto, días ni
+  persona.** Hoy se dice y no se ejecuta. Agrupar por sucursal, en cambio, sí.
+- **Los meses corridos cortan el mes más antiguo.** «Los últimos 3 meses por
+  mes» puede mostrar solo la segunda mitad del primero.
+- **Se agrupa por una sola cosa.** Mes y sucursal a la vez no se puede.
 - **No hay límite de tasa** en ningún endpoint del proyecto; el camino de Gemini
   cuesta dinero. Está fuera de esta historia.
 - **El camino de Gemini no se probó contra el proveedor real**, solo simulado.
   Con el analizador local la historia funciona sin él.
 - **El QR del PDF se verificó decodificándolo, no con un teléfono sobre papel.**
-  A 32 mm lee el decodificador; si en una impresión real no se lee, subir el
-  lado o bajar la corrección de errores.
+  A 32 mm lee el decodificador (10 de 10, cada uno por separado); si en una
+  impresión real no se lee, subir el lado o bajar la corrección de errores.
 - **La web no tiene pruebas automáticas** (el frontend no tiene un ejecutor de
   pruebas): se verificó con `tsc` y el lint.
 - Las claves de la consulta van en español (son las de la consigna) y el sobre

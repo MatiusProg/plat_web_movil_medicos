@@ -7,7 +7,11 @@ cerrada:
     "mis últimas 2 facturas de cardiología en octubre"
         ↓
     {"tipo": "pagos", "cantidad": 2, "desde": "2026-10-01",
-     "hasta": "2026-10-31", "especialidad": "<uuid>"}
+     "hasta": "2026-10-31", "especialidad": "<uuid>", "agrupar": null}
+
+Y también «mis facturas de los últimos 3 meses agrupadas por sucursal»: un
+período corrido (desde la misma fecha de hace 3 meses hasta hoy) y una
+agrupación para mostrar la lista por `mes`, `sucursal` o `especialidad`.
 
 Las tres reglas de la característica 5 (`reporting/voice.py`) valen igual:
 
@@ -27,6 +31,11 @@ sesión, así que una frase que nombre a otra persona no cambia de quién son lo
 datos. Pedirlo se avisa (`detectar_no_soportado`) para que no parezca que
 funcionó.
 
+**Agrupar no lo decide el modelo.** «Por mes», «por sucursal» y «por
+especialidad» son vocabulario cerrado: lo detecta Python en la frase, igual
+con o sin proveedor. Así un modelo no puede inventar una agrupación que nadie
+pidió, ni dejar sin efecto una que sí.
+
 **El modelo traduce, no responde.** No recibe datos de ningún paciente: sólo la
 frase, la fecha de hoy y los nombres de las especialidades del centro. El
 resumen para leer lo arma Python.
@@ -45,7 +54,12 @@ CANTIDAD_MAXIMA = 50
 
 # Los nombres de las claves son los de la consigna de US-46; el sobre de la
 # respuesta (`understood`, `unresolved`...) conserva los de la voz del personal.
-CLAVES = ("tipo", "cantidad", "desde", "hasta", "especialidad")
+CLAVES = ("tipo", "cantidad", "desde", "hasta", "especialidad", "agrupar")
+
+# Cómo se puede mostrar la lista. Una a la vez.
+AGRUPACIONES = ("mes", "sucursal", "especialidad")
+# «Los últimos N meses»: más allá de tres años no es una consulta de comprobantes.
+MESES_MAXIMOS = 36
 
 MESES = {
     "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
@@ -88,7 +102,7 @@ ANIO = r"(?:19|20)\d{2}"
 # Lo que hoy no se puede pedir, y por qué. Cada patrón es una frase que el
 # paciente podría decir; el mensaje le explica qué sí se puede.
 _NO_SOPORTADO = (
-    (r"\b(?:hoy|ayer|anteayer|manana|semanas?|dias?|meses|trimestres?|"
+    (r"\b(?:hoy|ayer|anteayer|manana|semanas?|dias?|trimestres?|"
      r"semestres?|quincenas?)\b",
      "Por ahora se pide por mes o por año, no por días ni semanas."),
     (r"\b(?:devuelt[oa]s?|reembols\w*|pendientes?|fallid[oa]s?|cancelad[oa]s?|"
@@ -118,7 +132,7 @@ _RELLENO = frozenset({
     "pagaron", "pague", "pagado", "pagados", "pagadas", "he", "tengo", "hice",
     "atendi", "atendieron", "reserve", "reservadas", "confirmadas",
     "atendidas", "mias", "mios", "pasado", "pasada", "anterior", "este",
-    "esta", "actual",
+    "esta", "actual", "hace", "unos", "unas",
 })
 
 
@@ -159,6 +173,56 @@ def detectar_no_soportado(texto: str, nombres=()) -> list[str]:
 
 
 # ==========================================================================
+#  Cómo agrupar
+# ==========================================================================
+_CLAVES_DE_AGRUPACION = (
+    ("mes", r"mes(?:es)?"),
+    ("sucursal", r"(?:sucursal(?:es)?|sedes?)"),
+    ("especialidad", r"especialidad(?:es)?"),
+)
+_VERBO_DE_AGRUPAR = r"(?:agrup\w*|separ\w*|divid\w*|clasific\w*|desglos\w*)"
+
+
+def sin_agrupacion(texto: str):
+    """Saca de la frase cómo agrupar. Devuelve `(agrupar, texto, bloqueos)`.
+
+    «Agrupadas por sucursal», «por mes», «de cada especialidad», «mes a mes».
+    Es lo primero que se corre sobre la frase, con o sin proveedor, y lo que
+    devuelve es el texto **sin** esa parte: así «sucursal» no se toma por un
+    filtro por sucursal, que sigue sin existir, ni «por especialidad» por una
+    especialidad que no está en el catálogo.
+    """
+    t = _limpio(texto)
+    encontradas: list[str] = []
+    for nombre, patron in _CLAVES_DE_AGRUPACION:
+        patrones = (
+            rf"\b{_VERBO_DE_AGRUPAR}\s+(?:por|segun|en|a)\s+(?:cada\s+)?{patron}\b",
+            rf"\bpor\s+(?:cada\s+)?{patron}\b",
+            rf"\bde\s+cada\s+{patron}\b",
+            *((r"\bmes\s+a\s+mes\b",) if nombre == "mes" else ()),
+        )
+        for patron_completo in patrones:
+            if re.search(patron_completo, t):
+                t = _compactar(re.sub(patron_completo, " ", t))
+                if nombre not in encontradas:
+                    encontradas.append(nombre)
+
+    bloqueos: list[str] = []
+    if len(encontradas) > 1:
+        bloqueos.append(
+            "Agrupa por una sola cosa a la vez: mes, sucursal o especialidad."
+        )
+        return None, t, bloqueos
+    if not encontradas and re.search(rf"\b{_VERBO_DE_AGRUPAR}\b", t):
+        bloqueos.append(
+            "No supe por qué agrupar. Puedes agrupar por mes, sucursal o "
+            "especialidad."
+        )
+        t = _compactar(re.sub(rf"\b{_VERBO_DE_AGRUPAR}\b", " ", t))
+    return (encontradas[0] if encontradas else None), t, bloqueos
+
+
+# ==========================================================================
 #  El analizador local
 # ==========================================================================
 def analizar(texto, especialidades, hoy, nombres=()):
@@ -173,17 +237,23 @@ def analizar(texto, especialidades, hoy, nombres=()):
     if not t:
         return None, ["No escuché nada."], []
 
-    bloqueos = detectar_no_soportado(texto, nombres)
+    agrupar, t, bloqueos = sin_agrupacion(t)
+    bloqueos = [*bloqueos, *detectar_no_soportado(t, nombres)]
     avisos: list[str] = []
 
     tipo = _tipo(t, bloqueos)
     cantidad, t = _cantidad(t, bloqueos, avisos)
     desde, hasta, t = _fechas(t, hoy, bloqueos)
-    especialidad, t = _especialidad(t, especialidades, bloqueos)
+    # «No encontré la especialidad X» solo si no hay otro motivo antes: «de
+    # hace 3 meses» ya se explicó, y «hace» no es una especialidad.
+    de_especialidad: list[str] = []
+    especialidad, t = _especialidad(t, especialidades, de_especialidad)
+    if not bloqueos:
+        bloqueos.extend(de_especialidad)
 
     if bloqueos:
         return None, bloqueos, avisos
-    return _armar(tipo, cantidad, desde, hasta, especialidad), [], avisos
+    return _armar(tipo, cantidad, desde, hasta, especialidad, agrupar), [], avisos
 
 
 def _tipo(t, bloqueos):
@@ -232,6 +302,24 @@ def _validar_cantidad(valor, bloqueos, avisos):
 def _fechas(t, hoy, bloqueos):
     """El mes, el año o un rango. Devuelve `(desde, hasta, texto_restante)`."""
     relativas = []
+
+    # «Los últimos 3 meses», «el último mes»: corrido, desde la misma fecha de
+    # hace N meses hasta hoy. No son meses calendario completos: el 16/11,
+    # «los últimos 3 meses» empiezan el 16/08.
+    corrido = re.search(
+        rf"\b(?:en\s+)?(?:los\s+)?ultim[oa]s\s+({NUM})\s+mes(?:es)?\b", t,
+    ) or re.search(r"\b(?:en\s+)?(?:el\s+)?ultimo\s+mes\b", t)
+    if corrido:
+        cuantos = _numero(corrido.group(1)) if corrido.groups() else 1
+        t = _compactar(t[:corrido.start()] + " " + t[corrido.end():])
+        if not 1 <= cuantos <= MESES_MAXIMOS:
+            bloqueos.append(
+                f"Pide entre 1 y {MESES_MAXIMOS} meses, por ejemplo «los "
+                "últimos 3 meses»."
+            )
+        else:
+            relativas.append((_restar_meses(hoy, cuantos), hoy))
+
     for patron, rango in (
         (r"\beste mes\b", lambda: _mes(hoy.year, hoy.month)),
         (r"\bmes (?:pasado|anterior)\b", lambda: _mes_anterior(hoy)),
@@ -265,6 +353,13 @@ def _fechas(t, hoy, bloqueos):
                 relativas.append(_anio(anio))
             t = _compactar(t[:solo_anio.start()] + " " + t[solo_anio.end():])
 
+    # Un «mes» que sobró no se entendió («hace 3 meses», «3 meses atrás»): se
+    # dice en vez de devolver todo como si no hubiera dicho nada.
+    if re.search(r"\bmes(?:es)?\b", t):
+        bloqueos.append(
+            "No entendí el período. Prueba con «los últimos 3 meses» o un mes "
+            "como «octubre»."
+        )
     if len(relativas) > 1:
         bloqueos.append("Pediste dos fechas distintas. Dime solo un mes o un año.")
         return None, None, t
@@ -319,6 +414,14 @@ def _mes(anio, mes):
             dt.date(anio, mes, calendar.monthrange(anio, mes)[1]))
 
 
+def _restar_meses(fecha, meses):
+    """`fecha` menos `meses` meses, sin pasarse del fin del mes (31/05 → 28/02)."""
+    total = fecha.year * 12 + (fecha.month - 1) - meses
+    anio, mes0 = divmod(total, 12)
+    mes = mes0 + 1
+    return dt.date(anio, mes, min(fecha.day, calendar.monthrange(anio, mes)[1]))
+
+
 def _mes_anterior(hoy):
     anio, mes = (hoy.year, hoy.month - 1) if hoy.month > 1 else (hoy.year - 1, 12)
     return _mes(anio, mes)
@@ -364,7 +467,7 @@ def _compactar(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
-def _armar(tipo, cantidad, desde, hasta, especialidad):
+def _armar(tipo, cantidad, desde, hasta, especialidad, agrupar=None):
     return {
         "tipo": tipo,
         "cantidad": cantidad,
@@ -372,6 +475,7 @@ def _armar(tipo, cantidad, desde, hasta, especialidad):
         "hasta": hasta.isoformat() if hasta else None,
         "especialidad": especialidad[0] if especialidad else None,
         "especialidad_nombre": especialidad[1] if especialidad else None,
+        "agrupar": agrupar,
     }
 
 
@@ -398,6 +502,10 @@ Reglas:
 - Un mes suelto («octubre») son dos fechas: el primer y el último día de ese
   mes. Sin año, usa el año de la fecha de hoy, o el anterior si ese mes todavía
   no llegó. Un año suelto es del 1 de enero al 31 de diciembre.
+- «Los últimos N meses» son corridos: "desde" es la fecha de hoy menos N meses
+  y "hasta" es la fecha de hoy. «El último mes» es N = 1.
+- El texto llega en minúsculas y sin tildes, y sin la parte que pide agrupar
+  (eso no lo decides tú).
 - "especialidad" es uno de los nombres de la lista, copiado igual. Si pide una
   que no está en la lista, déjala en null y anótala en "no_entendido".
 - No hay forma de pedir por persona, profesional, sucursal, monto, estado,
@@ -420,12 +528,14 @@ def pedido_al_modelo(texto, especialidades, hoy) -> str:
     )
 
 
-def sanear_consulta(crudo, especialidades, hoy, nombres=()):
+def sanear_consulta(crudo, especialidades, hoy, nombres=(), agrupar=None):
     """Valida lo que devolvió el modelo. `(consulta, unresolved, avisos)`.
 
-    Solo se leen las cinco claves de la consulta; cualquier otra —un
-    `paciente`, un `organization`— se descarta sin mirarla. Lo que el modelo
-    anotó en `no_entendido` y todo lo que no pase la validación bloquea.
+    Solo se leen las cinco claves que el modelo llena; cualquier otra —un
+    `paciente`, un `organization`, un `agrupar`— se descarta sin mirarla. Cómo
+    agrupar lo trae `agrupar`, que sacó Python de la frase (`sin_agrupacion`).
+    Lo que el modelo anotó en `no_entendido` y todo lo que no pase la
+    validación bloquea.
     """
     bloqueos = [
         str(item).strip()[:200]
@@ -472,7 +582,7 @@ def sanear_consulta(crudo, especialidades, hoy, nombres=()):
 
     if bloqueos:
         return None, bloqueos, avisos
-    return _armar(tipo, cantidad, desde, hasta, especialidad), [], avisos
+    return _armar(tipo, cantidad, desde, hasta, especialidad, agrupar), [], avisos
 
 
 def _fecha(valor, hoy, bloqueos):
@@ -504,6 +614,8 @@ def resumen(consulta) -> str:
     periodo = _periodo(consulta["desde"], consulta["hasta"])
     if periodo:
         partes.append(periodo)
+    if consulta.get("agrupar"):
+        partes.append(f"agrupados por {consulta['agrupar']}")
     return " · ".join(partes)
 
 
@@ -553,16 +665,21 @@ def interpretar_consulta(texto, user, *, hoy=None) -> dict:
     hoy = hoy or timezone.localdate()
     especialidades, nombres = _contexto_del_centro(user)
 
-    motivos = detectar_no_soportado(texto, nombres)
+    # Cómo agrupar lo decide Python, con o sin proveedor, y el modelo recibe
+    # la frase sin esa parte: no puede inventar una agrupación ni dejarla sin
+    # efecto.
+    agrupar, sin_agrupar, bloqueos = sin_agrupacion(texto)
+    motivos = [*bloqueos, *detectar_no_soportado(sin_agrupar, nombres)]
     if motivos:
         return _nada(motivos)
 
     crudo, generado_por = voice.ask_model(
-        SYSTEM_PROMPT_PACIENTE, pedido_al_modelo(texto, especialidades, hoy),
+        SYSTEM_PROMPT_PACIENTE,
+        pedido_al_modelo(sin_agrupar, especialidades, hoy),
     )
     if crudo is not None:
         consulta, unresolved, avisos = sanear_consulta(
-            crudo, especialidades, hoy, nombres,
+            crudo, especialidades, hoy, nombres, agrupar,
         )
     else:
         generado_por = "plantilla"

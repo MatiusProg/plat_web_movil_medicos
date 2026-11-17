@@ -17,6 +17,9 @@ import { descargarArchivo, pedir, type Contexto } from './cliente'
 
 export type TipoDeComprobante = 'pagos' | 'fichas'
 
+/** Cómo se muestra la lista. Solo presentación: no cambia qué entra. */
+export type Agrupacion = 'mes' | 'sucursal' | 'especialidad'
+
 /** Lo que entendió el sistema. Se manda tal cual al listado. */
 export interface Consulta {
   tipo: TipoDeComprobante
@@ -28,6 +31,8 @@ export interface Consulta {
   especialidad: string | null
   /** Solo para mostrarla; no viaja al listado. */
   especialidad_nombre: string | null
+  /** Cómo agrupar la lista. Lo decide el backend desde la frase. */
+  agrupar: Agrupacion | null
 }
 
 export interface Propuesta {
@@ -61,6 +66,16 @@ export interface Comprobante {
   paid_at: string | null
 }
 
+/** Un grupo de la lista, con lo que suma. Cada comprobante cae en uno solo. */
+export interface Grupo {
+  key: string
+  label: string
+  count: number
+  /** Lo cobrado por moneda. Vacío en las fichas. */
+  totals: { currency: string; amount: string }[]
+  items: Comprobante[]
+}
+
 export interface ListaDeComprobantes {
   tipo: TipoDeComprobante
   count: number
@@ -68,6 +83,9 @@ export interface ListaDeComprobantes {
   /** Había más de lo pedido. */
   truncated: boolean
   summary: string
+  agrupar: Agrupacion | null
+  /** Vacío si no se pidió agrupar. `items` sigue trayendo la lista completa. */
+  groups: Grupo[]
   items: Comprobante[]
 }
 
@@ -92,6 +110,7 @@ function parametros(consulta: Consulta, formato: 'json' | 'pdf'): string {
   if (consulta.desde) url.set('desde', consulta.desde)
   if (consulta.hasta) url.set('hasta', consulta.hasta)
   if (consulta.especialidad) url.set('especialidad', consulta.especialidad)
+  if (consulta.agrupar) url.set('agrupar', consulta.agrupar)
   return url.toString()
 }
 

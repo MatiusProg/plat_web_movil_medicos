@@ -14,6 +14,10 @@
  * **Solo lo propio.** La pantalla nunca manda de quién son los datos: el
  * backend lo decide con la sesión, y son los del paciente y sus dependientes.
  * Por eso cada comprobante dice a quién pertenece.
+ *
+ * **Agrupar es solo cómo se muestra.** «Mis facturas de los últimos 3 meses
+ * agrupadas por sucursal» trae los mismos comprobantes que sin agrupar,
+ * repartidos en secciones que dicen cuántos tienen y cuánto suman.
  */
 
 import { QRCodeSVG } from 'qrcode.react'
@@ -22,7 +26,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ETIQUETA_ESTADO_FICHA } from '@/api/fichas'
 import {
   descargarComprobantesPdf, interpretarComprobantes, listarComprobantes,
-  type Comprobante, type Consulta, type ListaDeComprobantes, type Propuesta,
+  type Comprobante, type Consulta, type Grupo, type ListaDeComprobantes, type Propuesta,
 } from '@/api/misComprobantes'
 import { EntradaDeVoz } from '@/componentes/EntradaDeVoz'
 import { ErrorCatalogo, mensajeError, PANEL, SECONDARY } from '@/paginas/catalogo_comun'
@@ -38,6 +42,12 @@ function fecha(iso: string): string {
 function importe(c: Comprobante): string {
   const moneda = c.currency === 'BOB' ? 'Bs' : (c.currency ?? '')
   return `${moneda} ${Number(c.amount).toFixed(2)}`
+}
+
+function total(totales: Grupo['totals']): string {
+  return totales
+    .map((t) => `${t.currency === 'BOB' ? 'Bs' : t.currency} ${Number(t.amount).toFixed(2)}`)
+    .join(' + ')
 }
 
 export function MisComprobantes() {
@@ -199,11 +209,50 @@ function Resultados({
         </p>
       )}
 
-      <ul className="grid gap-4 sm:grid-cols-2">
-        {lista.items.map((item) => (
-          <TarjetaDeComprobante key={item.id} item={item} tipo={lista.tipo} />
-        ))}
-      </ul>
+      {lista.groups.length > 0 ? (
+        <div className="space-y-8">
+          {lista.groups.map((grupo) => (
+            <SeccionDeGrupo key={grupo.key} grupo={grupo} tipo={lista.tipo} />
+          ))}
+        </div>
+      ) : (
+        <ListaDeTarjetas items={lista.items} tipo={lista.tipo} />
+      )}
+    </section>
+  )
+}
+
+function ListaDeTarjetas({
+  items,
+  tipo,
+}: {
+  items: Comprobante[]
+  tipo: ListaDeComprobantes['tipo']
+}) {
+  return (
+    <ul className="grid gap-4 sm:grid-cols-2">
+      {items.map((item) => (
+        <TarjetaDeComprobante key={item.id} item={item} tipo={tipo} />
+      ))}
+    </ul>
+  )
+}
+
+/** Un grupo: su nombre, cuántos comprobantes tiene y cuánto suman. */
+function SeccionDeGrupo({ grupo, tipo }: { grupo: Grupo; tipo: ListaDeComprobantes['tipo'] }) {
+  const titulo = `grupo-${grupo.key}`
+  return (
+    <section aria-labelledby={titulo} className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-tinta-200 pb-2 dark:border-tinta-800">
+        <h3 id={titulo} className="font-semibold text-tinta-900 dark:text-tinta-50">
+          {grupo.label}
+        </h3>
+        <p className="text-sm text-tinta-500">
+          {grupo.count} {grupo.count === 1 ? 'comprobante' : 'comprobantes'}
+          {grupo.totals.length > 0 && ` · ${total(grupo.totals)}`}
+        </p>
+      </div>
+      <ListaDeTarjetas items={grupo.items} tipo={tipo} />
     </section>
   )
 }

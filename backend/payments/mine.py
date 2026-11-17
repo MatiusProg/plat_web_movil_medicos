@@ -21,6 +21,13 @@ movió a la ficha nueva (`transfer_payment`, US-20) y sale con el código nuevo.
 **La fecha.** Un pago se ubica por cuándo se pagó (`paid_at`) y una ficha por
 cuándo es (`starts_at`), en hora local del proyecto: «los pagos de octubre» no
 se corre un día por la zona horaria.
+
+**Agrupar.** La lista puede mostrarse por `mes`, `sucursal` o `especialidad`
+(`agrupar_items`). Es solo cómo se presenta: **no cambia qué entra**, y cada
+comprobante cae en exactamente un grupo, así que los totales nunca cuentan un
+pago dos veces. Un profesional con dos especialidades forma un grupo propio con
+las dos («Cardiología, Neurología»). Los grupos se arman en Python sobre los
+mismos ítems que ve el cliente, de modo que la pantalla y el PDF dicen lo mismo.
 """
 
 from __future__ import annotations
@@ -29,6 +36,9 @@ import datetime as dt
 import uuid
 from dataclasses import dataclass
 
+from collections import defaultdict
+from decimal import Decimal
+
 from django.db.models import F, Prefetch, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -36,14 +46,17 @@ from django.utils import timezone
 from appointments import receipts
 from appointments.models import Appointment
 from catalog.models import Specialty
-from reporting.exporters import QRCelda
+from reporting.exporters import FilaDeGrupo, QRCelda
 
-from .mine_voice import CANTIDAD_MAXIMA, TIPOS
+from catalog.models import normalize_text
+
+from .mine_voice import AGRUPACIONES, CANTIDAD_MAXIMA, NOMBRES_DE_MES, TIPOS
 from .models import Payment
 
 # Qué fichas tienen comprobante (US-19).
 CON_COMPROBANTE = (Appointment.Status.CONFIRMED, Appointment.Status.ATTENDED)
-# Sin cantidad, esto.
+# Sin cantidad, esto. Agrupada, el máximo: un grupo cortado a la mitad con su
+# total daría una cuenta que nadie pidió.
 CANTIDAD_POR_OMISION = 20
 FORMATOS = ("json", "pdf")
 
@@ -64,14 +77,17 @@ class Consulta:
     desde: dt.date | None = None
     hasta: dt.date | None = None
     especialidad: uuid.UUID | None = None
+    agrupar: str | None = None
 
     @property
     def limite(self) -> int:
-        return self.cantidad or CANTIDAD_POR_OMISION
+        if self.cantidad:
+            return self.cantidad
+        return CANTIDAD_MAXIMA if self.agrupar else CANTIDAD_POR_OMISION
 
     @property
     def filtros(self) -> int:
-        """Cuántos criterios trae, sin contar el tipo."""
+        """Cuántos criterios trae, sin contar el tipo ni cómo se agrupa."""
         return sum(
             valor is not None
             for valor in (self.cantidad, self.desde, self.hasta, self.especialidad)
@@ -138,10 +154,16 @@ def parse_consulta(params, organization):
                 errores["especialidad"] = ["No es una especialidad de este centro."]
                 especialidad = None
 
+    agrupar = params.get("agrupar")
+    if agrupar in (None, ""):
+        agrupar = None
+    elif agrupar not in AGRUPACIONES:
+        errores["agrupar"] = ["Tiene que ser «mes», «sucursal» o «especialidad»."]
+
     if errores:
         return None, errores
     return Consulta(tipo, cantidad, fechas.get("desde"), fechas.get("hasta"),
-                    especialidad), {}
+                    especialidad, agrupar), {}
 
 
 # ==========================================================================
@@ -250,13 +272,86 @@ def serializar(objeto, tipo: str, titular) -> dict:
     return item
 
 
+# ==========================================================================
+#  Agrupar
+# ==========================================================================
+def _grupo_de(item: dict, por: str) -> tuple[str, str, str]:
+    """`(clave, etiqueta, orden)` del grupo al que pertenece un ítem."""
+    if por == "mes":
+        fecha = timezone.localtime(dt.datetime.fromisoformat(item["date"]))
+        clave = f"{fecha.year}-{fecha.month:02d}"
+        etiqueta = f"{NOMBRES_DE_MES[fecha.month].capitalize()} de {fecha.year}"
+        return clave, etiqueta, clave
+    if por == "sucursal":
+        nombre = item["branch_name"] or "Sin sucursal"
+        return nombre, nombre, normalize_text(nombre)
+    nombre = ", ".join(sorted(item["specialties"])) or "Sin especialidad"
+    return nombre, nombre, normalize_text(nombre)
+
+
+def agrupar_items(items: list[dict], por: str | None) -> list[dict]:
+    """Los ítems repartidos en grupos, o `[]` si no se pide agrupar.
+
+    Cada ítem cae en un solo grupo. Los meses van del más reciente al más
+    antiguo; sucursales y especialidades, por orden alfabético sin tildes. Los
+    ítems conservan el orden que traían (más reciente primero). En los pagos,
+    cada grupo suma lo cobrado **por moneda**: no se mezclan bolivianos con
+    dólares.
+    """
+    if not por:
+        return []
+    grupos: dict[str, dict] = {}
+    orden: dict[str, str] = {}
+    for item in items:
+        clave, etiqueta, ordenar = _grupo_de(item, por)
+        grupo = grupos.setdefault(
+            clave, {"key": clave, "label": etiqueta, "count": 0, "items": []},
+        )
+        orden[clave] = ordenar
+        grupo["count"] += 1
+        grupo["items"].append(item)
+
+    for grupo in grupos.values():
+        sumas: dict[str, Decimal] = defaultdict(Decimal)
+        for item in grupo["items"]:
+            if item["amount"] is not None:
+                sumas[item["currency"]] += Decimal(item["amount"])
+        grupo["totals"] = [
+            {"currency": moneda, "amount": f"{sumas[moneda]:.2f}"}
+            for moneda in sorted(sumas)
+        ]
+    return sorted(grupos.values(), key=lambda g: orden[g["key"]], reverse=(por == "mes"))
+
+
 def titulo_del_pdf(consulta: Consulta) -> str:
     return ("Mis comprobantes de pagos" if consulta.tipo == "pagos"
             else "Mis comprobantes de fichas")
 
 
-def filas_del_pdf(items: list[dict]) -> list[list]:
-    """Una fila por ítem; el código va como `QRCelda` y se dibuja en el PDF."""
+def _texto_del_grupo(grupo: dict) -> str:
+    comprobantes = "1 comprobante" if grupo["count"] == 1 else f"{grupo['count']} comprobantes"
+    totales = " + ".join(
+        f"{'Bs' if t['currency'] == 'BOB' else t['currency']} {t['amount']}"
+        for t in grupo["totals"]
+    )
+    return " · ".join(p for p in (grupo["label"], comprobantes, totales) if p)
+
+
+def filas_del_pdf(items: list[dict], grupos: list[dict] | None = None) -> list[list]:
+    """Una fila por ítem; el código va como `QRCelda` y se dibuja en el PDF.
+
+    Con grupos, cada uno abre con una fila de encabezado (`FilaDeGrupo`) que dice
+    su nombre, cuántos comprobantes tiene y cuánto suman.
+    """
+    if grupos:
+        filas: list[list] = []
+        for grupo in grupos:
+            filas.append(FilaDeGrupo(
+                [_texto_del_grupo(grupo)] + [""] * (len(ENCABEZADOS_PDF) - 1),
+            ))
+            filas.extend(filas_del_pdf(grupo["items"]))
+        return filas
+
     filas = []
     for item in items:
         fecha = timezone.localtime(dt.datetime.fromisoformat(item["date"]))
