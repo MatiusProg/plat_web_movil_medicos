@@ -3,6 +3,10 @@
 **Fechas:** 10/11/26 – 23/11/26 · **Revisión:** 24–26/11/26 *(fecha exacta a
 confirmar con la docente)*
 
+> **Ampliación del 17/11:** seis historias nuevas (US-48 a US-53, 48 h) después
+> de la revisión con la ingeniera, y la ruta crítica corrida (backend congelado
+> el 21/11). Ver `ampliacion-17-11.md`.
+
 **Objetivo:** cerrar las épicas de IA que faltan —predicción de inasistencia y
 demanda (Épica 8) y textos clínicos generados con validación del médico
 (Épica 9)—, sumar los **reportes transaccionales por voz** para el paciente y
