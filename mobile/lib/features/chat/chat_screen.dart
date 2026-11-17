@@ -158,7 +158,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             _Receta(datos: datos),
                           if (_urgencia != null) _Urgencia(texto: _urgencia!),
                           const SizedBox(height: 8),
-                          if (datos.mensajes.isEmpty)
+                          // Invitar a escribir sólo si se puede: en un chat
+                          // vencido o cerrado contradecía el aviso de abajo.
+                          if (datos.mensajes.isEmpty && datos.canWrite)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 24),
                               child: Text(

@@ -46,12 +46,19 @@ class _CentroMedicoAppState extends State<CentroMedicoApp> {
   /// nadie adentro, no se abre nada: la ficha es de quien inició sesión.
   void _abrirFicha(String appointmentId) {
     final session = widget.session;
-    void ir() => WidgetsBinding.instance.addPostFrameCallback(
-          (_) => appointmentId.startsWith('chat:')
-              // US-47: la respuesta del médico abre esa conversación.
-              ? _router.go('/chat/${appointmentId.substring(5)}')
-              : _router.go('/appointments/$appointmentId'),
-        );
+    void ir() => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!appointmentId.startsWith('chat:')) {
+            _router.go('/appointments/$appointmentId');
+            return;
+          }
+          // US-47: la respuesta del médico abre esa conversación. `/chat` es
+          // de primer nivel: con `go` quedaba sola en la pila, sin flecha, y
+          // «atrás» cerraba la app. Se parte del inicio y se apila encima.
+          _router.go('/home');
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _router.push('/chat/${appointmentId.substring(5)}'),
+          );
+        });
 
     if (session.isSignedIn) {
       ir();

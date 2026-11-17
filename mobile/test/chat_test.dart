@@ -162,6 +162,13 @@ void main() {
     await _abrir(tester, abierta: false, motivo: 'expired');
     expect(find.byType(TextField), findsNothing);
     expect(find.textContaining('pasaron 15 días'), findsOneWidget);
+    // Sin mensajes, no invita a escribir lo que ya no se puede mandar.
+    expect(find.textContaining('Escribe tu duda'), findsNothing);
+  });
+
+  testWidgets('abierta y sin mensajes: invita a escribir', (tester) async {
+    await _abrir(tester);
+    expect(find.textContaining('Escribe tu duda'), findsOneWidget);
   });
 
   test('el aviso de una respuesta del médico abre el chat de esa atención', () {
