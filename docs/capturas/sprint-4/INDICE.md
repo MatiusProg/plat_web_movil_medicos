@@ -37,13 +37,51 @@ El chat necesita una atención firmada hace menos de 15 días. Mauricio atiende 
 | `US-47-14-web-medico-conversacion-cerrada.png` | Conversación cerrada: sin caja para responder y con «El médico cerró esta conversación.» |
 | `US-47-15-web-paciente-respuesta-y-chat-cerrado.png` | El paciente ve la respuesta del médico y el chat cerrado, con «reserva una ficha». |
 
+### US-47 en el móvil (17/11/2026)
+
+Con la APK compilada desde `main` contra la API de producción, en un Xiaomi 2311DRK48G con Android 16 (1220 × 2712, capturas con `adb screencap`, a escala 1). La paciente es Jimena (`paciente1`) y el médico, Mauricio (`medico1`).
+
+**Cómo se armó el caso.** Mauricio atiende los martes de 08:00 a 12:00 y ya eran las 17:28, así que:
+1. **Admin (*Agendas*):** una regla de martes de 17:00 a 18:00 en Sede Sopocachi, vigente solo el 17/11/2026.
+2. **Admin (*Mostrador*):** ficha de Jimena a las 17:30, cobro en efectivo de 110 BOB (simulado) y check-in por documento.
+3. **Médico:** atención por «Rinitis alérgica» con receta de loratadina 10 mg (1 comprimido cada 24 horas por 10 días, por la noche), firmada a las 17:34.
+
+`adb input` no escribe tildes ni signos de apertura, por eso los mensajes de la paciente van sin ellos.
+
+| Archivo | Caso que muestra |
+|---|---|
+| `US-47-16-movil-escribir-al-medico.png` | La atención del 17/11 en *Mi historia clínica*, con receta, firma y el botón «Escribir al médico». |
+| `US-47-17-movil-chat-abierto-con-receta.png` | Chat abierto: aviso de que no es para urgencias, receta de la atención y «Puedes escribir hasta el 2 de diciembre» (15 días). |
+| `US-47-18-movil-mensaje-en-blanco-no-se-envia.png` | **Borde: mensaje vacío o de solo espacios.** Con la caja vacía y después con 5 espacios, «Enviar» no manda nada: no aparece burbuja ni llega un `POST` al servidor. |
+| `US-47-19-movil-tope-2000-caracteres.png` | **Borde: tope de 2000 caracteres.** Se pegaron 2500; el campo quedó con **2000 exactos** (medido con `uiautomator`). No se envió, para no dejarle relleno al médico. En el móvil el contador está oculto (`counterText: ''`): el texto se corta sin aviso. |
+| `US-47-20-movil-consulta-enviada.png` | Consulta sobre la medicación enviada, como «Tú · 17 de noviembre, 17:38». |
+| `US-47-21-movil-urgencia-derivada.png` | **Borde: urgencia (US-34).** Con «Me duele mucho el pecho y me falta el aire» aparece arriba la derivación a emergencias y «Tu mensaje le llegó a tu médico igual, pero no esperes su respuesta para ir.» |
+| `US-47-22-movil-push-tu-medico-te-respondio.png` | Push «Tu médico te respondió · Mauricio Copa Choque respondió tu consulta» con la app en segundo plano. Recortada para no mostrar otras notificaciones del teléfono. |
+| `US-47-23-movil-push-abre-el-chat.png` | Tocar el push abre el chat de esa atención (`event=chat`) con las dos respuestas del médico. |
+| `US-47-24-movil-chat-cerrado-por-el-medico.png` | **Borde: chat cerrado por el médico** desde la web: sin caja para escribir, «El médico cerró esta conversación.» y «Reservar una ficha nueva», que lleva a *Profesionales* (`/search`). |
+| `US-47-25-movil-chat-vencido-15-dias.png` | **Borde: ventana vencida.** Chat de la atención del 29/09: «La conversación se cerró: pasaron 15 días desde la atención.» Tomada con el arreglo 2 de abajo. |
+| `US-47-26-movil-sin-conexion-chat-abierto.png` | **Borde: sin conexión (modo avión) con el chat abierto.** El refresco de cada 10 s falla en silencio y la conversación sigue a la vista. |
+| `US-47-27-movil-sin-conexion-reintentar.png` | **Borde: abrir el chat sin conexión.** «No se pudo conectar con el servidor. Revisá tu conexión.» y «Reintentar». |
+| `US-47-28-movil-medico-sin-entrada-al-chat.png` | El médico en el móvil: su inicio no tiene entrada al chat de pacientes. |
+| `US-47-29-movil-medico-ruta-chat-bloqueada.png` | **Borde: un médico fuerza la ruta.** Con `centromedico://app/chat/<id>` (el enlace profundo de US-18) solo ve «Esta sección es para pacientes.» (`SoloPacientes`), sin pedir la conversación. |
+
+**Lo que salió al probar y se corrigió en este PR:**
+1. **El push dejaba al paciente sin salida.** Abría el chat con `go('/chat/…')`, y como `/chat` es de primer nivel la pantalla quedaba sola en la pila: sin flecha, y «atrás» cerraba la app (`US-47-23` es de antes del arreglo). Ahora va a `/home` y apila el chat encima (`mobile/lib/app.dart`). No se pudo repetir contra producción porque las dos conversaciones de Jimena ya estaban cerradas y el push solo sale cuando el médico escribe. Se verifica con la próxima atención.
+2. **El chat vencido invitaba a escribir.** Sin mensajes mostraba «Escribe tu duda sobre la medicación…» encima de «La conversación se cerró». Ahora la invitación sale solo si se puede escribir (`chat_screen.dart`). La prueba nueva de `test/chat_test.dart` falla si se quita el arreglo.
+
+**No se probó en el móvil:** el dependiente (el titular que escribe por él). Jimena no tiene a nadie a cargo y armarlo pedía otra atención firmada hoy. Lo cubren las pruebas del backend (`tests/test_us47.py`).
+
 ## US-42: Textos de IA validados por el médico
 
 | Archivo | Caso que muestra |
 |---|---|
 | `US-42-01-web-resumen-aprobado.png` | *Textos por validar* → «Aprobados»: el resumen de la consulta de Jimena (US-39) generado con `gemini-3.5-flash-lite` al firmar, marcado «Aprobado sin cambios». |
+| `US-42-02-web-resumen-pendiente.png` | *Textos por validar* → «Pendientes» (17/11): el resumen de la atención de las 17:30, generado a las 17:34 con `gemini-3.5-flash-lite`, editable y con *Aprobar*, *Guardar sin aprobar* y *Descartar*. Reemplaza la del 13/11, que había quedado en baja resolución. |
+| `US-42-03-web-resumen-aprobado-aviso.png` | Al aprobarlo: «Aprobado. Jimena Flores Fernández ya puede leerlo.» y la lista de pendientes vacía. |
 
-## Lo que falta
+## US-39: Resumen claro de la consulta
 
-- **US-42, texto pendiente:** la captura del resumen en «Pendientes», con *Aprobar*, *Guardar sin aprobar* y *Descartar*, se guardó en baja resolución y no sirve. Se repite con la próxima atención firmada.
-- **Móvil (US-47):** la pantalla del chat y el aviso push que la abre. Se toman con la APK contra producción.
+| Archivo | Caso que muestra |
+|---|---|
+| `US-39-01-web-resumen-de-la-consulta.png` | *Mi historia clínica* de Jimena en la web (17/11): «Resumen de tu consulta» arriba de la atención, con «Redactado con IA y revisado por Mauricio Copa Choque · 17 nov 2026, 17:34». Ventana de 1536 × 695. |
+| `US-39-02-movil-resumen-de-la-consulta.png` | El mismo resumen en el móvil. |
