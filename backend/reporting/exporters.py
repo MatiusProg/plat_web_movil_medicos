@@ -39,6 +39,50 @@ MIME = {
 }
 
 
+class QRCelda:
+    """Una celda que en el PDF es un código QR y en los demás formatos, su texto.
+
+    US-46: la lista de comprobantes del paciente lleva el código firmado de
+    cada ficha. En CSV, Excel y HTML ese código es una cadena como cualquier
+    otra (``str(celda)``), así que esos exportadores no necesitan saber que
+    existe; sólo ``_pdf`` la reconoce y la dibuja. La firma de ``export`` no
+    cambia: una fila sigue siendo una lista de valores.
+    """
+
+    __slots__ = ("valor",)
+
+    def __init__(self, valor):
+        self.valor = str(valor)
+
+    def __str__(self):
+        return self.valor
+
+    def __repr__(self):
+        return f"QRCelda({self.valor!r})"
+
+
+class FilaDeGrupo(list):
+    """Una fila que abre un grupo: un título, no un dato.
+
+    US-46: la lista de comprobantes puede agruparse por mes, sucursal o
+    especialidad. En el PDF es una fila combinada y sombreada con el nombre del
+    grupo, su cantidad y su total; en CSV, Excel y HTML, una fila común con ese
+    texto en la primera celda. Se construye con el mismo ancho que las demás
+    filas (`[texto, "", "", ...]`) y **no cuenta como fila de datos** en el
+    pie («N fila(s)»).
+    """
+
+    __slots__ = ()
+
+    @property
+    def texto(self) -> str:
+        return str(self[0]) if self else ""
+
+
+def _filas_de_datos(rows) -> int:
+    return sum(1 for fila in rows if not isinstance(fila, FilaDeGrupo))
+
+
 def export(fmt: str, headers, rows, title: str, subtitle: str = "",
            truncated: bool = False):
     """Devuelve ``(contenido_en_bytes, tipo_mime, nombre_de_archivo)``."""
@@ -94,7 +138,7 @@ def _csv(headers, rows, title, subtitle, truncated):
     for fila in rows:
         escritor.writerow(fila)
     escritor.writerow([])
-    escritor.writerow([_pie(truncated, len(rows))])
+    escritor.writerow([_pie(truncated, _filas_de_datos(rows))])
     return buffer.getvalue().encode("utf-8-sig")
 
 
@@ -160,7 +204,7 @@ def _xlsx(headers, rows, title, subtitle, truncated):
         )
 
     pie = hoja.cell(row=fila_encabezado + len(rows) + 2, column=1,
-                    value=_pie(truncated, len(rows)))
+                    value=_pie(truncated, _filas_de_datos(rows)))
     pie.font = Font(italic=True, size=9, color="808080")
 
     salida = io.BytesIO()
@@ -237,7 +281,7 @@ def _html(headers, rows, title, subtitle, truncated):
 <p class="subtitulo">{escape(subtitle)}</p>
 {aviso}
 <table><thead><tr>{encabezados}</tr></thead><tbody>{cuerpo}</tbody></table>
-<footer>{escape(_pie(truncated, len(rows)))}</footer>
+<footer>{escape(_pie(truncated, _filas_de_datos(rows)))}</footer>
 </html>""".encode("utf-8")
 
 
@@ -286,12 +330,26 @@ def _pdf(headers, rows, title, subtitle, truncated):
     # cadenas sueltas, reportlab no parte la línea y la columna se ensancha
     # hasta empujar a las demás fuera de la página.
     tabla_datos = [[Paragraph(escape(str(h)), celda_encabezado) for h in headers]]
+    celda_grupo = ParagraphStyle(
+        "celda_grupo", parent=celda, fontName="Helvetica-Bold", fontSize=8.5,
+        leading=11,
+    )
     tabla_datos += [
-        [Paragraph(escape(str(v)), celda) for v in fila] for fila in rows
+        [_parrafo(fila.texto, celda_grupo)] + [""] * (len(headers) - 1)
+        if isinstance(fila, FilaDeGrupo)
+        else [_celda_del_pdf(v, celda) for v in fila]
+        for fila in rows
     ]
+    # Dónde están los encabezados de grupo (la fila 0 es el encabezado de la tabla).
+    filas_de_grupo = [
+        indice for indice, fila in enumerate(rows, start=1)
+        if isinstance(fila, FilaDeGrupo)
+    ]
+    solo_datos = [fila for fila in rows if not isinstance(fila, FilaDeGrupo)]
 
     disponible = documento.width
-    anchos = _anchos_de_columna(headers, rows, disponible)
+    anchos = _anchos_con_qr(headers, solo_datos, disponible, QR_LADO_MM * mm)
+    columnas_qr = _columnas_qr(solo_datos)
 
     tabla = Table(tabla_datos, colWidths=anchos, repeatRows=1)
     tabla.setStyle(TableStyle([
@@ -304,6 +362,18 @@ def _pdf(headers, rows, title, subtitle, truncated):
         ("RIGHTPADDING", (0, 0), (-1, -1), 4),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        # Un encabezado de grupo ocupa todo el ancho y se distingue de los datos.
+        *[estilo for fila in filas_de_grupo for estilo in (
+            ("SPAN", (0, fila), (-1, fila)),
+            ("BACKGROUND", (0, fila), (-1, fila), colors.HexColor("#DBEAFE")),
+            ("TOPPADDING", (0, fila), (-1, fila), 5),
+            ("BOTTOMPADDING", (0, fila), (-1, fila), 5),
+        )],
+        # El QR va centrado en su celda; el resto del contenido, arriba.
+        *[estilo for c in columnas_qr for estilo in (
+            ("VALIGN", (c, 1), (c, -1), "MIDDLE"),
+            ("ALIGN", (c, 1), (c, -1), "CENTER"),
+        )],
     ]))
 
     historia = [
@@ -328,10 +398,82 @@ def _pdf(headers, rows, title, subtitle, truncated):
 
     documento.build(
         historia,
-        onFirstPage=_pie_de_pagina(_pie(truncated, len(rows))),
-        onLaterPages=_pie_de_pagina(_pie(truncated, len(rows))),
+        onFirstPage=_pie_de_pagina(_pie(truncated, _filas_de_datos(rows))),
+        onLaterPages=_pie_de_pagina(_pie(truncated, _filas_de_datos(rows))),
     )
     return salida.getvalue()
+
+
+# Lado del QR en el PDF. El código firmado de una ficha tiene unos 150
+# caracteres (un QR de versión 8 o 9): a 32 mm cada módulo mide medio milímetro,
+# que lee cualquier teléfono y el lector del check-in, impreso o en pantalla.
+QR_LADO_MM = 32
+
+
+def _columnas_qr(rows):
+    """Los índices de las columnas donde alguna fila trae un ``QRCelda``."""
+    indices = set()
+    for fila in rows:
+        for indice, valor in enumerate(fila):
+            if isinstance(valor, QRCelda):
+                indices.add(indice)
+    return sorted(indices)
+
+
+def _celda_del_pdf(valor, estilo):
+    """Un ``Drawing`` con el QR, o el ``Paragraph`` de siempre."""
+    if isinstance(valor, QRCelda):
+        return _dibujo_qr(valor.valor, QR_LADO_MM)
+    return _parrafo(valor, estilo)
+
+
+def _parrafo(valor, estilo):
+    from reportlab.platypus import Paragraph
+
+    return Paragraph(escape(str(valor)), estilo)
+
+
+def _dibujo_qr(valor, lado_mm):
+    """El QR de ``valor`` como dibujo vectorial, de ``lado_mm`` de lado."""
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
+    from reportlab.lib.units import mm
+
+    # Corrección de errores media: aguanta una impresión sucia sin agrandar
+    # el código más de lo que ya es.
+    widget = QrCodeWidget(valor, barLevel="M")
+    x0, y0, x1, y1 = widget.getBounds()
+    lado = lado_mm * mm
+    dibujo = Drawing(
+        lado, lado, transform=[lado / (x1 - x0), 0, 0, lado / (y1 - y0), 0, 0],
+    )
+    dibujo.add(widget)
+    return dibujo
+
+
+def _anchos_con_qr(headers, rows, disponible, lado):
+    """Como ``_anchos_de_columna``, pero con ancho fijo en las columnas QR.
+
+    El código de una ficha mide 150 caracteres: medido por contenido, esa
+    columna se llevaría media página. Las columnas QR reciben el lado del
+    dibujo más el relleno y el resto se reparte lo que queda.
+    """
+    columnas_qr = _columnas_qr(rows)
+    if not columnas_qr:
+        return _anchos_de_columna(headers, rows, disponible)
+
+    ancho_qr = lado + 10  # 4 pt de relleno a cada lado, más un respiro
+    resto = [i for i in range(len(headers)) if i not in columnas_qr]
+    repartido = _anchos_de_columna(
+        [headers[i] for i in resto],
+        [[fila[i] for i in resto] for fila in rows],
+        max(disponible - ancho_qr * len(columnas_qr), 0),
+    ) if resto else []
+
+    anchos, siguiente = [], iter(repartido)
+    for indice in range(len(headers)):
+        anchos.append(ancho_qr if indice in columnas_qr else next(siguiente))
+    return anchos
 
 
 def _anchos_de_columna(headers, rows, disponible):

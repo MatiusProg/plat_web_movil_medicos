@@ -16,6 +16,7 @@ import { BloqueosAgenda } from '@/paginas/BloqueosAgenda'
 import { BuscarProfesionales } from '@/paginas/BuscarProfesionales'
 import { Disponibilidad } from '@/paginas/Disponibilidad'
 import { InicioSesion } from '@/paginas/InicioSesion'
+import { MisComprobantes } from '@/paginas/MisComprobantes'
 import { MisFichas } from '@/paginas/MisFichas'
 import { Organizaciones } from '@/paginas/Organizaciones'
 import { RegistroPaciente } from '@/paginas/RegistroPaciente'
@@ -272,6 +273,9 @@ export default function App() {
                                 <MisFichas />
                             }
                         />
+
+                        {/* US-46: mis comprobantes, pedidos hablando o escribiendo */}
+                        <Route path="/mis-comprobantes" element={<MisComprobantes />} />
 
 
                         {/* US-16: búsqueda de profesionales */}

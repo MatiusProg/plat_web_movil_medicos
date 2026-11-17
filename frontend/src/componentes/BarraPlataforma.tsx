@@ -298,6 +298,15 @@ const items: ItemMenu[] = [
         requiere: 'appointments.appointment.read',
     },
 
+    // US-46 — los comprobantes del paciente, pedidos hablando o escribiendo.
+    {
+        etiqueta: 'Mis comprobantes',
+        ruta: '/mis-comprobantes',
+        seccion: 'Atención',
+        icono: 'ficha',
+        requiere: 'paciente',
+    },
+
     // US-25 — la historia clínica, vista por el propio paciente.
     {
         etiqueta: 'Mi historia clínica',

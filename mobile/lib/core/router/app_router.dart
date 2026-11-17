@@ -32,6 +32,7 @@ import '../../features/plans/plan_form_screen.dart';
 import '../../features/plans/plans_api.dart';
 import '../../features/plans/plans_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/receipts/my_receipts_screen.dart';
 import '../../features/receipts/receipt_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/search/specialties_screen.dart';
@@ -84,6 +85,7 @@ class Routes {
   static const String appointmentReceipt = 'appointment-receipt';
   static const String appointmentReschedule = 'appointment-reschedule';
   static const String receipts = 'receipts';
+  static const String myReceipts = 'my-receipts';
   static const String platformDashboard = 'platform-dashboard';
   static const String platformOrganizations = 'platform-organizations';
   static const String platformOrganizationForm = 'platform-organization-form';
@@ -435,6 +437,22 @@ GoRouter buildRouter(Session session) {
         ),
       ),
 
+      // US-46: mis comprobantes, pedidos hablando o escribiendo. Cada uno
+      // trae su QR; tocarlo abre el comprobante en grande, que además queda
+      // guardado para verlo sin conexión.
+      GoRoute(
+        path: '/my-receipts',
+        name: Routes.myReceipts,
+        builder: (context, state) => SoloPacientes(
+          titulo: 'Mis comprobantes',
+          child: MyReceiptsScreen(
+            onAbrir: (item) =>
+                context.push('/appointments/${item.appointmentId}/receipt'),
+            onVerGuardados: () => context.push('/receipts'),
+          ),
+        ),
+      ),
+
       // ---------- US-05 (Karen): edición de perfil -----------------------
       // Para todos, no sólo pacientes: todo el que entra tiene un perfil.
       GoRoute(
@@ -726,6 +744,15 @@ class _HomeScreen extends StatelessWidget {
           titulo: 'Mis fichas',
           subtitulo: 'Pagar, ver el comprobante QR y confirmar asistencia',
           onTap: () => context.push('/appointments'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-46: los comprobantes, por voz o escritos ----------
+        _accesoTarjeta(
+          context,
+          icono: Icons.qr_code_2,
+          titulo: 'Mis comprobantes',
+          subtitulo: 'Pídelos hablando o escribiendo, con su código QR',
+          onTap: () => context.push('/my-receipts'),
         ),
         const SizedBox(height: 12),
         // ---------- US-25 (SM): lo que escribieron los médicos -----------

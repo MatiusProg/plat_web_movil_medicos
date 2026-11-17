@@ -81,6 +81,48 @@ async function leerJson(respuesta: Response): Promise<unknown> {
   }
 }
 
+/**
+ * Baja un archivo binario —un PDF, un Excel— y lo guarda con el nombre que
+ * mande el backend. Devuelve ese nombre.
+ *
+ * Va aparte de `pedir()` porque la respuesta no es JSON: se lee como `blob` y
+ * se entrega al navegador con un `<a download>`. Los errores sí vuelven como
+ * `ErrorApi`, igual que en el resto, para que la pantalla los muestre igual.
+ */
+export async function descargarArchivo(
+  ruta: string,
+  { token, organizacion }: Contexto,
+  nombrePorOmision: string,
+  senal?: AbortSignal,
+): Promise<string> {
+  const encabezados: Record<string, string> = {}
+  if (token) encabezados.Authorization = `Bearer ${token}`
+  if (organizacion) encabezados['X-Organization'] = organizacion
+
+  let respuesta: Response
+  try {
+    respuesta = await fetch(`${BASE}${ruta}`, { headers: encabezados, signal: senal })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
+    throw new ErrorApi(
+      'No se pudo conectar con el servidor. Revisá que el backend esté corriendo.',
+      'sin_conexion',
+      0,
+    )
+  }
+  if (!respuesta.ok) throw construirError(respuesta.status, await leerJson(respuesta))
+
+  const disposicion = respuesta.headers.get('Content-Disposition') ?? ''
+  const nombre = /filename="([^"]+)"/.exec(disposicion)?.[1] ?? nombrePorOmision
+  const url = URL.createObjectURL(await respuesta.blob())
+  const enlace = Object.assign(document.createElement('a'), { href: url, download: nombre })
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+  URL.revokeObjectURL(url)
+  return nombre
+}
+
 function construirError(estado: number, datos: unknown): ErrorApi {
   const cuerpo = (datos ?? {}) as Record<string, unknown>
 
