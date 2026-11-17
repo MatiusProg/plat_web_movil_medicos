@@ -34,7 +34,8 @@ logger = logging.getLogger(__name__)
 CONFIRMED = "confirmacion"
 REMINDER = "recordatorio"
 CANCELLED = "cancelacion"
-EVENTS = (CONFIRMED, REMINDER, CANCELLED)
+RISK_REMINDER = "recordatorio_reforzado"
+EVENTS = (CONFIRMED, REMINDER, CANCELLED, RISK_REMINDER)
 
 
 def notify(event: str, appointment_id, organization_id) -> None:
@@ -109,6 +110,10 @@ def _push_text(event: str, appointment) -> tuple[str, str]:
     if event == CONFIRMED:
         return ("Tu ficha quedó confirmada",
                 f"{profesional} · {sucursal} · {inicio:%d/%m} a las {inicio:%H:%M}")
+    if event == RISK_REMINDER:
+        return ("Tu cita es pronto: confirma tu asistencia",
+                f"{_cuando(appointment)} con {profesional} en {sucursal}. "
+                "Confirma tu asistencia o cancela si no puedes acudir.")
     if event == REMINDER:
         return ("Recordatorio de tu ficha",
                 f"{_cuando(appointment)} con {profesional} en {sucursal}.")
@@ -133,6 +138,15 @@ def _email(event: str, appointment) -> tuple[str, str]:
     inicio = timezone.localtime(appointment.starts_at)
     saludo = f"Hola {appointment.patient.first_name}:\n\n"
     organizacion = appointment.organization
+    if event == RISK_REMINDER:
+        cuerpo = (saludo + f"Tu cita en {organizacion.name} está próxima.\n\n"
+                  + _datos(appointment) + "\n")
+        if appointment.attendance_confirmed_at is None:
+            cuerpo += ("Por favor, confirma tu asistencia aquí:\n\n"
+                       f"  {attendance_link(appointment)}\n\n")
+        cuerpo += ("Si no puedes asistir, cancela desde la aplicación para "
+                   "liberar el turno.\n")
+        return f"Confirma tu asistencia: ficha del {inicio:%d/%m}", cuerpo
     if event == REMINDER:
         cuerpo = (
             saludo

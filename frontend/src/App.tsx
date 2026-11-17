@@ -37,6 +37,7 @@ import { MiHistoria } from '@/paginas/MiHistoria'
 import { Reportes } from '@/paginas/Reportes'
 import { Kpis } from '@/paginas/Kpis'
 import { RiesgoInasistencia } from '@/paginas/RiesgoInasistencia'
+import { ProyeccionDemanda } from '@/paginas/ProyeccionDemanda'
 import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
 import { Pacientes } from '@/paginas/Pacientes'
@@ -236,6 +237,7 @@ export default function App() {
                         <Route path="/kpis" element={<Kpis />} />
                         {/* US-35: riesgo de inasistencia de las fichas futuras */}
                         <Route path="/riesgo-inasistencia" element={<RiesgoInasistencia />} />
+                        <Route path="/proyeccion-demanda" element={<ProyeccionDemanda />} />
                         {/* Característica general 6: copias de seguridad por plan */}
                         <Route path="/respaldos" element={<Respaldos />} />
 

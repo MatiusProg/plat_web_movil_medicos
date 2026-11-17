@@ -66,7 +66,9 @@ class Command(BaseCommand):
             time.sleep(pausa)
 
     def _vuelta(self):
+        from appointments import risk_reminders
         avisadas = reminders.run_due()
+        reforzadas = risk_reminders.run_due()
         self.stdout.write(self.style.SUCCESS(
-            f"Recordatorios de fichas: {avisadas} enviado(s).",
+            f"Recordatorios normales: {avisadas}; reforzados US-37: {reforzadas}.",
         ))

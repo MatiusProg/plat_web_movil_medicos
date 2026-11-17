@@ -173,6 +173,14 @@ const items: ItemMenu[] = [
         icono: 'reloj',
         requiere: 'appointments.noshow.read',
     },
+    // US-38 — demanda de las próximas semanas.
+    {
+        etiqueta: 'Proyección de demanda',
+        ruta: '/proyeccion-demanda',
+        seccion: 'Organización',
+        icono: 'indicadores',
+        requiere: 'reporting.kpi.read',
+    },
     // Característica general 6 — la frecuencia depende del plan.
     {
         etiqueta: 'Copias de seguridad',

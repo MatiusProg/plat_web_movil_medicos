@@ -121,6 +121,14 @@ class Appointment(models.Model):
         blank=True,
     )
 
+    # US-37 — segundo recordatorio únicamente para fichas con riesgo alto.
+    # Independiente del recordatorio general de US-28.
+    risk_reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    # US-37: aceptación individual por canal. El total se marca cuando todos
+    # los canales disponibles se han aceptado. No equivale a lectura humana.
+    risk_reminder_push_accepted_at = models.DateTimeField(null=True, blank=True)
+    risk_reminder_email_accepted_at = models.DateTimeField(null=True, blank=True)
+
     # Vence la reserva `pending_payment`: pasado este momento, el turno se
     # considera libre aunque la fila siga existiendo con este estado hasta que
     # algo la marque `expired` (lectura perezosa, sin tarea en segundo plano).

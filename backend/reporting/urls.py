@@ -19,6 +19,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .kpi_views import KpiView
+from .demand_views import DemandProjectionView
 from .views import (
     DatasetListView,
     InterpretVoiceView,
@@ -36,5 +37,6 @@ urlpatterns = [
     path("run/", RunReportView.as_view(), name="run"),
     path("interpret/", InterpretVoiceView.as_view(), name="interpret"),
     path("kpis/", KpiView.as_view(), name="kpis"),
+    path("demand/", DemandProjectionView.as_view(), name="demand"),
     *router.urls,
 ]

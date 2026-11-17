@@ -573,3 +573,6 @@ ASSISTANT_MIN_SIMILARITY = (
 #
 # Cambiarla exige reindexar, y con Gemini también volver a medir el umbral.
 ASSISTANT_MEDICAL_REFERENCE = env("ASSISTANT_MEDICAL_REFERENCE")
+
+# US-37: ventana del segundo recordatorio para riesgo alto (horas).
+APPOINTMENT_RISK_REMINDER_HOURS = env.int("APPOINTMENT_RISK_REMINDER_HOURS", default=3)
