@@ -285,6 +285,7 @@ def test_todo_junto_en_una_frase():
         "tipo": "pagos", "cantidad": 2, "desde": "2026-10-01",
         "hasta": "2026-10-31", "especialidad": "id-cardio",
         "especialidad_nombre": "Cardiología", "agrupar": None,
+        "profesional": None, "profesional_nombre": None,
     }
 
 
@@ -389,7 +390,8 @@ def test_el_modelo_no_puede_agregar_claves_de_alcance():
         "organization": "otra", "usuario": "admin",
     })
     assert consulta is not None
-    assert set(consulta) == {*mine_voice.CLAVES, "especialidad_nombre"}
+    assert set(consulta) == {*mine_voice.CLAVES, "especialidad_nombre",
+                             "profesional_nombre"}
 
 
 def test_el_modelo_con_una_cantidad_en_digitos_como_texto_se_acepta_y_se_recorta():
@@ -828,6 +830,7 @@ def test_con_gemini_la_consulta_la_arma_el_modelo_y_se_valida(
         "tipo": "pagos", "cantidad": 2, "desde": "2026-10-01",
         "hasta": "2026-10-31", "especialidad": str(specialty_a.id),
         "especialidad_nombre": "Cardiología", "agrupar": None,
+        "profesional": None, "profesional_nombre": None,
     }
 
 
@@ -911,7 +914,7 @@ def test_el_modelo_no_puede_cambiar_de_quien_son_los_datos(
     assert cuerpo["understood"] is True
     assert set(cuerpo["consulta"]) == {
         "tipo", "cantidad", "desde", "hasta", "especialidad",
-        "especialidad_nombre", "agrupar",
+        "especialidad_nombre", "agrupar", "profesional", "profesional_nombre",
     }
 
 
@@ -1617,3 +1620,412 @@ def test_el_pdf_con_filas_de_grupo_se_arma_y_sus_qr_siguen_con_ancho_fijo():
     assert exporters._columnas_qr(
         [f for f in filas if not isinstance(f, FilaDeGrupo)]) == [2]
     assert exporters._filas_de_datos(filas) == 3
+
+
+# ==========================================================================
+#  Por doctor: filtrar y agrupar por profesional
+# ==========================================================================
+PROFESIONALES = [
+    ("id-laura", "Laura", "Gómez"),
+    ("id-mario", "Mario", "Soto"),
+    ("id-ana", "Ana", "Soto"),
+    ("id-carlos", "Carlos", "Méndez Pérez"),
+]
+
+
+def con_doctores(frase, nombres=()):
+    return analizar(frase, ESPECIALIDADES, HOY, nombres, PROFESIONALES)
+
+
+def consulta_con_doctores(frase, **kw):
+    consulta, unresolved, _ = con_doctores(frase, **kw)
+    assert consulta is not None, f"{frase!r} no se entendió: {unresolved}"
+    return consulta
+
+
+def motivos_con_doctores(frase, **kw):
+    consulta, unresolved, _ = con_doctores(frase, **kw)
+    assert consulta is None, f"{frase!r} no debía entenderse: {consulta}"
+    return unresolved
+
+
+@pytest.mark.parametrize("frase, esperado", [
+    ("mis fichas con la doctora Gómez", "id-laura"),
+    ("mis fichas con el doctor Gomez", "id-laura"),
+    ("mis pagos con la dra Laura", "id-laura"),
+    ("mis pagos con la Dra. Laura Gómez", "id-laura"),
+    ("mis pagos del Dr. Mario Soto", "id-mario"),
+    ("mis facturas con el médico Mario Soto", "id-mario"),
+    ("mis pagos con el profesional Méndez", "id-carlos"),
+    ("mis pagos con el doctor Pérez", "id-carlos"),
+    ("mis pagos con el doctor Carlos Méndez Pérez", "id-carlos"),
+])
+def test_el_doctor_se_reconoce_con_su_titulo_por_el_apellido_o_el_nombre(
+    frase, esperado,
+):
+    assert consulta_con_doctores(frase)["profesional"] == esperado
+
+
+@pytest.mark.parametrize("frase, esperado", [
+    ("mis pagos con Laura Gómez", "id-laura"),
+    ("mis pagos de Mario Soto", "id-mario"),
+    ("mis pagos con Soto Mario", "id-mario"),
+    ("mis fichas con laura gomez", "id-laura"),
+])
+def test_sin_titulo_se_reconoce_solo_por_el_nombre_completo(frase, esperado):
+    assert consulta_con_doctores(frase)["profesional"] == esperado
+
+
+def test_un_apellido_sin_titulo_no_es_un_doctor():
+    """«Gómez» a secas puede ser cualquier cosa: no se adivina."""
+    assert any("especialidades" in m
+               for m in motivos_con_doctores("mis pagos con Gómez"))
+
+
+def test_el_nombre_dicho_viene_con_su_nombre_completo_para_mostrarlo():
+    consulta = consulta_con_doctores("mis pagos con la doctora Gómez")
+    assert consulta["profesional_nombre"] == "Laura Gómez"
+
+
+def test_dos_doctores_con_el_mismo_apellido_piden_el_nombre_completo():
+    motivos = motivos_con_doctores("mis fichas con el doctor Soto")
+    assert any("más de un profesional" in m and "Ana Soto" in m
+               and "Mario Soto" in m for m in motivos)
+    # Con el nombre completo, ya no hay duda.
+    assert consulta_con_doctores(
+        "mis fichas con el doctor Mario Soto")["profesional"] == "id-mario"
+
+
+def test_un_doctor_que_no_es_del_centro_no_se_ignora():
+    motivos = motivos_con_doctores("mis pagos con el doctor Rodríguez")
+    assert any("rodriguez" in m and "profesionales de este centro" in m
+               for m in motivos)
+
+
+def test_un_titulo_sin_nombre_se_dice():
+    assert any("de qué profesional" in m
+               for m in motivos_con_doctores("mis pagos con el doctor"))
+
+
+@pytest.mark.parametrize("frase", [
+    "mis fichas con el doctor Gómez y el doctor Mario Soto",
+    "mis pagos con la doctora Gómez y con Mario Soto",
+])
+def test_se_pide_un_solo_doctor_a_la_vez(frase):
+    assert any("un solo profesional" in m for m in motivos_con_doctores(frase))
+
+
+def test_el_doctor_se_combina_con_todo_lo_demas():
+    consulta = consulta_con_doctores(
+        "mis últimas 2 facturas de cardiología con la doctora Gómez de los "
+        "últimos 3 meses agrupadas por sucursal",
+    )
+    assert consulta == {
+        "tipo": "pagos", "cantidad": 2, "desde": "2026-08-16",
+        "hasta": "2026-11-16", "especialidad": "id-cardio",
+        "especialidad_nombre": "Cardiología", "profesional": "id-laura",
+        "profesional_nombre": "Laura Gómez", "agrupar": "sucursal",
+    }
+
+
+@pytest.mark.parametrize("frase", [
+    "mis pagos agrupados por doctor", "mis pagos por doctores",
+    "mis fichas por profesional", "mis pagos de cada doctor",
+    "mis pagos separados por médico", "mis pagos por profesionales",
+])
+def test_agrupar_por_doctor_se_dice_de_varias_maneras(frase):
+    consulta = consulta_con_doctores(frase)
+    assert consulta["agrupar"] == "profesional"
+    assert consulta["profesional"] is None
+
+
+def test_por_doctor_con_un_nombre_detras_es_un_filtro_y_no_una_agrupacion():
+    consulta = consulta_con_doctores("mis pagos por doctor Gómez")
+    assert consulta["profesional"] == "id-laura" and consulta["agrupar"] is None
+
+
+def test_filtrar_por_un_doctor_y_agrupar_por_doctor_a_la_vez_se_entiende():
+    consulta = consulta_con_doctores(
+        "mis pagos con la doctora Gómez agrupados por mes")
+    assert consulta["profesional"] == "id-laura" and consulta["agrupar"] == "mes"
+
+
+def test_un_doctor_que_comparte_nombre_con_la_familia_no_es_una_persona():
+    """«Laura» es la paciente y también la doctora: con título es la doctora."""
+    consulta = consulta_con_doctores(
+        "mis pagos con la doctora Laura Gómez", nombres=("laura",))
+    assert consulta["profesional"] == "id-laura"
+    # Sin título ni apellido, «Laura» sigue siendo una persona de la familia.
+    assert any("No se filtra por persona" in m for m in motivos_con_doctores(
+        "los pagos de Laura", nombres=("laura",)))
+
+
+def test_una_sucursal_concreta_sigue_sin_existir_pero_agrupar_por_sucursal_si():
+    assert any("sucursal concreta" in m
+               for m in motivos_con_doctores("mis pagos de la sucursal centro"))
+    assert consulta_con_doctores("mis pagos por sucursal")["agrupar"] == "sucursal"
+
+
+def test_sin_profesionales_en_el_centro_un_doctor_no_se_encuentra():
+    consulta, unresolved, _ = analizar(
+        "mis pagos con la doctora Gómez", ESPECIALIDADES, HOY)
+    assert consulta is None
+    assert any("profesionales de este centro" in m for m in unresolved)
+
+
+def test_el_resumen_nombra_al_doctor():
+    consulta = consulta_con_doctores(
+        "mis últimas 2 facturas con la doctora Gómez agrupadas por sucursal")
+    assert mine_voice.resumen(consulta) == (
+        "Pagos con comprobante · últimos 2 · con Laura Gómez · "
+        "agrupados por sucursal"
+    )
+
+
+def test_el_modelo_no_puede_elegir_al_profesional():
+    consulta, _, _ = sanear_consulta(
+        {"tipo": "pagos", "profesional": "id-mario"}, ESPECIALIDADES, HOY,
+        profesional=None,
+    )
+    assert consulta["profesional"] is None
+    consulta, _, _ = sanear_consulta(
+        {"tipo": "pagos"}, ESPECIALIDADES, HOY, profesional=("id-laura", "Laura Gómez"),
+    )
+    assert consulta["profesional"] == "id-laura"
+    assert consulta["profesional_nombre"] == "Laura Gómez"
+
+
+# ---- contra la base ----------------------------------------------------------
+@pytest.fixture
+def con_otro_soto(org_a, branches_a):
+    """Un segundo «Soto» en el centro, para que el apellido sea ambiguo."""
+    pediatra, _ = _profesional(org_a, branches_a["centro"], "Ana", "Soto",
+                               "Pediatría", "MP-3100")
+    return pediatra
+
+
+def test_el_doctor_se_reconoce_contra_los_profesionales_reales_del_centro(
+    api_client, paciente_a, practitioner_a, comprobantes_a,
+):
+    cuerpo = interpretar(autenticar(api_client, paciente_a),
+                         "mis pagos con la doctora Gómez").json()
+
+    assert cuerpo["understood"] is True
+    assert cuerpo["consulta"]["profesional"] == str(practitioner_a.id)
+    assert cuerpo["consulta"]["profesional_nombre"] == "Laura Gómez"
+    assert cuerpo["spoken_summary"] == "Pagos con comprobante · con Laura Gómez"
+
+
+def test_dos_profesionales_con_el_mismo_apellido_en_la_base_piden_el_nombre_completo(
+    api_client, paciente_a, comprobantes_a, con_otro_soto,
+):
+    cliente = autenticar(api_client, paciente_a)
+
+    ambiguo = interpretar(cliente, "mis pagos con el doctor Soto").json()
+    claro = interpretar(cliente, "mis pagos con el doctor Mario Soto").json()
+
+    assert ambiguo["understood"] is False
+    assert any("Ana Soto" in m and "Mario Soto" in m for m in ambiguo["unresolved"])
+    assert claro["understood"] is True
+    assert claro["consulta"]["profesional_nombre"] == "Mario Soto"
+
+
+def test_filtrar_por_un_doctor_trae_solo_sus_comprobantes(
+    api_client, paciente_a, practitioner_a, comprobantes_a,
+):
+    c = comprobantes_a
+    cliente = autenticar(api_client, paciente_a)
+
+    de_laura = listar(cliente, tipo="pagos", profesional=str(practitioner_a.id))
+    fichas = listar(cliente, tipo="fichas", profesional=str(practitioner_a.id))
+
+    # `f8` es del pediatra Mario Soto; las demás, de la doctora Gómez.
+    assert ids_de(de_laura) == ids(c["f3"], c["f1"], c["f2"])
+    assert ids_de(fichas) == ids(c["f3"], c["f1"], c["f2"], c["f6"])
+    assert de_laura.json()["summary"] == "Pagos con comprobante · con Laura Gómez"
+
+
+def test_el_doctor_sin_comprobantes_da_una_lista_vacia_y_no_un_error(
+    api_client, paciente_a, comprobantes_a, con_otro_soto,
+):
+    respuesta = listar(autenticar(api_client, paciente_a), tipo="pagos",
+                       profesional=str(con_otro_soto.id))
+
+    assert respuesta.status_code == 200 and respuesta.json()["count"] == 0
+
+
+def test_un_doctor_que_ya_no_atiende_igual_se_puede_filtrar_por_su_id(
+    api_client, paciente_a, org_a, practitioner_a, comprobantes_a,
+):
+    with tenant_context(org_a.id):
+        Practitioner.objects.filter(pk=practitioner_a.pk).update(is_active=False)
+
+    respuesta = listar(autenticar(api_client, paciente_a), tipo="pagos",
+                       profesional=str(practitioner_a.id))
+
+    assert respuesta.status_code == 200 and respuesta.json()["count"] == 3
+
+
+@pytest.mark.parametrize("valor", ["no-es-un-uuid", "00000000-0000-0000-0000-000000000000"])
+def test_un_profesional_invalido_o_inexistente_da_400(api_client, paciente_a, valor):
+    respuesta = listar(autenticar(api_client, paciente_a), tipo="pagos",
+                       profesional=valor)
+    assert respuesta.status_code == 400
+    assert "profesional" in respuesta.json()["errors"]
+
+
+def test_un_profesional_de_otra_organizacion_da_400(
+    api_client, paciente_a, org_b,
+):
+    with tenant_context(org_b.id):
+        ajeno = Practitioner.objects.create(
+            organization=org_b, first_name="Pedro", last_name="Vaca",
+            license_number="MP-9999",
+        )
+
+    respuesta = listar(autenticar(api_client, paciente_a), tipo="pagos",
+                       profesional=str(ajeno.id))
+
+    assert respuesta.status_code == 400
+    assert "profesional" in respuesta.json()["errors"]
+
+
+def test_agrupar_por_profesional_va_en_orden_alfabetico_con_su_total(
+    api_client, paciente_a, repartidos_a,
+):
+    respuesta = listar(autenticar(api_client, paciente_a), tipo="pagos",
+                       agrupar="profesional")
+    grupos = _grupos(respuesta)
+
+    assert list(grupos) == ["Laura Gómez", "Mario Soto", "Rita Vega"]
+    assert grupos["Laura Gómez"]["count"] == 3
+    assert grupos["Laura Gómez"]["totals"] == [{"currency": "BOB", "amount": "220.00"}]
+    assert grupos["Mario Soto"]["totals"] == [{"currency": "BOB", "amount": "80.00"}]
+    assert grupos["Rita Vega"]["totals"] == [{"currency": "BOB", "amount": "30.00"}]
+    assert sum(g["count"] for g in grupos.values()) == respuesta.json()["count"] == 5
+
+
+def test_filtrar_por_doctor_y_agrupar_por_mes_a_la_vez(
+    api_client, paciente_a, practitioner_a, repartidos_a,
+):
+    grupos = _grupos(listar(
+        autenticar(api_client, paciente_a), tipo="pagos", agrupar="mes",
+        profesional=str(practitioner_a.id),
+    ))
+
+    assert list(grupos) == ["Marzo de 2025", "Enero de 2025"]
+    assert grupos["Marzo de 2025"]["totals"] == [{"currency": "BOB", "amount": "70.00"}]
+    assert grupos["Enero de 2025"]["totals"] == [{"currency": "BOB", "amount": "150.00"}]
+
+
+@pytest.mark.isolation
+@pytest.mark.parametrize("tipo", ["pagos", "fichas"])
+def test_filtrar_por_un_doctor_no_deja_ver_a_los_pacientes_de_ese_doctor(
+    api_client, paciente_a, practitioner_a, comprobantes_a, ajenos, tipo,
+):
+    """El doctor es el mismo; los pacientes de otro titular, no."""
+    vistos = set(ids_de(listar(autenticar(api_client, paciente_a), tipo=tipo,
+                               profesional=str(practitioner_a.id), cantidad=50)))
+
+    assert vistos and vistos <= set(ids(*comprobantes_a.values()))
+    assert not vistos & set(ajenos)
+
+
+@pytest.mark.isolation
+def test_agrupar_por_doctor_tampoco_deja_ver_lo_ajeno(
+    api_client, paciente_a, comprobantes_a, ajenos,
+):
+    respuesta = listar(autenticar(api_client, paciente_a), tipo="pagos",
+                       agrupar="profesional", cantidad=50)
+    vistos = {i["appointment_id"] for g in respuesta.json()["groups"]
+              for i in g["items"]}
+
+    assert vistos and vistos <= set(ids(*comprobantes_a.values()))
+    assert not vistos & set(ajenos)
+
+
+@pytest.mark.isolation
+def test_el_otro_titular_con_el_mismo_doctor_ve_lo_suyo_y_no_lo_del_primero(
+    api_client, otro_paciente_a, practitioner_a, comprobantes_a, ajenos,
+):
+    vistos = set(ids_de(listar(autenticar(api_client, otro_paciente_a),
+                               tipo="pagos", profesional=str(practitioner_a.id))))
+
+    assert vistos == set(ajenos[:2])
+    assert not vistos & set(ids(*comprobantes_a.values()))
+
+
+def test_la_lista_de_profesionales_del_modelo_no_delata_con_quien_se_atendio(
+    org_a, paciente_a, comprobantes_a, con_otro_soto,
+):
+    """Se ofrecen todos los activos del centro, no los de esta persona."""
+    with tenant_context(org_a.id):
+        _, _, profesionales = mine_voice._contexto_del_centro(paciente_a)
+
+    nombres = {f"{n} {a}" for _, n, a in profesionales}
+    # Hay uno con el que no tiene ni un comprobante: está igual.
+    assert {"Laura Gómez", "Mario Soto", "Ana Soto"} <= nombres
+
+
+def test_con_gemini_el_modelo_no_recibe_el_doctor_ni_puede_elegirlo(
+    api_client, paciente_a, practitioner_a, comprobantes_a, monkeypatch,
+):
+    registro = []
+    simular_modelo_paciente(monkeypatch, {
+        "tipo": "pagos", "desde": "2026-08-16", "hasta": "2026-11-16",
+        # Aunque lo intente, el modelo no elige al profesional.
+        "profesional": "otro-id",
+    }, registro)
+
+    cuerpo = interpretar(
+        autenticar(api_client, paciente_a),
+        "mis pagos de los últimos 3 meses con la doctora Gómez",
+    ).json()
+
+    [(prompt_del_sistema, pedido)] = registro
+    for dato in ("gomez", "Gómez", "Gomez", "doctora", "Laura", "Mario Soto"):
+        assert dato not in pedido and dato not in prompt_del_sistema
+    assert "ultimos 3 meses" in pedido
+    assert cuerpo["understood"] is True
+    assert cuerpo["consulta"]["profesional"] == str(practitioner_a.id)
+
+
+def test_un_doctor_inexistente_no_llega_ni_al_proveedor(
+    api_client, paciente_a, comprobantes_a, monkeypatch,
+):
+    registro = []
+    simular_modelo_paciente(monkeypatch, {"tipo": "pagos"}, registro)
+
+    cuerpo = interpretar(autenticar(api_client, paciente_a),
+                         "mis pagos con el doctor Rodríguez").json()
+
+    assert cuerpo["understood"] is False and registro == []
+
+
+def test_el_doctor_cuenta_como_filtro_en_la_bitacora_y_nunca_se_guarda_su_nombre(
+    api_client, paciente_a, org_a, comprobantes_a,
+):
+    interpretar(autenticar(api_client, paciente_a),
+                "mis pagos con la doctora Gómez agrupados por mes")
+
+    with tenant_context(org_a.id):
+        asiento = AuditLog.objects.filter(action=Action.PATIENT_VOICE_QUERY).get()
+    assert asiento.detail == {
+        "understood": True, "tipo": "pagos", "filtros": 1, "agrupar": "mes",
+        "generated_by": "plantilla",
+    }
+    for pedazo in ("Gómez", "gomez", "Laura", "doctora"):
+        assert pedazo not in str(asiento.detail)
+
+
+def test_el_pdf_filtrado_y_agrupado_por_doctor_se_arma(
+    api_client, paciente_a, practitioner_a, repartidos_a,
+):
+    respuesta = listar(
+        autenticar(api_client, paciente_a), tipo="pagos", agrupar="profesional",
+        profesional=str(practitioner_a.id), formato="pdf",
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.content.startswith(b"%PDF-")
+    assert respuesta["X-Report-Rows"] == "3"

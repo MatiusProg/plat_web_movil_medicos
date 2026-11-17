@@ -7,7 +7,8 @@ cerrada:
     "mis últimas 2 facturas de cardiología en octubre"
         ↓
     {"tipo": "pagos", "cantidad": 2, "desde": "2026-10-01",
-     "hasta": "2026-10-31", "especialidad": "<uuid>", "agrupar": null}
+     "hasta": "2026-10-31", "especialidad": "<uuid>", "profesional": null,
+     "agrupar": null}
 
 Y también «mis facturas de los últimos 3 meses agrupadas por sucursal»: un
 período corrido (desde la misma fecha de hace 3 meses hasta hoy) y una
@@ -30,6 +31,11 @@ alcance —el titular y sus dependientes— lo pone `payments/mine.py` desde la
 sesión, así que una frase que nombre a otra persona no cambia de quién son los
 datos. Pedirlo se avisa (`detectar_no_soportado`) para que no parezca que
 funcionó.
+
+**El profesional tampoco lo decide el modelo.** «Con la doctora Gómez» se
+reconoce en Python contra los profesionales del centro (`sin_profesional`) y
+sale de la frase antes de llegar al proveedor. Se pide uno a la vez; si dos
+comparten el nombre, se pide el nombre completo en vez de elegir uno.
 
 **Agrupar no lo decide el modelo.** «Por mes», «por sucursal» y «por
 especialidad» son vocabulario cerrado: lo detecta Python en la frase, igual
@@ -54,10 +60,12 @@ CANTIDAD_MAXIMA = 50
 
 # Los nombres de las claves son los de la consigna de US-46; el sobre de la
 # respuesta (`understood`, `unresolved`...) conserva los de la voz del personal.
-CLAVES = ("tipo", "cantidad", "desde", "hasta", "especialidad", "agrupar")
+CLAVES = (
+    "tipo", "cantidad", "desde", "hasta", "especialidad", "profesional", "agrupar",
+)
 
 # Cómo se puede mostrar la lista. Una a la vez.
-AGRUPACIONES = ("mes", "sucursal", "especialidad")
+AGRUPACIONES = ("mes", "sucursal", "especialidad", "profesional")
 # «Los últimos N meses»: más allá de tres años no es una consulta de comprobantes.
 MESES_MAXIMOS = 36
 
@@ -109,8 +117,9 @@ _NO_SOPORTADO = (
      r"vencid[oa]s?|impag\w*|deudas?|rechazad[oa]s?|anulad[oa]s?|"
      r"reprogramad[oa]s?|por pagar)\b",
      "Solo se muestran los pagos y las fichas que tienen comprobante."),
-    (r"\b(?:doctor|doctora|dr|dra|medic[oa]s?|sucursal(?:es)?)\b",
-     "Por ahora no se filtra por profesional ni por sucursal."),
+    (r"\b(?:sucursal(?:es)?)\b",
+     "Por ahora no se filtra por una sucursal concreta. Agrupar por sucursal "
+     "sí se puede."),
     (r"\b(?:monto|montos|importe|importes|bs|bolivianos|dolares|"
      r"mayor(?:es)? a|menor(?:es)? a)\b",
      "Por ahora no se filtra por monto."),
@@ -179,11 +188,12 @@ _CLAVES_DE_AGRUPACION = (
     ("mes", r"mes(?:es)?"),
     ("sucursal", r"(?:sucursal(?:es)?|sedes?)"),
     ("especialidad", r"especialidad(?:es)?"),
+    ("profesional", r"(?:doctor(?:a|es|as)?|profesional(?:es)?|medic[oa]s?)"),
 )
 _VERBO_DE_AGRUPAR = r"(?:agrup\w*|separ\w*|divid\w*|clasific\w*|desglos\w*)"
 
 
-def sin_agrupacion(texto: str):
+def sin_agrupacion(texto: str, profesionales=()):
     """Saca de la frase cómo agrupar. Devuelve `(agrupar, texto, bloqueos)`.
 
     «Agrupadas por sucursal», «por mes», «de cada especialidad», «mes a mes».
@@ -194,11 +204,20 @@ def sin_agrupacion(texto: str):
     """
     t = _limpio(texto)
     encontradas: list[str] = []
+    # «Por doctor Pérez» no es agrupar: si lo que sigue a «doctor» es parte del
+    # nombre de un profesional, es un filtro y lo resuelve `sin_profesional`.
+    palabras = {p for _, nombre, apellido in profesionales
+                for p in _limpio(f"{nombre} {apellido}").split() if len(p) >= 2}
+    no_es_nombre = (
+        rf"(?!\s+(?:{'|'.join(re.escape(p) for p in sorted(palabras))})\b)"
+        if palabras else ""
+    )
     for nombre, patron in _CLAVES_DE_AGRUPACION:
+        cola = no_es_nombre if nombre == "profesional" else ""
         patrones = (
-            rf"\b{_VERBO_DE_AGRUPAR}\s+(?:por|segun|en|a)\s+(?:cada\s+)?{patron}\b",
-            rf"\bpor\s+(?:cada\s+)?{patron}\b",
-            rf"\bde\s+cada\s+{patron}\b",
+            rf"\b{_VERBO_DE_AGRUPAR}\s+(?:por|segun|en|a)\s+(?:cada\s+)?{patron}\b{cola}",
+            rf"\bpor\s+(?:cada\s+)?{patron}\b{cola}",
+            rf"\bde\s+cada\s+{patron}\b{cola}",
             *((r"\bmes\s+a\s+mes\b",) if nombre == "mes" else ()),
         )
         for patron_completo in patrones:
@@ -210,22 +229,117 @@ def sin_agrupacion(texto: str):
     bloqueos: list[str] = []
     if len(encontradas) > 1:
         bloqueos.append(
-            "Agrupa por una sola cosa a la vez: mes, sucursal o especialidad."
+            "Agrupa por una sola cosa a la vez: mes, sucursal, especialidad o "
+            "profesional."
         )
         return None, t, bloqueos
     if not encontradas and re.search(rf"\b{_VERBO_DE_AGRUPAR}\b", t):
         bloqueos.append(
-            "No supe por qué agrupar. Puedes agrupar por mes, sucursal o "
-            "especialidad."
+            "No supe por qué agrupar. Puedes agrupar por mes, sucursal, "
+            "especialidad o profesional."
         )
         t = _compactar(re.sub(rf"\b{_VERBO_DE_AGRUPAR}\b", " ", t))
     return (encontradas[0] if encontradas else None), t, bloqueos
 
 
 # ==========================================================================
+#  Con qué profesional
+# ==========================================================================
+_TITULOS = r"(?:doctor|doctora|dr|dra|medico|medica|profesional)"
+
+
+def sin_profesional(texto: str, profesionales=()):
+    """Saca de la frase el profesional. Devuelve `(profesional, texto, bloqueos)`.
+
+    `profesionales` son los del centro del paciente, `(id, nombre, apellido)`:
+    es el catálogo público del centro, el mismo de «Buscar profesionales», no
+    los que atendieron a esta persona. `profesional` es `(id, nombre completo)`
+    o `None`.
+
+    Se reconoce de dos maneras: **con título** —«la doctora Gómez», «el Dr.
+    Mario Soto», «la dra Laura»—, donde alcanza con el apellido o el nombre si
+    identifican a uno solo, o **por el nombre completo** —«con Laura Gómez»—.
+    Un nombre que no es de nadie, o que es de dos, **no se adivina**: se dice.
+    Es uno a la vez.
+    """
+    t = _limpio(texto)
+    fichas = []
+    for id_, nombre, apellido in profesionales:
+        completo = f"{nombre} {apellido}".strip()
+        fichas.append((id_, completo, set(_limpio(completo).split()),
+                       _limpio(completo), _limpio(f"{apellido} {nombre}")))
+
+    bloqueos: list[str] = []
+    encontrados: dict = {}
+
+    # 1. Con título: «la doctora Gómez». Se busca siempre sobre el texto
+    # vigente: cada título que se resuelve (o se descarta) sale de la frase.
+    while True:
+        coincidencia = re.search(rf"\b{_TITULOS}\b", t)
+        if coincidencia is None:
+            break
+        palabras = t[coincidencia.end():].split()[:4]
+        elegidos, largo = [], 0
+        for k in range(1, len(palabras) + 1):
+            candidatos = [f for f in fichas if set(palabras[:k]) <= f[2]]
+            if not candidatos:
+                break
+            elegidos, largo = candidatos, k
+        if not elegidos:
+            dicho = palabras[0] if palabras else ""
+            bloqueos.append(
+                f"No encontré a «{dicho}» entre los profesionales de este centro."
+                if dicho else "No supe de qué profesional hablas."
+            )
+        elif len(elegidos) > 1:
+            # Si lo dicho es exactamente el nombre completo de uno, es ese.
+            dicho_completo = " ".join(palabras[:largo])
+            exactos = [f for f in elegidos if dicho_completo in (f[3], f[4])]
+            if len(exactos) == 1:
+                encontrados[exactos[0][0]] = exactos[0][1]
+            else:
+                nombres_ = ", ".join(sorted(f[1] for f in elegidos))
+                bloqueos.append(
+                    f"Hay más de un profesional con ese nombre: {nombres_}. Di "
+                    "el nombre completo."
+                )
+        else:
+            encontrados[elegidos[0][0]] = elegidos[0][1]
+
+        # Sale de la frase el título y, si se reconoció, las palabras del nombre.
+        reconocidas = " ".join(palabras[:largo]) if elegidos else ""
+        quitar = rf"\b{_TITULOS}" + (
+            rf"\s+{re.escape(reconocidas)}\b" if reconocidas else r"\b"
+        )
+        t = _compactar(re.sub(
+            rf"(?:\b(?:con|de|del|por|para|al)\s+)?(?:\b(?:el|la)\s+)?{quitar}",
+            " ", t, count=1,
+        ))
+
+    # 2. Por el nombre completo, sin título: «con Laura Gómez».
+    for id_, completo, _tokens, directo, invertido in fichas:
+        if id_ in encontrados or " " not in directo:
+            continue
+        for forma in {directo, invertido}:
+            patron = rf"(?:\b(?:con|de|del|por|para|al)\s+)?\b{re.escape(forma)}\b"
+            if re.search(patron, t):
+                encontrados[id_] = completo
+                t = _compactar(re.sub(patron, " ", t, count=1))
+                break
+
+    if len(encontrados) > 1:
+        bloqueos.append("Pide un solo profesional a la vez.")
+        return None, t, bloqueos
+    if encontrados:
+        id_, nombre = next(iter(encontrados.items()))
+        return (id_, nombre), t, bloqueos
+    return None, t, bloqueos
+
+
+# ==========================================================================
 #  El analizador local
 # ==========================================================================
-def analizar(texto, especialidades, hoy, nombres=()):
+def analizar(texto, especialidades, hoy, nombres=(), profesionales=()):
     """Lee la frase por reglas fijas. Devuelve `(consulta, unresolved, avisos)`.
 
     `consulta` es `None` si algo impide ejecutar —tipo ausente, un criterio que
@@ -237,8 +351,9 @@ def analizar(texto, especialidades, hoy, nombres=()):
     if not t:
         return None, ["No escuché nada."], []
 
-    agrupar, t, bloqueos = sin_agrupacion(t)
-    bloqueos = [*bloqueos, *detectar_no_soportado(t, nombres)]
+    agrupar, t, bloqueos = sin_agrupacion(t, profesionales)
+    profesional, t, de_profesional = sin_profesional(t, profesionales)
+    bloqueos = [*bloqueos, *de_profesional, *detectar_no_soportado(t, nombres)]
     avisos: list[str] = []
 
     tipo = _tipo(t, bloqueos)
@@ -253,7 +368,8 @@ def analizar(texto, especialidades, hoy, nombres=()):
 
     if bloqueos:
         return None, bloqueos, avisos
-    return _armar(tipo, cantidad, desde, hasta, especialidad, agrupar), [], avisos
+    return (_armar(tipo, cantidad, desde, hasta, especialidad, agrupar, profesional),
+            [], avisos)
 
 
 def _tipo(t, bloqueos):
@@ -467,7 +583,8 @@ def _compactar(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
-def _armar(tipo, cantidad, desde, hasta, especialidad, agrupar=None):
+def _armar(tipo, cantidad, desde, hasta, especialidad, agrupar=None,
+           profesional=None):
     return {
         "tipo": tipo,
         "cantidad": cantidad,
@@ -475,6 +592,8 @@ def _armar(tipo, cantidad, desde, hasta, especialidad, agrupar=None):
         "hasta": hasta.isoformat() if hasta else None,
         "especialidad": especialidad[0] if especialidad else None,
         "especialidad_nombre": especialidad[1] if especialidad else None,
+        "profesional": profesional[0] if profesional else None,
+        "profesional_nombre": profesional[1] if profesional else None,
         "agrupar": agrupar,
     }
 
@@ -504,12 +623,12 @@ Reglas:
   no llegó. Un año suelto es del 1 de enero al 31 de diciembre.
 - «Los últimos N meses» son corridos: "desde" es la fecha de hoy menos N meses
   y "hasta" es la fecha de hoy. «El último mes» es N = 1.
-- El texto llega en minúsculas y sin tildes, y sin la parte que pide agrupar
-  (eso no lo decides tú).
+- El texto llega en minúsculas y sin tildes, y sin la parte que pide agrupar ni
+  la que nombra a un profesional (eso no lo decides tú).
 - "especialidad" es uno de los nombres de la lista, copiado igual. Si pide una
   que no está en la lista, déjala en null y anótala en "no_entendido".
-- No hay forma de pedir por persona, profesional, sucursal, monto, estado,
-  días ni semanas: anótalo en "no_entendido".
+- No hay forma de pedir por persona, sucursal concreta, monto, estado, días ni
+  semanas: anótalo en "no_entendido".
 - Nunca inventes datos. Lo dudoso va en "no_entendido".
 """
 
@@ -528,12 +647,14 @@ def pedido_al_modelo(texto, especialidades, hoy) -> str:
     )
 
 
-def sanear_consulta(crudo, especialidades, hoy, nombres=(), agrupar=None):
+def sanear_consulta(crudo, especialidades, hoy, nombres=(), agrupar=None,
+                    profesional=None):
     """Valida lo que devolvió el modelo. `(consulta, unresolved, avisos)`.
 
     Solo se leen las cinco claves que el modelo llena; cualquier otra —un
     `paciente`, un `organization`, un `agrupar`— se descarta sin mirarla. Cómo
-    agrupar lo trae `agrupar`, que sacó Python de la frase (`sin_agrupacion`).
+    agrupar y con qué profesional lo traen `agrupar` y `profesional`, que sacó
+    Python de la frase (`sin_agrupacion` y `sin_profesional`).
     Lo que el modelo anotó en `no_entendido` y todo lo que no pase la
     validación bloquea.
     """
@@ -582,7 +703,8 @@ def sanear_consulta(crudo, especialidades, hoy, nombres=(), agrupar=None):
 
     if bloqueos:
         return None, bloqueos, avisos
-    return _armar(tipo, cantidad, desde, hasta, especialidad, agrupar), [], avisos
+    return (_armar(tipo, cantidad, desde, hasta, especialidad, agrupar, profesional),
+            [], avisos)
 
 
 def _fecha(valor, hoy, bloqueos):
@@ -611,6 +733,8 @@ def resumen(consulta) -> str:
                       if consulta["cantidad"] > 1 else "el último")
     if consulta["especialidad_nombre"]:
         partes.append(consulta["especialidad_nombre"])
+    if consulta.get("profesional_nombre"):
+        partes.append(f"con {consulta['profesional_nombre']}")
     periodo = _periodo(consulta["desde"], consulta["hasta"])
     if periodo:
         partes.append(periodo)
@@ -663,28 +787,32 @@ def interpretar_consulta(texto, user, *, hoy=None) -> dict:
         return _nada(["No escuché nada."])
 
     hoy = hoy or timezone.localdate()
-    especialidades, nombres = _contexto_del_centro(user)
+    especialidades, nombres, profesionales = _contexto_del_centro(user)
 
     # Cómo agrupar lo decide Python, con o sin proveedor, y el modelo recibe
     # la frase sin esa parte: no puede inventar una agrupación ni dejarla sin
     # efecto.
-    agrupar, sin_agrupar, bloqueos = sin_agrupacion(texto)
-    motivos = [*bloqueos, *detectar_no_soportado(sin_agrupar, nombres)]
+    agrupar, sin_agrupar, bloqueos = sin_agrupacion(texto, profesionales)
+    profesional, limpio, de_profesional = sin_profesional(sin_agrupar, profesionales)
+    motivos = [*bloqueos, *de_profesional, *detectar_no_soportado(limpio, nombres)]
     if motivos:
         return _nada(motivos)
 
+    # El proveedor recibe la frase sin la parte que agrupa ni la que nombra a
+    # un profesional: ni los nombres de los profesionales ni quién atendió a
+    # esta persona salen del servidor.
     crudo, generado_por = voice.ask_model(
         SYSTEM_PROMPT_PACIENTE,
-        pedido_al_modelo(sin_agrupar, especialidades, hoy),
+        pedido_al_modelo(limpio, especialidades, hoy),
     )
     if crudo is not None:
         consulta, unresolved, avisos = sanear_consulta(
-            crudo, especialidades, hoy, nombres, agrupar,
+            crudo, especialidades, hoy, nombres, agrupar, profesional,
         )
     else:
         generado_por = "plantilla"
         consulta, unresolved, avisos = analizar(
-            texto, especialidades, hoy, nombres,
+            texto, especialidades, hoy, nombres, profesionales,
         )
 
     if consulta is None:
@@ -699,14 +827,25 @@ def interpretar_consulta(texto, user, *, hoy=None) -> dict:
 
 
 def _contexto_del_centro(user):
-    """Las especialidades del centro y los nombres de pila de la familia."""
-    from catalog.models import Specialty
+    """Las especialidades y los profesionales del centro, y los nombres de pila
+    de la familia.
+
+    Los profesionales son **todos los activos del centro**, no los de esta
+    persona: es el catálogo público de «Buscar profesionales». Filtrarlos por
+    quién la atendió delataría con quién se atendió a quien mire la lista.
+    """
+    from catalog.models import Practitioner, Specialty
     from patients.models import Patient
 
     especialidades = list(
         Specialty.objects
         .filter(organization_id=user.organization_id, is_active=True)
         .values_list("id", "name")
+    )
+    profesionales = list(
+        Practitioner.objects
+        .filter(organization_id=user.organization_id, is_active=True)
+        .values_list("id", "first_name", "last_name")
     )
     titular = getattr(user, "patient_profile", None)
     nombres: set[str] = set()
@@ -719,4 +858,4 @@ def _contexto_del_centro(user):
                 limpio = _limpio(parte)
                 if len(limpio) >= 3:
                     nombres.add(limpio)
-    return especialidades, sorted(nombres)
+    return especialidades, sorted(nombres), profesionales

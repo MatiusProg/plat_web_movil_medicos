@@ -466,6 +466,8 @@ void main() {
       especialidad: 'id-cardio',
       especialidadNombre: 'Cardiología',
       agrupar: 'sucursal',
+      profesional: 'id-laura',
+      profesionalNombre: 'Laura Gómez',
     );
 
     final partes = Uri.splitQueryString(consulta.parametros('pdf'));
@@ -477,8 +479,50 @@ void main() {
       'desde': '2026-10-01',
       'hasta': '2026-10-31',
       'especialidad': 'id-cardio',
+      'profesional': 'id-laura',
       'agrupar': 'sucursal',
     });
+    // El nombre es solo para mostrarlo: no viaja al listado.
+    expect(partes.containsKey('profesional_nombre'), isFalse);
+  });
+
+  testWidgets('pedir por un doctor viaja con su id y se muestra su nombre', (
+    tester,
+  ) async {
+    final servidor = _Servidor(
+      interpretacion: {
+        'understood': true,
+        'consulta': {
+          'tipo': 'pagos',
+          'cantidad': null,
+          'desde': null,
+          'hasta': null,
+          'especialidad': null,
+          'especialidad_nombre': null,
+          'agrupar': null,
+          'profesional': 'id-laura',
+          'profesional_nombre': 'Laura Gómez',
+        },
+        'spoken_summary': 'Pagos con comprobante · con Laura Gómez',
+        'unresolved': <String>[],
+        'generated_by': 'plantilla',
+      },
+    );
+    await _abrir(tester, servidor);
+
+    await _escribirYBuscar(tester, 'mis pagos con la doctora Gómez');
+
+    expect(
+      find.text('Entendí: Pagos con comprobante · con Laura Gómez'),
+      findsOneWidget,
+    );
+    expect(servidor.listados.single.queryParameters['profesional'], 'id-laura');
+    expect(
+      servidor.listados.single.queryParameters.containsKey(
+        'profesional_nombre',
+      ),
+      isFalse,
+    );
   });
 
   testWidgets('agrupada, cada sección dice cuántos tiene y cuánto suma', (

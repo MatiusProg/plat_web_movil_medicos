@@ -45,7 +45,7 @@ from django.utils import timezone
 
 from appointments import receipts
 from appointments.models import Appointment
-from catalog.models import Specialty
+from catalog.models import Practitioner, Specialty
 from reporting.exporters import FilaDeGrupo, QRCelda
 
 from catalog.models import normalize_text
@@ -78,6 +78,7 @@ class Consulta:
     hasta: dt.date | None = None
     especialidad: uuid.UUID | None = None
     agrupar: str | None = None
+    profesional: uuid.UUID | None = None
 
     @property
     def limite(self) -> int:
@@ -90,7 +91,8 @@ class Consulta:
         """Cuántos criterios trae, sin contar el tipo ni cómo se agrupa."""
         return sum(
             valor is not None
-            for valor in (self.cantidad, self.desde, self.hasta, self.especialidad)
+            for valor in (self.cantidad, self.desde, self.hasta,
+                          self.especialidad, self.profesional)
         )
 
 
@@ -154,6 +156,22 @@ def parse_consulta(params, organization):
                 errores["especialidad"] = ["No es una especialidad de este centro."]
                 especialidad = None
 
+    profesional = None
+    crudo = params.get("profesional")
+    if crudo not in (None, ""):
+        try:
+            profesional = uuid.UUID(str(crudo))
+        except ValueError:
+            errores["profesional"] = ["No es un profesional válido."]
+        else:
+            # Basta con que sea del centro del paciente: uno que ya no atiende
+            # puede tener comprobantes suyos, y verlos es lo correcto.
+            if not Practitioner.objects.filter(
+                id=profesional, organization=organization,
+            ).exists():
+                errores["profesional"] = ["No es un profesional de este centro."]
+                profesional = None
+
     agrupar = params.get("agrupar")
     if agrupar in (None, ""):
         agrupar = None
@@ -163,7 +181,7 @@ def parse_consulta(params, organization):
     if errores:
         return None, errores
     return Consulta(tipo, cantidad, fechas.get("desde"), fechas.get("hasta"),
-                    especialidad, agrupar), {}
+                    especialidad, agrupar, profesional), {}
 
 
 # ==========================================================================
@@ -233,6 +251,10 @@ def consultar(user, consulta: Consulta):
         consulta_base = consulta_base.filter(
             **{f"{prefijo}practitioner__specialties": consulta.especialidad},
         )
+    if consulta.profesional:
+        consulta_base = consulta_base.filter(
+            **{f"{prefijo}practitioner_id": consulta.profesional},
+        )
     return consulta_base.order_by("-fecha", "-id")
 
 
@@ -284,6 +306,9 @@ def _grupo_de(item: dict, por: str) -> tuple[str, str, str]:
         return clave, etiqueta, clave
     if por == "sucursal":
         nombre = item["branch_name"] or "Sin sucursal"
+        return nombre, nombre, normalize_text(nombre)
+    if por == "profesional":
+        nombre = item["practitioner_name"] or "Sin profesional"
         return nombre, nombre, normalize_text(nombre)
     nombre = ", ".join(sorted(item["specialties"])) or "Sin especialidad"
     return nombre, nombre, normalize_text(nombre)

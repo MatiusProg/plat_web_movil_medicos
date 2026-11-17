@@ -18,7 +18,7 @@ import { descargarArchivo, pedir, type Contexto } from './cliente'
 export type TipoDeComprobante = 'pagos' | 'fichas'
 
 /** Cómo se muestra la lista. Solo presentación: no cambia qué entra. */
-export type Agrupacion = 'mes' | 'sucursal' | 'especialidad'
+export type Agrupacion = 'mes' | 'sucursal' | 'especialidad' | 'profesional'
 
 /** Lo que entendió el sistema. Se manda tal cual al listado. */
 export interface Consulta {
@@ -31,6 +31,10 @@ export interface Consulta {
   especialidad: string | null
   /** Solo para mostrarla; no viaja al listado. */
   especialidad_nombre: string | null
+  /** Id del profesional del centro, si pidió «con la doctora Gómez». */
+  profesional: string | null
+  /** Solo para mostrarlo; no viaja al listado. */
+  profesional_nombre: string | null
   /** Cómo agrupar la lista. Lo decide el backend desde la frase. */
   agrupar: Agrupacion | null
 }
@@ -110,6 +114,7 @@ function parametros(consulta: Consulta, formato: 'json' | 'pdf'): string {
   if (consulta.desde) url.set('desde', consulta.desde)
   if (consulta.hasta) url.set('hasta', consulta.hasta)
   if (consulta.especialidad) url.set('especialidad', consulta.especialidad)
+  if (consulta.profesional) url.set('profesional', consulta.profesional)
   if (consulta.agrupar) url.set('agrupar', consulta.agrupar)
   return url.toString()
 }

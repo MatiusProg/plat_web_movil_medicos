@@ -25,6 +25,8 @@ class ConsultaDeComprobantes {
     this.especialidad,
     this.especialidadNombre,
     this.agrupar,
+    this.profesional,
+    this.profesionalNombre,
   });
 
   /// `pagos` o `fichas`.
@@ -41,9 +43,16 @@ class ConsultaDeComprobantes {
   /// Solo para mostrarla; no viaja al listado.
   final String? especialidadNombre;
 
-  /// Cómo agrupar la lista: `mes`, `sucursal` o `especialidad`. Es solo
-  /// presentación: no cambia qué entra. Lo decide el backend desde la frase.
+  /// Cómo agrupar la lista: `mes`, `sucursal`, `especialidad` o `profesional`.
+  /// Es solo presentación: no cambia qué entra. Lo decide el backend desde la
+  /// frase.
   final String? agrupar;
+
+  /// El id del profesional, si pidió «con la doctora Gómez».
+  final String? profesional;
+
+  /// Solo para mostrarlo; no viaja al listado.
+  final String? profesionalNombre;
 
   factory ConsultaDeComprobantes.fromJson(Map<String, dynamic> json) =>
       ConsultaDeComprobantes(
@@ -54,6 +63,8 @@ class ConsultaDeComprobantes {
         especialidad: json['especialidad'] as String?,
         especialidadNombre: json['especialidad_nombre'] as String?,
         agrupar: json['agrupar'] as String?,
+        profesional: json['profesional'] as String?,
+        profesionalNombre: json['profesional_nombre'] as String?,
       );
 
   /// Los parámetros de la URL. El nombre es `formato` y no `format`: DRF
@@ -64,6 +75,7 @@ class ConsultaDeComprobantes {
     if (desde != null) partes['desde'] = desde!;
     if (hasta != null) partes['hasta'] = hasta!;
     if (especialidad != null) partes['especialidad'] = especialidad!;
+    if (profesional != null) partes['profesional'] = profesional!;
     if (agrupar != null) partes['agrupar'] = agrupar!;
     return Uri(queryParameters: partes).query;
   }

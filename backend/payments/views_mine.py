@@ -56,7 +56,8 @@ class MyReceiptsInterpretView(APIView):
                 "tipo": consulta.get("tipo"),
                 "filtros": sum(
                     consulta.get(c) is not None
-                    for c in ("cantidad", "desde", "hasta", "especialidad")
+                    for c in ("cantidad", "desde", "hasta", "especialidad",
+                              "profesional")
                 ),
                 "agrupar": consulta.get("agrupar"),
                 "generated_by": resultado["generated_by"],
@@ -68,9 +69,9 @@ class MyReceiptsInterpretView(APIView):
 class MyReceiptsView(APIView):
     """`GET /api/payments/mine/receipts/` — la lista, o el PDF con los QR.
 
-    `?tipo=pagos|fichas&cantidad=&desde=&hasta=&especialidad=&agrupar=&formato=`
-    (`agrupar` es `mes`, `sucursal` o `especialidad`; `formato`, `json` o
-    `pdf`). El parámetro se llama `formato` y no `format` porque DRF reserva
+    `?tipo=pagos|fichas&cantidad=&desde=&hasta=&especialidad=&profesional=`
+    `&agrupar=&formato=` (`agrupar` es `mes`, `sucursal`, `especialidad` o
+    `profesional`; `formato`, `json` o `pdf`). El parámetro se llama `formato` y no `format` porque DRF reserva
     `?format=` para elegir el renderizador y respondería 404.
 
     Agrupar es solo cómo se presenta: `items` sigue siendo la lista completa y
@@ -113,17 +114,21 @@ class MyReceiptsView(APIView):
     @staticmethod
     def _como_dict(consulta):
         """La consulta en la forma que lee `mine_voice.resumen`."""
-        from catalog.models import Specialty
+        from catalog.models import Practitioner, Specialty
 
         nombre = None
         if consulta.especialidad:
             nombre = (Specialty.objects.filter(id=consulta.especialidad)
                       .values_list("name", flat=True).first())
+        medico = None
+        if consulta.profesional:
+            medico = Practitioner.objects.filter(id=consulta.profesional).first()
         return {
             "tipo": consulta.tipo, "cantidad": consulta.cantidad,
             "desde": consulta.desde.isoformat() if consulta.desde else None,
             "hasta": consulta.hasta.isoformat() if consulta.hasta else None,
             "especialidad_nombre": nombre, "agrupar": consulta.agrupar,
+            "profesional_nombre": medico.full_name if medico else None,
         }
 
     @staticmethod
