@@ -20,6 +20,7 @@ import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/appointments/appointments_api.dart';
 import 'package:mobile/features/appointments/confirmar_reserva_sheet.dart';
 import 'package:mobile/features/dependents/dependents_api.dart';
+import 'package:mobile/features/waitlist/anotarse_card.dart';
 
 import 'availability_api.dart';
 
@@ -153,11 +154,26 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
 
           final datos = snapshot.data;
           if (datos == null || datos.totalEspacios == 0) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No hay espacios libres en las próximas dos semanas.'),
-              ),
+            // US-52: sin turnos, se ofrece la lista de espera (salvo que el
+            // profesional esté inactivo: no tiene sentido esperar a uno que
+            // no atiende).
+            final puedeAnotarse = datos?.practitionerActive ?? true;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+              children: [
+                const Text(
+                  'No hay espacios libres en las próximas dos semanas.',
+                  textAlign: TextAlign.center,
+                ),
+                if (puedeAnotarse) ...[
+                  const SizedBox(height: 16),
+                  AnotarseCard(
+                    practitionerId: widget.practitionerId,
+                    client: _client!,
+                    onHayTurnos: _cargar,
+                  ),
+                ],
+              ],
             );
           }
 

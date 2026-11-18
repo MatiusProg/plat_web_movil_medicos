@@ -167,6 +167,7 @@ class _PlanCard extends StatelessWidget {
     ('ai_summaries', 'Resúmenes con IA'),
     ('report_export', 'Exportar reportes'),
     ('online_payment', 'Pago en línea'),
+    ('waitlist', 'Lista de espera'),
   ];
 
   static String _tope(int? valor) => valor == null ? 'Sin límite' : '$valor';
