@@ -27,6 +27,7 @@ from audit.services import record
 from .booking import SlotAlreadyTaken, book_appointment
 from .mixins import owns_appointment
 from .models import Appointment
+from .waitlist import offer_freed_slot
 from .permissions import CanCancelAppointments, CanRescheduleAppointments
 from .serializers import AppointmentSerializer, RescheduleAppointmentSerializer
 
@@ -121,6 +122,11 @@ def reschedule_appointment(
         nueva.rescheduled_from = appointment
         nueva.save(update_fields=["rescheduled_from", "updated_at"])
 
+        # US-52: el turno viejo quedó libre; si alguien lo espera, se le
+        # ofrece. Después del COMMIT, y sin poder deshacer la reprogramación.
+        transaction.on_commit(lambda: offer_freed_slot(
+            appointment.id, appointment.organization_id))
+
     return nueva
 
 
@@ -190,6 +196,10 @@ class CancelAppointmentView(APIView):
 
         transaction.on_commit(lambda: notify(CANCELLED, appointment.id,
                                              appointment.organization_id))
+        # US-52: el turno quedó libre; si alguien lo espera en la lista, se le
+        # guarda y se le avisa. Nunca propaga un error.
+        transaction.on_commit(lambda: offer_freed_slot(
+            appointment.id, appointment.organization_id))
         return Response(AppointmentSerializer(appointment).data)
 
 

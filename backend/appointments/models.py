@@ -237,3 +237,134 @@ class Appointment(models.Model):
     @property
     def is_active(self) -> bool:
         return self.status in self.ACTIVE_STATUSES
+
+
+class WaitlistEntry(models.Model):
+    """US-52 — Un paciente esperando que se libere un turno.
+
+    Se anota por un **profesional** o por una **especialidad** (cualquiera de
+    sus profesionales), con el rango de fechas que le sirve y, si quiere, una
+    sucursal. Cuando se cancela una ficha que encaja, `waitlist.offer_freed_slot`
+    le guarda el turno 15 minutos como una ficha `pending_payment` real
+    (`offered_appointment`): así el turno lo protege el mismo índice único de
+    siempre, el pago es el de siempre y el vencimiento es el de las reservas
+    (`holds.release_expired_holds`).
+
+    Estados:
+
+    - `waiting`    esperando; cuenta para la posición en la fila.
+    - `offered`    se le guardó un turno y tiene 15 minutos para pagarlo.
+    - `booked`     pagó el turno ofrecido.
+    - `expired`    no lo tomó a tiempo, o pasó su rango de fechas.
+    - `cancelled`  salió de la lista.
+    """
+
+    class Status(models.TextChoices):
+        WAITING = "waiting", "Esperando"
+        OFFERED = "offered", "Turno ofrecido"
+        BOOKED = "booked", "Tomó el turno"
+        EXPIRED = "expired", "Venció"
+        CANCELLED = "cancelled", "Salió de la lista"
+
+    # Los que cuentan para la unicidad y la posición: la entrada sigue viva.
+    LIVE_STATUSES = [Status.WAITING, Status.OFFERED]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="waitlist_entries",
+    )
+
+    # Para quién es el turno: el titular o un dependiente a cargo (US-07).
+    patient = models.ForeignKey(
+        "patients.Patient", on_delete=models.PROTECT,
+        related_name="waitlist_entries",
+    )
+    # Quién se anotó. El aviso va al paciente o, si es un dependiente sin
+    # cuenta, a su titular (`attendance.recipient_user`).
+    requested_by = models.ForeignKey(
+        "accounts.User", on_delete=models.PROTECT,
+        related_name="waitlist_entries",
+    )
+
+    practitioner = models.ForeignKey(
+        "catalog.Practitioner", on_delete=models.PROTECT,
+        null=True, blank=True, related_name="waitlist_entries",
+    )
+    specialty = models.ForeignKey(
+        "catalog.Specialty", on_delete=models.PROTECT,
+        null=True, blank=True, related_name="waitlist_entries",
+    )
+    branch = models.ForeignKey(
+        "catalog.Branch", on_delete=models.PROTECT,
+        null=True, blank=True, related_name="waitlist_entries",
+    )
+
+    # Los días (en la zona de la sede) en que le sirve el turno, ambos incluidos.
+    date_from = models.DateField()
+    date_to = models.DateField()
+
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.WAITING,
+    )
+
+    # La ficha `pending_payment` que se le guardó, y desde cuándo.
+    offered_appointment = models.ForeignKey(
+        "appointments.Appointment", on_delete=models.PROTECT,
+        null=True, blank=True, related_name="waitlist_offers",
+    )
+    offered_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "waitlist_entries"
+        verbose_name = "entrada de lista de espera"
+        verbose_name_plural = "entradas de lista de espera"
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "organization"], name="uq_waitlist_id_org",
+            ),
+            # Una sola entrada viva por paciente y profesional, y otra por
+            # paciente y especialidad: anotarse dos veces no adelanta lugar.
+            models.UniqueConstraint(
+                fields=["patient", "practitioner"],
+                condition=models.Q(
+                    status__in=["waiting", "offered"],
+                    practitioner__isnull=False,
+                ),
+                name="uq_waitlist_live_patient_practitioner",
+            ),
+            models.UniqueConstraint(
+                fields=["patient", "specialty"],
+                condition=models.Q(
+                    status__in=["waiting", "offered"],
+                    specialty__isnull=False,
+                ),
+                name="uq_waitlist_live_patient_specialty",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(practitioner__isnull=False)
+                    | models.Q(specialty__isnull=False)
+                ),
+                name="ck_waitlist_target",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(date_to__gte=models.F("date_from")),
+                name="ck_waitlist_date_order",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=["waiting", "offered", "booked", "expired",
+                                "cancelled"],
+                ),
+                name="ck_waitlist_status",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.patient_id} · {self.status} · {self.date_from}–{self.date_to}"

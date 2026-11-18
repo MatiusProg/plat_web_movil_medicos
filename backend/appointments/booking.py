@@ -40,6 +40,7 @@ from patients.models import Patient
 from scheduling.availability import generate_slots
 from scheduling.models import Schedule
 
+from .holds import release_expired_holds
 from .mixins import UUID_REGEX, OrganizationScopedMixin
 from .models import Appointment
 from .permissions import CanCreateAppointments, CanReadAppointments
@@ -125,6 +126,13 @@ def book_appointment(
             )
 
         ends_at = _validate_slot_is_real(schedule=schedule, starts_at=starts_at)
+
+        # US-52: una reserva pendiente que ya venció no puede seguir ocupando
+        # el turno (ver `holds.py`). Con el `Schedule` bloqueado arriba, nadie
+        # más la toca mientras se libera.
+        release_expired_holds(
+            now=now, schedule_id=schedule.id, starts_at=starts_at,
+        )
 
         try:
             return Appointment.objects.create(

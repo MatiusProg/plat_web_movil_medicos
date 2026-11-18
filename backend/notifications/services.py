@@ -1,6 +1,6 @@
 """US-28 — Los avisos de la ficha: push y correo.
 
-Cuatro eventos. Para cada uno sale un push a todos los teléfonos del
+Cinco eventos. Para cada uno sale un push a todos los teléfonos del
 destinatario y un correo:
 
     confirmacion   se pagó la ficha       el correo es el de US-21: comprobante
@@ -9,9 +9,13 @@ destinatario y un correo:
     recordatorio_reforzado                US-36: el segundo aviso, más cerca de
                    la hora                la hora; lo dispara el mismo módulo
     cancelacion    se canceló la ficha    dice si se devolvió el pago
+    cupo_liberado  US-52: se liberó un turno que el paciente esperaba en la
+                   lista de espera; se le guarda `APPOINTMENT_HOLD_MINUTES`
+                   minutos como una ficha pendiente de pago
 
 El texto del recordatorio reforzado **no dice por qué** se manda: el paciente
-no ve cómo lo califica el centro (US-35).
+no ve cómo lo califica el centro (US-35). El del cupo liberado **no dice nada
+de otros pacientes**: ni quién canceló ni quién sigue en la fila.
 
 El destinatario es el paciente o, si es un dependiente sin cuenta, su titular
 (`appointments.attendance.recipient_user`, el mismo criterio que el correo).
@@ -40,7 +44,8 @@ CONFIRMED = "confirmacion"
 REMINDER = "recordatorio"
 REINFORCED_REMINDER = "recordatorio_reforzado"
 CANCELLED = "cancelacion"
-EVENTS = (CONFIRMED, REMINDER, REINFORCED_REMINDER, CANCELLED)
+CUPO_LIBERADO = "cupo_liberado"
+EVENTS = (CONFIRMED, REMINDER, REINFORCED_REMINDER, CANCELLED, CUPO_LIBERADO)
 
 
 def notify(event: str, appointment_id, organization_id) -> None:
@@ -101,6 +106,10 @@ def _recipient(appointment):
     return recipient_user(appointment)
 
 
+def _minutos() -> int:
+    return settings.APPOINTMENT_HOLD_MINUTES
+
+
 def _cuando(appointment) -> str:
     inicio = timezone.localtime(appointment.starts_at)
     dias = (inicio.date() - timezone.localdate()).days
@@ -122,6 +131,10 @@ def _push_text(event: str, appointment) -> tuple[str, str]:
         return ("Tu ficha empieza pronto",
                 f"{_cuando(appointment)} con {profesional} en {sucursal}. "
                 "Si no puedes ir, cancélala para liberar el turno.")
+    if event == CUPO_LIBERADO:
+        return ("Se liberó un turno para ti",
+                f"{_cuando(appointment)} con {profesional} en {sucursal}. "
+                f"Págala en los próximos {_minutos()} minutos o pasará al siguiente.")
     devolucion = _devolucion(appointment)
     return ("Tu ficha fue cancelada",
             f"La del {inicio:%d/%m} a las {inicio:%H:%M} con {profesional}."
@@ -168,6 +181,18 @@ def _email(event: str, appointment) -> tuple[str, str]:
         cuerpo += ("Si no puedes ir, cancélala ahora desde la aplicación: "
                    "otro paciente podrá usar el turno.\n")
         return f"Tu ficha de {_cuando(appointment).lower()}", cuerpo
+
+    if event == CUPO_LIBERADO:
+        cuerpo = (
+            saludo
+            + f"Se liberó un turno en {organizacion.name} y estabas en la lista "
+            "de espera.\n\n"
+            + _datos(appointment)
+            + f"\nTienes {_minutos()} minutos para tomarlo. Entra a la aplicación, abre "
+            "«Mis fichas» y paga para confirmarlo. Pasado ese tiempo, el turno "
+            "pasa a la siguiente persona de la lista.\n"
+        )
+        return f"Se liberó un turno: {_cuando(appointment).lower()}", cuerpo
 
     devolucion = _devolucion(appointment)
     cuerpo = (

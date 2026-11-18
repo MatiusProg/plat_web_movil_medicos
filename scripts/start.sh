@@ -53,6 +53,12 @@ python -u manage.py send_appointment_reminders --loop &
 echo "==> Lanzando la predicción de inasistencia en segundo plano"
 python -u manage.py score_noshow --loop &
 
+# US-52: la lista de espera. Cada minuto libera las reservas que vencieron sin
+# pagarse y le ofrece el turno al siguiente de la fila. Idempotente; sólo toca a
+# las organizaciones cuyo plan la incluye. Se apaga con WAITLIST_PROCESS=off.
+echo "==> Lanzando la lista de espera en segundo plano"
+python -u manage.py process_waitlist --loop &
+
 echo "==> Levantando gunicorn en el puerto ${PORT:-8000}"
 # exec: gunicorn reemplaza al script y recibe las señales de la plataforma
 # directamente. Sin exec, un reinicio de Railway mata el shell y deja el
