@@ -30,6 +30,7 @@ const FUNCIONES: { clave: string; etiqueta: string }[] = [
   { clave: 'ai_summaries', etiqueta: 'Resúmenes con IA' },
   { clave: 'report_export', etiqueta: 'Exportar reportes' },
   { clave: 'online_payment', etiqueta: 'Pago en línea' },
+  { clave: 'waitlist', etiqueta: 'Lista de espera' },
 ]
 
 const incluye = (plan: PlanSuscripcion, clave: string) => plan.features?.[clave] === true
@@ -70,6 +71,7 @@ function aFormulario(plan: PlanSuscripcion): DatosFormularioPlan {
     aiSummaries: incluye(plan, 'ai_summaries'),
     reportExport: incluye(plan, 'report_export'),
     onlinePayment: incluye(plan, 'online_payment'),
+    waitlist: incluye(plan, 'waitlist'),
     active: plan.is_active,
   }
 }
@@ -95,6 +97,7 @@ function aDatos(f: DatosFormularioPlan): DatosPlan {
       ai_summaries: f.aiSummaries,
       report_export: f.reportExport,
       online_payment: f.onlinePayment,
+      waitlist: f.waitlist,
     },
     is_active: f.active,
   }

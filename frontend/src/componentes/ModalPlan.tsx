@@ -20,6 +20,7 @@ export type DatosFormularioPlan = {
     aiSummaries: boolean
     reportExport: boolean
     onlinePayment: boolean
+    waitlist: boolean
 
     active: boolean
 }
@@ -54,6 +55,7 @@ const vacio: DatosFormularioPlan = {
     aiSummaries: false,
     reportExport: false,
     onlinePayment: false,
+    waitlist: false,
 
     active: true,
 }
@@ -566,6 +568,21 @@ export function ModalPlan({
                                         cambiar(
                                             'onlinePayment',
                                             !formulario.onlinePayment,
+                                        )
+                                    }
+                                />
+
+
+                                <OpcionFuncionalidad
+                                    titulo="Lista de espera"
+                                    descripcion="Avisa al paciente cuando se libera un turno que buscaba."
+                                    activo={
+                                        formulario.waitlist
+                                    }
+                                    onCambiar={() =>
+                                        cambiar(
+                                            'waitlist',
+                                            !formulario.waitlist,
                                         )
                                     }
                                 />

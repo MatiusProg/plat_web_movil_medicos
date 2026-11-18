@@ -20,6 +20,7 @@ import { reservarFicha } from '@/api/fichas'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { ModalReservarFicha } from '@/componentes/ModalReservarFicha'
+import { TarjetaListaEspera } from '@/componentes/TarjetaListaEspera'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 
@@ -46,7 +47,7 @@ export function Disponibilidad() {
 
   const [parametrosUrl] = useSearchParams()
   const [profesionales, setProfesionales] = useState<
-    { id: string; full_name: string }[]
+    { id: string; full_name: string; specialties: { id: string; name: string }[] }[]
   >([])
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
 
@@ -255,9 +256,28 @@ export function Disponibilidad() {
       ) : cargando ? (
         <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
       ) : totalEspacios === 0 ? (
-        <p className="text-tinta-500 text-[0.9375rem]">
-          No hay espacios libres en ese rango.
-        </p>
+        <div className="space-y-4">
+          <p className="text-tinta-500 text-[0.9375rem]">
+            No hay espacios libres en ese rango.
+          </p>
+          {puedeReservar && (
+            // US-52: sin turnos se ofrece la lista de espera. La `key` la
+            // reinicia si cambia el profesional o la consulta.
+            <TarjetaListaEspera
+              key={`${profesional}|${desde}|${hasta}|${sucursal}`}
+              practitionerId={profesional}
+              practitionerName={
+                datos?.practitioner.full_name
+                ?? profesionales.find((p) => p.id === profesional)?.full_name
+                ?? 'este profesional'
+              }
+              specialties={profesionales.find((p) => p.id === profesional)?.specialties ?? []}
+              branchId={sucursal || undefined}
+              desde={desde}
+              hasta={hasta}
+            />
+          )}
+        </div>
       ) : (
         <div className="space-y-5">
           {datos?.days.map((dia) => (
