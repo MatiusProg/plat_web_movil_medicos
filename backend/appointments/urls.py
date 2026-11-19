@@ -9,6 +9,9 @@ from .changes import CancelAppointmentView, RescheduleAppointmentView
 from .attendance import ConfirmAttendanceView, attendance_link_view
 from .checkin import CheckInView
 from .receipts import ReceiptView
+from .waitlist_views import (
+    WaitlistEntryView, WaitlistSummaryView, WaitlistView,
+)
 
 app_name = "appointments"
 
@@ -61,4 +64,9 @@ urlpatterns = router.urls + [
         CheckInView.as_view(),
         name="checkin",
     ),
+
+    # ---------- US-52 — Lista de espera ----------------------------------
+    path("waitlist/", WaitlistView.as_view(), name="waitlist"),
+    path("waitlist/summary/", WaitlistSummaryView.as_view(), name="waitlist-summary"),
+    path("waitlist/<uuid:pk>/", WaitlistEntryView.as_view(), name="waitlist-entry"),
 ]

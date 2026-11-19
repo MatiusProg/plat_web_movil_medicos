@@ -54,14 +54,22 @@ def _booked_slots(practitioner_id, date_from, date_to) -> set:
     Sólo cuentan las fichas que todavía ocupan el turno —`pending_payment` o
     `confirmed`, ver `Appointment.ACTIVE_STATUSES`—; cancelar o reprogramar
     libera el turno de inmediato porque deja de estar en este conjunto.
+
+    US-52: una `pending_payment` cuyo `expires_at` ya pasó tampoco cuenta,
+    aunque nadie la haya marcado `expired` todavía (ver
+    `appointments/holds.py`): el turno se ve libre y `book_appointment` la
+    libera al tomarlo. La excepción es la reserva que se le guardó a alguien
+    de la lista de espera, que sigue bloqueando unos minutos para que el
+    turno le llegue al siguiente de la fila y no al primero que pase.
     """
+    from appointments.holds import blocking_q
     from appointments.models import Appointment
 
     range_start = dt.datetime.combine(date_from, dt.time.min, tzinfo=dt.timezone.utc)
     range_end = dt.datetime.combine(date_to, dt.time.max, tzinfo=dt.timezone.utc)
     filas = Appointment.objects.filter(
+        blocking_q(),
         practitioner_id=practitioner_id,
-        status__in=Appointment.ACTIVE_STATUSES,
         starts_at__gte=range_start,
         starts_at__lte=range_end,
     ).values_list("schedule_id", "starts_at")

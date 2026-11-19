@@ -9,7 +9,7 @@
  * muestra `refund_eligible`, nunca se calcula acá.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import type { Espacio } from '@/api/disponibilidad'
@@ -17,6 +17,9 @@ import {
   cancelarFicha, confirmarAsistencia, ETIQUETA_ESTADO_FICHA as ETIQUETA_ESTADO, iniciarPago,
   misFichas, reprogramarFicha, type Ficha,
 } from '@/api/fichas'
+import {
+  miListaDeEspera, salirDeListaDeEspera, type EntradaEspera,
+} from '@/api/listaEspera'
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { ModalComprobante } from '@/componentes/ModalComprobante'
@@ -53,6 +56,46 @@ function fechaYHora(iso: string): string {
   })
 }
 
+/** `YYYY-MM-DD` a `DD/MM/AAAA`, sin pasar por `Date` para no correr el día. */
+function fechaCorta(iso: string): string {
+  const [anio, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+function segundosHasta(iso: string): number {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 1000) || 0)
+}
+
+/**
+ * US-52 — Cuenta regresiva en vivo hasta que vence el cupo liberado. Al llegar
+ * a cero avisa una sola vez, para que la pantalla vuelva a pedir las fichas.
+ */
+function CuentaRegresivaCupo({ hasta, alVencer }: { hasta: string; alVencer: () => void }) {
+  const [restante, setRestante] = useState(() => segundosHasta(hasta))
+  const alVencerRef = useRef(alVencer)
+  useEffect(() => { alVencerRef.current = alVencer })
+
+  useEffect(() => {
+    const reloj = window.setInterval(() => {
+      const quedan = segundosHasta(hasta)
+      setRestante(quedan)
+      if (quedan <= 0) {
+        window.clearInterval(reloj)
+        alVencerRef.current()
+      }
+    }, 1000)
+    return () => window.clearInterval(reloj)
+  }, [hasta])
+
+  const minutos = Math.floor(restante / 60)
+  const segundos = restante % 60
+  return (
+    <span role="timer" aria-label="Tiempo que queda para pagar" className="font-semibold tabular-nums">
+      {String(minutos).padStart(2, '0')}:{String(segundos).padStart(2, '0')}
+    </span>
+  )
+}
+
 export function MisFichas() {
   const { token } = useSesion()
   useTitulo('Mis fichas')
@@ -61,6 +104,12 @@ export function MisFichas() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<ErrorApi | null>(null)
   const [recargaClave, setRecargaClave] = useState(0)
+
+  // US-52: la lista de espera. `enabled` es falso si el plan no la incluye.
+  const [listaEspera, setListaEspera] = useState<{ enabled: boolean; entradas: EntradaEspera[] }>(
+    { enabled: false, entradas: [] },
+  )
+  const [saliendoId, setSaliendoId] = useState<string | null>(null)
 
   const [cancelandoId, setCancelandoId] = useState<string | null>(null)
   const [avisoCancelacion, setAvisoCancelacion] = useState<string | null>(null)
@@ -88,6 +137,18 @@ export function MisFichas() {
         setError(fallo instanceof ErrorApi ? fallo : null)
       })
       .finally(() => setCargando(false))
+    return () => control.abort()
+  }, [token, recargaClave])
+
+  // La lista de espera va aparte: si falla, el resto de la pantalla sigue igual.
+  useEffect(() => {
+    const control = new AbortController()
+    miListaDeEspera({ token }, control.signal)
+      .then((r) => setListaEspera({ enabled: r.enabled, entradas: r.results }))
+      .catch((fallo: unknown) => {
+        if (fallo instanceof DOMException && fallo.name === 'AbortError') return
+        setListaEspera({ enabled: false, entradas: [] })
+      })
     return () => control.abort()
   }, [token, recargaClave])
 
@@ -137,6 +198,21 @@ export function MisFichas() {
     } catch (fallo: unknown) {
       setError(fallo instanceof ErrorApi ? fallo : null)
       setPagandoId(null)
+    }
+  }
+
+  const salirDeLaLista = async (entrada: EntradaEspera) => {
+    if (!window.confirm('¿Salir de la lista de espera? Perderás tu lugar en la fila.')) return
+    setSaliendoId(entrada.id)
+    setError(null)
+    try {
+      await salirDeListaDeEspera(entrada.id, { token })
+      setAvisoCancelacion('Saliste de la lista de espera.')
+      setRecargaClave((clave) => clave + 1)
+    } catch (fallo: unknown) {
+      setError(fallo instanceof ErrorApi ? fallo : null)
+    } finally {
+      setSaliendoId(null)
     }
   }
 
@@ -245,6 +321,9 @@ export function MisFichas() {
       ) : (
         <div className="space-y-3">
           {fichas.map((ficha) => {
+            const deListaDeEspera = listaEspera.entradas.some(
+              (e) => e.offered_appointment === ficha.id,
+            )
             const futura = new Date(ficha.starts_at).getTime() > Date.now()
             const accionable = ACCIONABLES.includes(ficha.status) && futura
             const pendiente = ficha.status === 'pending_payment' && futura
@@ -276,6 +355,23 @@ export function MisFichas() {
                   </span>
                 </div>
 
+                {pendiente && deListaDeEspera && (
+                  <div
+                    role="status"
+                    className="border-marca-200 bg-marca-50 text-marca-700 dark:border-marca-900 dark:bg-marca-950/40 dark:text-marca-300 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border px-3 py-2 text-sm"
+                  >
+                    <span className="font-semibold">Cupo liberado para ti</span>
+                    {ficha.expires_at && (
+                      <span>
+                        Te lo guardamos por{' '}
+                        <CuentaRegresivaCupo
+                          hasta={ficha.expires_at}
+                          alVencer={() => setRecargaClave((clave) => clave + 1)}
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
                 {pendiente && (
                   <p className="text-tinta-500 mt-2 text-xs">
                     Pagá {importe(ficha)} para confirmarla
@@ -349,6 +445,67 @@ export function MisFichas() {
             )
           })}
         </div>
+      )}
+
+      {listaEspera.enabled && listaEspera.entradas.length > 0 && (
+        <section aria-label="En lista de espera" className="space-y-3">
+          <div>
+            <h2 className="text-tinta-900 dark:text-tinta-50 text-lg font-semibold">
+              En lista de espera
+            </h2>
+            <p className="text-tinta-500 mt-0.5 text-sm">
+              Si alguien cancela, te guardamos el turno 15 minutos y te avisamos.
+            </p>
+          </div>
+          {listaEspera.entradas.map((entrada) => (
+            <div
+              key={entrada.id}
+              className="border-tinta-200 dark:border-tinta-800 dark:bg-tinta-900/50 rounded-2xl border bg-white p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-tinta-900 dark:text-tinta-50 font-semibold">
+                    {entrada.practitioner_name
+                      ?? (entrada.specialty_name
+                        ? `Cualquier profesional de ${entrada.specialty_name}`
+                        : 'Cualquier profesional')}
+                  </p>
+                  <p className="text-tinta-500 mt-0.5 text-sm">
+                    Del {fechaCorta(entrada.date_from)} al {fechaCorta(entrada.date_to)}
+                    {entrada.branch_name && <> · {entrada.branch_name}</>}
+                  </p>
+                  <p className="text-tinta-400 mt-0.5 text-xs">Para {entrada.patient_name}</p>
+                </div>
+                {entrada.status === 'offered' ? (
+                  <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                    Turno ofrecido
+                  </span>
+                ) : (
+                  entrada.position !== null && (
+                    <span className="bg-tinta-100 text-tinta-600 dark:bg-tinta-800 dark:text-tinta-300 rounded-md px-2 py-1 text-xs font-medium">
+                      Eres el N.º <span className="tabular-nums">{entrada.position}</span>
+                    </span>
+                  )
+                )}
+              </div>
+              {entrada.status === 'offered' && (
+                <p className="text-tinta-500 mt-2 text-xs">
+                  Te guardamos un turno: míralo arriba en tus fichas y págalo para confirmarlo.
+                </p>
+              )}
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => salirDeLaLista(entrada)}
+                  disabled={saliendoId === entrada.id}
+                  className="border-tinta-300 dark:border-tinta-700 text-tinta-600 dark:text-tinta-300 hover:bg-tinta-100 dark:hover:bg-tinta-800 min-h-11 rounded-xl border px-3 py-1.5 text-sm font-semibold transition disabled:opacity-50 sm:min-h-0"
+                >
+                  {saliendoId === entrada.id ? 'Saliendo…' : 'Salir de la lista'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
       )}
 
       <ModalComprobante

@@ -305,6 +305,10 @@ APPOINTMENT_REINFORCED_REMINDER_HOURS = env.int(
 # US-35: el proceso que recalcula el riesgo de inasistencia de las fichas
 # futuras corre junto a gunicorn (scripts/start.sh). "off" lo apaga.
 NOSHOW_SCORING = env("NOSHOW_SCORING", default="on")
+# US-52: el proceso de la lista de espera —libera las reservas vencidas y le
+# ofrece el turno al siguiente— corre junto a gunicorn (scripts/start.sh).
+# "off" lo apaga.
+WAITLIST_PROCESS = env("WAITLIST_PROCESS", default="on")
 
 # --------------------------------------------------------------------------
 #  US-18 — Pago en línea

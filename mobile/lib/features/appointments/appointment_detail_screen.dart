@@ -8,6 +8,9 @@
 ///   (US-21).
 /// - activa → reprogramar o cancelar (US-20); al cancelar, la política de
 ///   devolución queda a la vista.
+/// - `pending_payment` con vencimiento → cuenta regresiva mm:ss hasta
+///   `expires_at` (US-52: el turno que se guarda al primero de la lista de
+///   espera dura 15 minutos). Al llegar a cero se vuelve a leer la ficha.
 library;
 
 import 'dart:async';
@@ -70,6 +73,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
   Timer? _poll;
   DateTime? _pollHasta;
 
+  /// US-52: lo que falta para que venza la ficha pendiente. `null` si no hay
+  /// cuenta regresiva que mostrar.
+  Timer? _cuenta;
+  Duration? _restante;
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +97,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _poll?.cancel();
+    _cuenta?.cancel();
     super.dispose();
   }
 
@@ -110,6 +119,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
         _error = null;
         _cargando = false;
       });
+      _ajustarCuentaRegresiva(ficha);
       if (_esperandoPago && !ficha.isPendingPayment) _dejarDeEsperar();
     } on ApiError catch (error) {
       if (!mounted) return;
@@ -119,6 +129,45 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
         _cargando = false;
       });
     }
+  }
+
+  /// Arranca (o detiene) la cuenta regresiva según la ficha leída.
+  ///
+  /// Sólo cuenta una ficha pendiente cuyo vencimiento todavía no pasó. Al
+  /// llegar a cero se vuelve a leer: el backend es quien dice si venció.
+  void _ajustarCuentaRegresiva(Appointment ficha) {
+    _cuenta?.cancel();
+    _cuenta = null;
+    final vence = ficha.expiresAt;
+    if (!ficha.isPendingPayment ||
+        vence == null ||
+        !vence.isAfter(DateTime.now())) {
+      if (_restante != null) setState(() => _restante = null);
+      return;
+    }
+    setState(() => _restante = vence.difference(DateTime.now()));
+    _cuenta = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final falta = vence.difference(DateTime.now());
+      if (!mounted || _ficha?.isPendingPayment != true) {
+        timer.cancel();
+        _cuenta = null;
+        return;
+      }
+      if (falta <= Duration.zero) {
+        timer.cancel();
+        _cuenta = null;
+        setState(() => _restante = null);
+        _recargar(silencioso: true);
+        return;
+      }
+      setState(() => _restante = falta);
+    });
+  }
+
+  static String _mmss(Duration d) {
+    final minutos = d.inMinutes.toString().padLeft(2, '0');
+    final segundos = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutos:$segundos';
   }
 
   void _empezarAEsperar() {
@@ -404,6 +453,24 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
             onPressed: _empezarAEsperar,
             icon: const Icon(Icons.refresh),
             label: const Text('Ya pagué — actualizar'),
+          ),
+          const SizedBox(height: 8),
+        ]);
+      }
+      final restante = _restante;
+      if (restante != null) {
+        acciones.addAll([
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.timer_outlined, color: Marca.waiting),
+              title: const Text('Tiempo para pagar'),
+              trailing: Text(
+                _mmss(restante),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 8),
         ]);

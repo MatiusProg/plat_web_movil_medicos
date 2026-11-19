@@ -69,6 +69,16 @@ export type CodigoError =
   | 'ficha_pasada'
   | 'cancelacion_invalida'
   | 'reprogramacion_invalida'
+  // US-52 — lista de espera. `plan_limit` también lo usan otras funciones por plan.
+  | 'plan_limit'
+  | 'no_es_paciente'
+  | 'destino_invalido'
+  | 'especialidad_invalida'
+  | 'rango_pasado'
+  | 'rango_invalido'
+  | 'rango_largo'
+  | 'hay_turnos'
+  | 'ya_anotado'
   // US-05 — cambio de contraseña desde el perfil.
   | 'contrasena_actual_incorrecta'
   | 'contrasena_repetida'

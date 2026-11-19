@@ -131,6 +131,11 @@ TABLES: tuple[Table, ...] = (
 
     # ---------- Fichas, pagos e historia clínica (Sprint 2) ----------
     Table("appointments", "Appointment", "Fichas"),
+    # US-52: quién espera un turno y cuál se le guardó. Apunta a la ficha, al
+    # paciente y al profesional con `PROTECT`: si no viajara en la copia, borrar
+    # las fichas al restaurar fallaría con una entrada colgando de ellas. Se
+    # purga y se repone como las fichas, de la misma foto del archivo.
+    Table("appointments", "WaitlistEntry", "Lista de espera"),
     Table("payments", "Payment", "Pagos", strategy=APPEND),
     Table("encounters", "Encounter", "Atenciones médicas", strategy=APPEND),
     Table("encounters", "EncounterAmendment", "Enmiendas de atenciones",

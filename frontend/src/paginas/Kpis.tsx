@@ -12,6 +12,8 @@
 import { useEffect, useState } from 'react'
 import { listarSucursales, type Sucursal } from '@/api/catalogo'
 import { verKpis, type Kpis as DatosKpis, type TotalPorNombre } from '@/api/kpis'
+import { resumenListaDeEspera, type ResumenListaDeEspera } from '@/api/listaEspera'
+import { esErrorDePlan } from '@/api/riesgo'
 import { Bloque, Cifra } from '@/componentes/Indicadores'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -66,6 +68,96 @@ function Barras({ filas, vacio }: { filas: TotalPorNombre[]; vacio: string }) {
           style={{ width: `${maximo ? (f.total / maximo) * 100 : 0}%` }} />
       </div>
     </li>)}</ul>
+}
+
+/** Una tabla corta de anotados y de quienes tomaron el turno, por médico o especialidad. */
+function TablaAnotados({ titulo, filas }: {
+  titulo: string
+  filas: { id: string; name: string; enrolled: number; booked: number }[]
+}) {
+  if (filas.length === 0) return null
+  return <div className="overflow-x-auto">
+    <table className="w-full text-left text-sm">
+      <caption className="mb-1.5 text-left text-xs font-medium text-tinta-500">{titulo}</caption>
+      <thead className="text-tinta-500">
+        <tr>
+          <th scope="col" className="py-1.5 pr-3 font-medium">Nombre</th>
+          <th scope="col" className="px-2 py-1.5 text-right font-medium">Anotados</th>
+          <th scope="col" className="py-1.5 pl-2 text-right font-medium">Tomaron turno</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-tinta-200 text-tinta-800 dark:divide-tinta-800 dark:text-tinta-100">
+        {filas.slice(0, 5).map(f => <tr key={f.id}>
+          <td className="py-1.5 pr-3">{f.name}</td>
+          <td className="px-2 py-1.5 text-right tabular-nums">{f.enrolled}</td>
+          <td className="py-1.5 pl-2 text-right tabular-nums">{f.booked}</td>
+        </tr>)}
+      </tbody>
+    </table>
+  </div>
+}
+
+/**
+ * US-52 — La lista de espera: cuántos se anotaron y cuántos cupos cancelados
+ * volvieron a ocuparse. La función es de los planes Pro y Premium: ante un 403
+ * `plan_limit` la tarjeta simplemente no aparece. El resumen no filtra por
+ * sucursal, así que sólo usa el rango de fechas de la pantalla.
+ */
+function BloqueListaEspera({ desde, hasta, token }: { desde: string; hasta: string; token: string | null | undefined }) {
+  const clave = `${desde}|${hasta}`
+  const [respuesta, setRespuesta] = useState<{ clave: string; datos?: ResumenListaDeEspera; sinPlan?: boolean; error?: string } | null>(null)
+
+  useEffect(() => {
+    const c = new AbortController()
+    resumenListaDeEspera({ from: desde, to: hasta }, { token }, c.signal)
+      .then(datos => setRespuesta({ clave, datos }))
+      .catch(e => {
+        if (e instanceof DOMException) return
+        setRespuesta(esErrorDePlan(e)
+          ? { clave, sinPlan: true }
+          : { clave, error: 'No se pudo cargar el resumen de la lista de espera.' })
+      })
+    return () => c.abort()
+  }, [token, desde, hasta, clave])
+
+  if (respuesta?.sinPlan) return null
+  const actual = respuesta?.clave === clave ? respuesta : null
+  const datos = actual?.datos
+  const lista = datos?.waitlist
+  const rec = datos?.recovery
+
+  return <Bloque titulo="Lista de espera">
+    {actual?.error && <p role="status" className="text-sm text-tinta-500">{actual.error}</p>}
+    {!actual && <p role="status" className="text-sm text-tinta-500">Calculando…</p>}
+    {lista && rec && <div className="space-y-5">
+      <div className="grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
+        <div className="flex items-center gap-5">
+          <Anillo tasa={rec.rate} etiqueta="Tasa de recuperación" tono="stroke-marca-500" />
+          <div className="max-w-xs text-sm text-tinta-500">
+            <p className="font-medium text-tinta-700 dark:text-tinta-300">Tasa de recuperación</p>
+            {rec.rate === null
+              ? <p className="mt-1">Sin cancelaciones en el período</p>
+              : <p className="mt-1">{rec.recovered} de {rec.cancelled} turnos cancelados volvieron a ocuparse</p>}
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <Cifra valor={lista.enrolled} etiqueta="Anotados" />
+          <Cifra valor={lista.booked} etiqueta="Tomaron el turno" tono="marca" />
+          <Cifra valor={lista.waiting} etiqueta="Esperando ahora" />
+        </div>
+      </div>
+      {lista.offered > 0 && <p className="text-xs text-tinta-500">
+        Además, {lista.offered} {lista.offered === 1 ? 'tiene' : 'tienen'} un turno ofrecido pendiente de pago.</p>}
+      {lista.enrolled === 0
+        ? <p className="text-sm text-tinta-500">Nadie se anotó en la lista de espera en este rango.</p>
+        : <div className="grid gap-5 sm:grid-cols-2">
+          <TablaAnotados titulo="Por médico"
+            filas={lista.by_practitioner.map(f => ({ id: f.practitioner, name: f.name, enrolled: f.enrolled, booked: f.booked }))} />
+          <TablaAnotados titulo="Por especialidad"
+            filas={lista.by_specialty.map(f => ({ id: f.specialty, name: f.name, enrolled: f.enrolled, booked: f.booked }))} />
+        </div>}
+    </div>}
+  </Bloque>
 }
 
 export function Kpis() {
@@ -190,6 +282,8 @@ export function Kpis() {
             especialidad puede superar las {kpis.demand.total} fichas.</p>
         </Bloque>
       </div>
+
+      <BloqueListaEspera desde={desde} hasta={hasta} token={token} />
 
       {kpis.revenue.by_branch.length > 0 && <Bloque titulo="Ingresos por sucursal">
         <ul className="divide-y divide-tinta-200 dark:divide-tinta-800">{kpis.revenue.by_branch.map(i =>
