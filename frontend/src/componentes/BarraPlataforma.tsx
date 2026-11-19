@@ -164,6 +164,14 @@ const items: ItemMenu[] = [
         icono: 'indicadores',
         requiere: 'reporting.kpi.read',
     },
+    // US-37 — proyección independiente; conserva las rutas y los permisos anteriores.
+    {
+        etiqueta: 'Proyección de demanda',
+        ruta: '/proyeccion-demanda',
+        seccion: 'Organización',
+        icono: 'indicadores',
+        requiere: 'reporting.kpi.read',
+    },
     // US-35 — qué fichas futuras tienen más riesgo de inasistencia (plan Premium).
     {
         etiqueta: 'Riesgo de inasistencia',

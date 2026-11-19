@@ -109,3 +109,26 @@ export const verModeloRiesgo = (contexto: Contexto, senal?: AbortSignal) =>
 /** El 403 de «tu plan no incluye esta función»; el mensaje lo pone el backend. */
 export const esErrorDePlan = (error: unknown): error is ErrorApi =>
   error instanceof ErrorApi && error.estado === 403 && (error.codigo as string) === 'plan_limit'
+
+/** US-38: auditoría de versiones, restringida al mismo permiso del riesgo. */
+export interface VersionRiesgo {
+  version: number
+  status: 'active' | 'candidate' | 'rejected' | 'retired'
+  trained_at: string
+  n_train: number
+  n_test: number
+  beats_baseline: boolean
+  auc: number | null
+  brier: number | null
+  comparison: {
+    holdout_n?: number
+    incumbent_version?: number
+    incumbent_brier?: number
+    candidate_brier?: number
+    improvement?: number
+    reason?: string
+  } | null
+}
+
+export const listarVersionesRiesgo = (contexto: Contexto, senal?: AbortSignal) =>
+  pedir<{ results: VersionRiesgo[] }>('/noshow/versions/', { ...contexto, senal })

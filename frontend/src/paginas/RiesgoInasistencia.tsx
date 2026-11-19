@@ -19,8 +19,8 @@ import { listarSucursales, type Sucursal } from '@/api/catalogo'
 import { ETIQUETA_ESTADO_FICHA } from '@/api/fichas'
 import type { Pagina } from '@/api/paginacion'
 import {
-  ETIQUETA_NIVEL, esErrorDePlan, listarRiesgo, verModeloRiesgo,
-  type EstadoModelo, type FichaEnRiesgo, type MetricasModelo, type NivelRiesgo,
+  ETIQUETA_NIVEL, esErrorDePlan, listarRiesgo, verModeloRiesgo, listarVersionesRiesgo,
+  type EstadoModelo, type FichaEnRiesgo, type MetricasModelo, type NivelRiesgo, type VersionRiesgo,
 } from '@/api/riesgo'
 import { IconoCandado } from '@/componentes/iconos'
 import { Paginador } from '@/componentes/Paginador'
@@ -198,6 +198,7 @@ export function RiesgoInasistencia() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [errorSucursales, setErrorSucursales] = useState<string | null>(null)
   const [modelo, setModelo] = useState<{ datos?: EstadoModelo; error?: ErrorPantalla } | null>(null)
+  const [versiones, setVersiones] = useState<VersionRiesgo[]>([])
   // La respuesta lleva la clave de la consulta que la pidió: mientras no
   // coincida con los filtros actuales, el listado está cargando.
   const [respuesta, setRespuesta] = useState<{ clave: string; datos?: Pagina<FichaEnRiesgo>; error?: ErrorPantalla } | null>(null)
@@ -221,6 +222,15 @@ export function RiesgoInasistencia() {
     verModeloRiesgo({ token }, c.signal)
       .then(datos => setModelo({ datos }))
       .catch(e => { if (!(e instanceof DOMException)) setModelo({ error: aErrorPantalla(e) }) })
+    return () => c.abort()
+  }, [token, autorizado])
+
+  useEffect(() => {
+    if (!autorizado) return
+    const c = new AbortController()
+    listarVersionesRiesgo({ token }, c.signal)
+      .then(data => setVersiones(data.results))
+      .catch(() => { /* Modelo no disponible o sin permiso/plan: no mostrar versiones. */ })
     return () => c.abort()
   }, [token, autorizado])
 
@@ -270,6 +280,19 @@ export function RiesgoInasistencia() {
 
     {!sinPlan && <>
       <TarjetaModelo estado={modelo?.datos ?? null} cargando={cargandoModelo} />
+      {versiones.length > 0 && <section className={PANEL} aria-label="Historial de versiones No-Show">
+        <h2 className="font-semibold">Historial de reentrenamientos</h2>
+        <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm">
+          <thead><tr><th className="p-2">Versión</th><th className="p-2">Estado</th><th className="p-2">Entrenamiento</th><th className="p-2">Brier</th><th className="p-2">Comparación con vigente anterior</th></tr></thead>
+          <tbody>{versiones.map(v => <tr key={v.version} className="border-t border-tinta-200 dark:border-tinta-800">
+            <td className="p-2">v{v.version}</td><td className="p-2">{({ active: 'Vigente', candidate: 'Candidato', rejected: 'Rechazado', retired: 'Retirado' } as const)[v.status]}</td>
+            <td className="p-2">{fechaLarga(v.trained_at)}</td><td className="p-2">{v.brier === null ? '—' : decimal(v.brier)}</td>
+            <td className="p-2">{v.comparison?.incumbent_brier !== undefined && v.comparison.candidate_brier !== undefined
+              ? `Anterior ${decimal(v.comparison.incumbent_brier)} · Candidato ${decimal(v.comparison.candidate_brier)} (mismas ${v.comparison.holdout_n} fichas)`
+              : v.comparison?.reason ?? 'Entrenamiento inicial'}</td>
+          </tr>)}</tbody>
+        </table></div>
+      </section>}
 
       {hayModelo && <>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
