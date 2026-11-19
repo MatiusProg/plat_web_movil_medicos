@@ -245,3 +245,87 @@ class MedicalOrder(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()}: {self.description}"
+
+
+# --------------------------------------------------------------------------
+#  US-48 — Calificación de la atención con estrellas
+# --------------------------------------------------------------------------
+#
+# Es la única señal de *cómo* se atendió (US-29 mide cuánto). Va en su propia
+# tabla porque el encuentro firmado no se toca: el trigger de la migración
+# 0002 rechaza cualquier `UPDATE` sobre él.
+#
+# `practitioner` y `branch` repiten lo que dice el encuentro, igual que el
+# encuentro repite lo de la ficha: el promedio por médico y por sede se cuenta
+# sin pasar por él. `services.rate_encounter` los copia; nunca vienen del
+# cliente.
+#
+# Lo que la base hace cumplir (migración 0007), y no sólo la vista:
+# - una calificación por atención (`OneToOneField`);
+# - sólo sobre una atención firmada;
+# - de 1 a 5 estrellas y hasta 500 caracteres de comentario;
+# - se corrige durante 7 días, después queda fija, y nunca se borra.
+
+
+class EncounterRating(models.Model):
+    """La calificación que el paciente deja sobre una atención firmada."""
+
+    # Días durante los que el paciente puede cambiar lo que calificó.
+    EDITABLE_DAYS = 7
+    MAX_COMMENT = 500
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="encounter_ratings",
+    )
+    encounter = models.OneToOneField(
+        Encounter, on_delete=models.PROTECT, related_name="rating",
+    )
+    patient = models.ForeignKey(
+        "patients.Patient", on_delete=models.PROTECT,
+        related_name="encounter_ratings",
+    )
+    practitioner = models.ForeignKey(
+        "catalog.Practitioner", on_delete=models.PROTECT,
+        related_name="encounter_ratings",
+    )
+    branch = models.ForeignKey(
+        "catalog.Branch", on_delete=models.PROTECT,
+        related_name="encounter_ratings",
+    )
+    # Quién calificó: el paciente o el titular de su dependiente.
+    rated_by = models.ForeignKey(
+        "accounts.User", on_delete=models.PROTECT,
+        related_name="encounter_ratings",
+    )
+    stars = models.PositiveSmallIntegerField("estrellas")
+    comment = models.CharField(
+        "comentario", max_length=MAX_COMMENT, blank=True, default="",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "encounter_ratings"
+        verbose_name = "calificación de la atención"
+        verbose_name_plural = "calificaciones de la atención"
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(stars__gte=1, stars__lte=5),
+                name="ck_rating_stars",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["practitioner", "-created_at"],
+                         name="ix_rating_practitioner"),
+        ]
+
+    def __str__(self):
+        return f"{self.encounter_id} · {self.stars}★"
+
+    @property
+    def editable_until(self):
+        import datetime as dt
+        return self.created_at + dt.timedelta(days=self.EDITABLE_DAYS)

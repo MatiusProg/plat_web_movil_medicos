@@ -1,8 +1,10 @@
-"""Rutas de la atención médica: US-24 (registro), US-25 (historial) y US-41 (resumen)."""
+"""Rutas de la atención médica: US-24 (registro), US-25 (historial), US-41 (resumen)
+y US-48 (calificación)."""
 
 from django.urls import path
 
 from .history_views import PatientHistorySummaryView, PatientHistoryView
+from .rating_views import EncounterRatingView, MyRatingsView
 from .views import (
     AgendaView,
     EncounterAmendView,
@@ -39,4 +41,7 @@ urlpatterns = [
     # US-41: el resumen del historial para el médico, antes de la consulta.
     path("history/<uuid:patient_id>/summary/", PatientHistorySummaryView.as_view(),
          name="history-summary"),
+    # US-48: el paciente califica la atención; el médico ve su promedio.
+    path("<uuid:pk>/rating/", EncounterRatingView.as_view(), name="rating"),
+    path("ratings/mine/", MyRatingsView.as_view(), name="my-ratings"),
 ]

@@ -1,5 +1,6 @@
 /** US-24: la agenda del profesional, el encuentro clínico y sus enmiendas. */
 import { pedir, type Contexto } from './cliente'
+import type { Calificacion } from './calificaciones'
 import type { ResultadoResumen } from './textos_ia'
 import { ErrorApi, type CodigoError } from './tipos'
 
@@ -112,6 +113,8 @@ export interface Encuentro extends Record<Seccion, string> {
   orders: Orden[]
   created_at: string
   updated_at: string
+  /** US-48: sólo en el historial propio. El médico nunca la recibe. */
+  rating?: Calificacion | null
 }
 
 export interface Antecedente {
