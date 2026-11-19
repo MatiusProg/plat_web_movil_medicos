@@ -105,6 +105,7 @@ class Atencion {
     this.medicamentos = const [],
     this.ordenes = const [],
     this.resumen,
+    this.calificacion,
   });
 
   final String id;
@@ -123,6 +124,9 @@ class Atencion {
   /// US-39: el resumen aprobado por el médico, o `null` si no hay.
   final ResumenConsulta? resumen;
 
+  /// US-48: lo que el paciente calificó, o `null` si todavía no.
+  final Calificacion? calificacion;
+
   Atencion conResumen(ResumenConsulta? resumen) => Atencion(
         id: id,
         startsAt: startsAt,
@@ -135,6 +139,7 @@ class Atencion {
         medicamentos: medicamentos,
         ordenes: ordenes,
         resumen: resumen,
+        calificacion: calificacion,
       );
 
   /// Hay algo que bajar en PDF.
@@ -165,8 +170,40 @@ class Atencion {
             .whereType<Map<String, dynamic>>()
             .map(Orden.fromJson)
             .toList(),
+        calificacion: json['rating'] is Map<String, dynamic>
+            ? Calificacion.fromJson(json['rating'] as Map<String, dynamic>)
+            : null,
       );
 }
+
+/// US-48 — La calificación de una atención, tal como la dejó el paciente.
+///
+/// Se corrige durante 7 días (`editable`); después queda fija. El médico
+/// nunca la recibe: sólo ve su promedio, sin nombres.
+class Calificacion {
+  const Calificacion({
+    required this.estrellas,
+    required this.comentario,
+    required this.editable,
+    required this.editableHasta,
+  });
+
+  final int estrellas;
+  final String comentario;
+  final bool editable;
+  final DateTime? editableHasta;
+
+  factory Calificacion.fromJson(Map<String, dynamic> json) => Calificacion(
+        estrellas: (json['stars'] as num?)?.toInt() ?? 0,
+        comentario: json['comment'] as String? ?? '',
+        editable: json['editable'] as bool? ?? false,
+        editableHasta:
+            DateTime.tryParse(json['editable_until'] as String? ?? ''),
+      );
+}
+
+/// El máximo de caracteres del comentario; lo vuelve a revisar el backend.
+const maxComentarioCalificacion = 500;
 
 /// US-39 — El resumen de una consulta, tal como lo aprobó el médico.
 class ResumenConsulta {
@@ -285,3 +322,23 @@ Future<ArchivoRecibido> descargarReceta(
       'GET',
       '/encounters/${Uri.encodeComponent(encounterId)}/prescription.pdf',
     );
+
+
+/// US-48 — Calificar una atención firmada (`primera`) o cambiar lo calificado.
+Future<Calificacion> calificarAtencion(
+  ApiClient client, {
+  required String encounterId,
+  required bool primera,
+  required int estrellas,
+  required String comentario,
+}) async {
+  final ruta = '/encounters/${Uri.encodeComponent(encounterId)}/rating/';
+  final cuerpo = {'stars': estrellas, 'comment': comentario};
+  final data = primera
+      ? await client.post(ruta, body: cuerpo)
+      : await client.patch(ruta, body: cuerpo);
+  final rating = data is Map<String, dynamic> ? data['rating'] : null;
+  return Calificacion.fromJson(
+    rating is Map<String, dynamic> ? rating : const <String, dynamic>{},
+  );
+}
