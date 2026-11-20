@@ -20,6 +20,7 @@ import '../api/client.dart';
 import '../api/errors.dart';
 import '../config.dart';
 import '../notifications/push.dart';
+import '../../features/medications/recordatorios.dart';
 import 'jwt.dart';
 import 'token_storage.dart';
 
@@ -98,7 +99,9 @@ class Session extends ChangeNotifier implements AuthContext {
     ApiClient? refreshClient,
     this._meClient,
     DeviceRegistrar? devices,
+    AvisosLocales? avisos,
   })  : _storage = storage ?? TokenStorage(),
+        _avisos = avisos ?? Recordatorios.instance,
         // Cliente SIN contexto de autenticación: es el que renueva. Si tuviera
         // contexto, pedir un token para renovar dispararía otra renovación.
         _refreshClient = refreshClient ?? ApiClient(),
@@ -110,6 +113,9 @@ class Session extends ChangeNotifier implements AuthContext {
   /// US-28: el registro del teléfono para los avisos push. Sin la
   /// configuración de Firebase no hace nada.
   final DeviceRegistrar _devices;
+
+  /// US-49: los avisos de medicamentos de este teléfono.
+  final AvisosLocales _avisos;
 
   // Con contexto (`auth: this`), a diferencia de `_refreshClient`: `/me/`
   // necesita el `Authorization` vigente. No se arma en el inicializador
@@ -375,6 +381,10 @@ class Session extends ChangeNotifier implements AuthContext {
     _incluye = const {};
     await _storage.clearTokens();
     _setStatus(SessionStatus.signedOut);
+
+    // US-49: quien sale no sigue recibiendo los avisos de su receta, y quien
+    // entre después no los hereda. Nunca lanza.
+    await _avisos.cancelarTodo();
 
     if (refresh == null || access == null) return;
 

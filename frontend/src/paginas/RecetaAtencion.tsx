@@ -13,7 +13,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   TIPOS_DE_ORDEN, agregarMedicamento, agregarOrden, descargarReceta, quitarMedicamento, quitarOrden,
-  type DatosMedicamento, type DatosOrden, type Encuentro,
+  type DatosMedicamento, type DatosOrden, type Encuentro, type Medicamento,
 } from '@/api/atencion'
 import { Boton } from '@/componentes/Boton'
 import { useSesion } from '@/sesion/useSesion'
@@ -44,6 +44,31 @@ function BotonDescargar({ encuentro }: { encuentro: Encuentro }) {
   </div>
 }
 
+/**
+ * US-49 — «Cumplimiento del tratamiento: 12 de 15 tomas (80 %)», con las
+ * tomas que el paciente marcó desde la app. Sin horario fijo («según dolor»)
+ * no hay total contra el cual medir, y se dice.
+ */
+function LineaDeCumplimiento({ medicamento }: { medicamento: Medicamento }) {
+  const c = medicamento.adherence
+  if (!c) return null
+  if (c.total === null) {
+    return <p className="mt-1 text-xs text-tinta-500">Sin horario fijo: no se mide el cumplimiento.</p>
+  }
+  const pct = Math.round((c.rate ?? 0) * 100)
+  const color = c.taken === 0 ? 'bg-tinta-300 dark:bg-tinta-600' : pct >= 80 ? 'bg-marca-500' : pct >= 50 ? 'bg-espera-600' : 'bg-alerta-600'
+  return <div className="mt-1.5 max-w-sm">
+    <p className="text-xs text-tinta-600 dark:text-tinta-300">
+      Cumplimiento del tratamiento: <span className="font-medium tabular-nums text-tinta-900 dark:text-tinta-100">{c.taken} de {c.total} tomas ({pct} %)</span>
+      {c.skipped > 0 && <span className="text-tinta-500"> · {c.skipped} {c.skipped === 1 ? 'salteada' : 'salteadas'}</span>}
+    </p>
+    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-tinta-100 dark:bg-tinta-800" role="progressbar"
+      aria-label={`Cumplimiento de ${medicamento.medication}`} aria-valuenow={c.taken} aria-valuemin={0} aria-valuemax={c.total}>
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+    </div>
+  </div>
+}
+
 /** Las dos listas, sólo lectura. `quitar` aparece mientras es borrador. */
 function Listas({ encuentro, quitar }: {
   encuentro: Encuentro
@@ -57,6 +82,7 @@ function Listas({ encuentro, quitar }: {
           <p className="font-medium text-tinta-900 dark:text-tinta-50">{m.medication}</p>
           <p className="text-tinta-600 dark:text-tinta-300">{m.dose} · {m.frequency} · {m.duration}</p>
           {m.instructions && <p className="text-tinta-500">{m.instructions}</p>}
+          {encuentro.status === 'signed' && <LineaDeCumplimiento medicamento={m} />}
         </div>
         {quitar && <button type="button" className={DANGER} disabled={quitar.ocupado} onClick={() => quitar.medicamento(m.id)} aria-label={`Quitar ${m.medication}`}>Quitar</button>}
       </li>)}</ul>

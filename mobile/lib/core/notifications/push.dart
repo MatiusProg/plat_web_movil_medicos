@@ -43,6 +43,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../api/client.dart';
+import '../../features/medications/recordatorios.dart';
 
 /// Los cuatro valores del proyecto de Firebase (consola > Configuración del
 /// proyecto > tu app Android). No son secretos como la credencial del
@@ -144,8 +145,10 @@ class Push implements DeviceRegistrar {
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         ),
-        onDidReceiveNotificationResponse: (respuesta) =>
-            _abrir(respuesta.payload),
+        // US-49: el plugin es uno solo y el último `initialize` define a
+        // quién se llama. Los avisos de medicamentos van a `Recordatorios`.
+        onDidReceiveNotificationResponse: _responderLocal,
+        onDidReceiveBackgroundNotificationResponse: alResponderEnSegundoPlano,
       );
       await _locales
           .resolvePlatformSpecificImplementation<
@@ -161,8 +164,11 @@ class Push implements DeviceRegistrar {
       final inicial = await FirebaseMessaging.instance.getInitialMessage();
       if (inicial != null) _abrir(destinoDe(inicial.data));
       final lanzada = await _locales.getNotificationAppLaunchDetails();
-      if (lanzada?.didNotificationLaunchApp ?? false) {
-        _abrir(lanzada!.notificationResponse?.payload);
+      final respuesta = lanzada?.notificationResponse;
+      if ((lanzada?.didNotificationLaunchApp ?? false) &&
+          respuesta != null &&
+          !Recordatorios.esDeMedicamento(respuesta.payload)) {
+        _abrir(respuesta.payload);
       }
       return true;
     } catch (error) {
@@ -283,6 +289,15 @@ class Push implements DeviceRegistrar {
   /// Lo mismo que pasa al tocar un aviso, para las pruebas.
   @visibleForTesting
   void tocarAviso(String? appointmentId) => _abrir(appointmentId);
+
+  void _responderLocal(NotificationResponse respuesta) {
+    if (Recordatorios.esDeMedicamento(respuesta.payload)) {
+      unawaited(Recordatorios.instance
+          .responder(respuesta.payload, respuesta.actionId));
+      return;
+    }
+    _abrir(respuesta.payload);
+  }
 
   void _abrir(String? appointmentId) {
     if (appointmentId == null || appointmentId.isEmpty) return;

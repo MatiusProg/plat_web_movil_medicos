@@ -24,6 +24,7 @@ import '../../features/dependents/dependent_form_screen.dart';
 import '../../features/dependents/dependents_screen.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/clinical_record/clinical_record_screen.dart';
+import '../../features/medications/medications_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/metrics/metrics_screen.dart';
 import '../../features/organizations/organizations_screen.dart';
@@ -77,6 +78,7 @@ class Routes {
   static const String dependentForm = 'dependent-form';
   static const String history = 'history';
   static const String clinicalRecord = 'clinical-record';
+  static const String medications = 'medications';
   static const String chat = 'chat';
   static const String assistant = 'assistant';
   static const String profile = 'profile';
@@ -356,6 +358,16 @@ GoRouter buildRouter(Session session) {
         builder: (context, state) => const SoloPacientes(
           titulo: 'Mi historia clínica',
           child: ClinicalRecordScreen(),
+        ),
+      ),
+
+      // ---------- US-49 (Karen): los recordatorios de la receta ----------
+      GoRoute(
+        path: '/medications',
+        name: Routes.medications,
+        builder: (context, state) => const SoloPacientes(
+          titulo: 'Mis medicamentos',
+          child: MedicationsScreen(),
         ),
       ),
 
@@ -762,6 +774,15 @@ class _HomeScreen extends StatelessWidget {
           titulo: 'Mi historia clínica',
           subtitulo: 'Tus consultas firmadas, de todas las sucursales',
           onTap: () => context.push('/clinical-record'),
+        ),
+        const SizedBox(height: 12),
+        // ---------- US-49 (Karen): avisos para tomar la receta ------------
+        _accesoTarjeta(
+          context,
+          icono: Icons.medication_outlined,
+          titulo: 'Mis medicamentos',
+          subtitulo: 'Recordatorios de tu receta y la próxima toma',
+          onTap: () => context.push('/medications'),
         ),
         const SizedBox(height: 12),
         // ---------- US-07 (SM): personas a cargo -----------------------

@@ -149,6 +149,11 @@ TABLES: tuple[Table, ...] = (
     # agregan las que faltan; una que ya está queda como está.
     Table("encounters", "EncounterRating", "Calificaciones de atenciones",
           strategy=APPEND),
+    # US-49: las tomas que marcó el paciente. La base no deja cambiarlas ni
+    # borrarlas (trigger de `encounters/0010`): igual que la calificación,
+    # sólo se agregan las que faltan.
+    Table("encounters", "MedicationIntake", "Tomas de medicamentos",
+          strategy=APPEND),
     # US-42: lo que la IA escribió para el paciente y lo que el médico validó.
     # Es parte de lo que se le dijo al paciente, y la base no deja borrarlo ni
     # cambiar lo decidido (trigger de `ai/0002`): sólo se agrega, como la

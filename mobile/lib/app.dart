@@ -9,12 +9,14 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/api/client.dart';
 import 'core/notifications/push.dart';
 import 'core/router/app_router.dart';
 import 'core/session/session.dart';
 import 'core/session/session_scope.dart';
 import 'core/theme/theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/medications/recordatorios.dart';
 
 class CentroMedicoApp extends StatefulWidget {
   const CentroMedicoApp({super.key, required this.session, required this.tema});
@@ -37,6 +39,13 @@ class _CentroMedicoAppState extends State<CentroMedicoApp> {
     super.initState();
     // US-28: tocar un aviso de ficha abre esa ficha.
     Push.instance.alAbrirFicha = _abrirFicha;
+    // US-49: tocar un aviso de medicamento abre *Mis medicamentos*, y una
+    // toma marcada desde el aviso se manda en seguida si hay sesión.
+    Recordatorios.instance
+      ..alTocarAviso = (() => _abrirFicha('medicamentos'))
+      ..clienteParaEnviar = (() => widget.session.isSignedIn
+          ? ApiClient(auth: widget.session)
+          : null);
   }
 
   /// Abre la ficha de un aviso tocado.
@@ -47,6 +56,13 @@ class _CentroMedicoAppState extends State<CentroMedicoApp> {
   void _abrirFicha(String appointmentId) {
     final session = widget.session;
     void ir() => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (appointmentId == 'medicamentos') {
+            _router.go('/home');
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _router.push('/medications'),
+            );
+            return;
+          }
           if (!appointmentId.startsWith('chat:')) {
             _router.go('/appointments/$appointmentId');
             return;

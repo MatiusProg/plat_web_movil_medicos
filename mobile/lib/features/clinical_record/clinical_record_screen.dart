@@ -24,6 +24,8 @@ import 'package:mobile/core/session/session_scope.dart';
 import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/dependents/dependents_api.dart';
 import 'package:mobile/features/dependents/patient_selector.dart';
+import 'package:mobile/features/medications/recordarme.dart';
+import 'package:mobile/features/medications/recordatorios.dart';
 
 import 'clinical_record_api.dart';
 import 'rating_card.dart';
@@ -228,6 +230,7 @@ class _ClinicalRecordScreenState extends State<ClinicalRecordScreen> {
                 ultima: i == atenciones.length - 1,
                 child: _TarjetaAtencion(
                   client: client,
+                  patientId: _deQuien?.id ?? '',
                   atencion: atencion,
                   bajando: _bajando.contains(atencion.id),
                   onDescargar: () => _descargarReceta(atencion),
@@ -292,12 +295,14 @@ class _EnLaLinea extends StatelessWidget {
 class _TarjetaAtencion extends StatelessWidget {
   const _TarjetaAtencion({
     required this.client,
+    required this.patientId,
     required this.atencion,
     required this.bajando,
     required this.onDescargar,
   });
 
   final ApiClient client;
+  final String patientId;
   final Atencion atencion;
   final bool bajando;
   final VoidCallback onDescargar;
@@ -363,6 +368,7 @@ class _TarjetaAtencion extends StatelessWidget {
             ],
             if (atencion.tieneReceta)
               _Receta(
+                patientId: patientId,
                 atencion: atencion,
                 bajando: bajando,
                 onDescargar: onDescargar,
@@ -436,11 +442,13 @@ class _Resumen extends StatelessWidget {
 /// US-27 — Lo que el médico recetó y ordenó en la atención, con su PDF.
 class _Receta extends StatelessWidget {
   const _Receta({
+    required this.patientId,
     required this.atencion,
     required this.bajando,
     required this.onDescargar,
   });
 
+  final String patientId;
   final Atencion atencion;
   final bool bajando;
   final VoidCallback onDescargar;
@@ -467,6 +475,17 @@ class _Receta extends StatelessWidget {
           if (m.instructions.isNotEmpty)
             Text(m.instructions,
                 style: theme.textTheme.bodySmall?.copyWith(color: suave)),
+          // US-49: el recordatorio de cada medicamento.
+          if (m.id.isNotEmpty)
+            InterruptorRecordatorio(
+              recordatorios: Recordatorios.instance,
+              itemId: m.id,
+              patientId: patientId,
+              medicamento: m.medication,
+              dosis: m.dose,
+              horario: m.horario,
+              motivoSinHorario: m.motivoSinHorario,
+            ),
         ],
         for (final o in atencion.ordenes) ...[
           const SizedBox(height: 8),
