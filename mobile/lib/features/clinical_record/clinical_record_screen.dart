@@ -475,6 +475,7 @@ class _Receta extends StatelessWidget {
           if (o.notes.isNotEmpty)
             Text(o.notes,
                 style: theme.textTheme.bodySmall?.copyWith(color: suave)),
+          if (o.preparacion != null) _Preparacion(texto: o.preparacion!),
         ],
         for (final enmienda in enmiendas)
           Container(
@@ -555,6 +556,47 @@ class _Aviso extends StatelessWidget {
         const SizedBox(height: 8),
         TextButton(onPressed: onReintentar, child: const Text('Reintentar')),
       ],
+    );
+  }
+}
+
+/// US-40 — Cómo prepararse para un estudio, debajo de su orden. Sólo llega
+/// aprobada por el médico (regla 14), y lo dice.
+class _Preparacion extends StatelessWidget {
+  const _Preparacion({required this.texto});
+
+  final TextoAprobado texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      key: const Key('preparacion'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.checklist, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 6),
+            Text('Cómo prepararte', style: theme.textTheme.labelLarge),
+          ]),
+          const SizedBox(height: 6),
+          Text(texto.texto, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 6),
+          Text(
+            'Revisado por ${texto.aprobadoPor}',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }

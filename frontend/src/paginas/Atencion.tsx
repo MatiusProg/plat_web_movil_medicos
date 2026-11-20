@@ -8,7 +8,7 @@ import { Boton } from '@/componentes/Boton'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
-import { PanelReceta } from './RecetaAtencion'
+import { PanelReceta, type Pendientes } from './RecetaAtencion'
 import { PanelResumenHistorial } from './ResumenHistorial'
 import { PanelChat } from './ChatAtencion'
 import { AvisoResumenPaciente, PedirResumenPaciente } from './TextosPorValidar'
@@ -16,6 +16,7 @@ import type { ResultadoResumen } from '@/api/textos_ia'
 
 type Borrador = Record<Seccion, string>
 const fechaHora = (iso: string) => new Date(iso).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' })
+const contar = (n: number, ninguno: string, uno: string, varios: string) => n === 0 ? ninguno : `${n} ${n === 1 ? uno : varios}`
 const aBorrador = (e: Encuentro): Borrador =>
   Object.fromEntries(SECCIONES.map(s => [s.campo, e[s.campo]])) as Borrador
 
@@ -59,6 +60,7 @@ export function Atencion() {
   const [resumenPaciente, setResumenPaciente] = useState<ResultadoResumen | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [confirmarFirma, setConfirmarFirma] = useState(false)
+  const [pendientes, setPendientes] = useState<Pendientes>({ medicamento: false, orden: false })
   const [enmienda, setEnmienda] = useState<{ section: SeccionEnmendable; text: string }>({ section: 'reason', text: '' })
 
   const cargar = useCallback(async (signal?: AbortSignal) => {
@@ -115,6 +117,12 @@ export function Atencion() {
 
   const firmado = encuentro.status === 'signed'
   const faltan = OBLIGATORIAS_PARA_FIRMAR.filter(c => !borrador[c].trim())
+  const bloqueos = [
+    ...(faltan.length > 0 ? [`Falta completar: ${faltan.map(c => SECCIONES.find(s => s.campo === c)!.etiqueta.toLowerCase()).join(' y ')}.`] : []),
+    ...(pendientes.medicamento ? ['Hay un medicamento escrito sin agregar: pulsa «Agregar medicamento» o borra los campos.'] : []),
+    ...(pendientes.orden ? ['Hay una orden escrita sin agregar: pulsa «Agregar orden» o borra los campos.'] : []),
+  ]
+  const sinRecetaNiOrdenes = encuentro.prescription_items.length === 0 && encuentro.orders.length === 0
   return <main className="mx-auto max-w-4xl space-y-6 px-5 py-8 sm:py-10">
     <div className="surgir flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -149,13 +157,22 @@ export function Atencion() {
         </div>)}
       </label>)}
       {!firmado && <div className="flex flex-wrap items-center justify-end gap-3 border-t border-tinta-200 pt-4 dark:border-tinta-800">
-        {faltan.length > 0 && <p className="mr-auto text-sm text-tinta-500">Para firmar falta: {faltan.map(c => SECCIONES.find(s => s.campo === c)!.etiqueta.toLowerCase()).join(' y ')}.</p>}
         <button type="submit" className={SECONDARY} disabled={guardando || !cambios}>Guardar borrador</button>
-        <Boton type="button" className="w-auto" disabled={faltan.length > 0} cargando={guardando} onClick={() => setConfirmarFirma(true)}>Firmar atención</Boton>
       </div>}
     </form>
 
-    <PanelReceta encuentro={encuentro} onCambio={setEncuentro} />
+    <PanelReceta encuentro={encuentro} onCambio={setEncuentro} onPendientes={setPendientes} />
+
+    {/* La firma va al final, después de la receta y las órdenes: firmar es lo
+        último que se hace y lo firmado ya no se edita. */}
+    {!firmado && <section className={`${PANEL} space-y-3`} aria-labelledby="firmar-titulo">
+      <h2 id="firmar-titulo" className="font-semibold text-tinta-900 dark:text-tinta-100">Firmar la atención</h2>
+      <p className="text-sm text-tinta-500">Se firma con {contar(encuentro.prescription_items.length, 'ningún medicamento', 'medicamento', 'medicamentos')} y {contar(encuentro.orders.length, 'ninguna orden', 'orden', 'órdenes')}. Después no se puede editar: las correcciones van como enmienda.</p>
+      {bloqueos.length > 0 && <ul className="list-disc space-y-1 pl-5 text-sm text-alerta-600">{bloqueos.map(b => <li key={b}>{b}</li>)}</ul>}
+      <div className="flex justify-end">
+        <Boton type="button" className="w-auto" disabled={bloqueos.length > 0} cargando={guardando} onClick={() => setConfirmarFirma(true)}>Firmar atención</Boton>
+      </div>
+    </section>}
     {/* US-47: las consultas del paciente después de la atención firmada */}
     {firmado && puede('encounters.chat') && <PanelChat encuentroId={encuentro.id} />}
 
@@ -172,6 +189,7 @@ export function Atencion() {
       <div role="alertdialog" aria-modal="true" aria-labelledby="firma-titulo" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-tinta-900">
         <h2 id="firma-titulo" className="text-lg font-semibold">Firmar la atención</h2>
         <p className="mt-2 text-sm leading-6 text-tinta-500">Una vez firmada no se puede editar ni borrar: las correcciones se agregan como enmienda. La ficha queda marcada como atendida.</p>
+        {sinRecetaNiOrdenes && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">Esta atención va <strong>sin receta ni órdenes</strong>. Si tenías que indicar algo, cancela y agrégalo antes de firmar.</p>}
         <div className="mt-6 flex justify-end gap-3"><button type="button" className={SECONDARY} onClick={() => setConfirmarFirma(false)}>Cancelar</button><button type="button" className="rounded-xl bg-marca-600 px-4 py-2.5 text-sm font-semibold text-white" onClick={() => void firmar()}>Firmar</button></div>
       </div>
     </div>}

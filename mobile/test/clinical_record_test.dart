@@ -185,7 +185,51 @@ Map<String, dynamic> _resumen(String encuentro, String paciente, String texto) =
       'approved_at': '2026-09-20T16:00:00Z',
     };
 
+Map<String, dynamic> _preparacion(String orden, String encuentro, String paciente,
+        String texto) =>
+    {
+      ..._resumen(encuentro, paciente, texto),
+      'id': 'p-$orden',
+      'kind': 'preparation',
+      'kind_display': 'Preparación para un estudio',
+      'medical_order': orden,
+      'order_description': 'Ecografía abdominal',
+    };
+
 void main() {
+  testWidgets('US-40: la preparación aprobada sale debajo de su orden',
+      (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(
+      tester,
+      {
+        't1': _historia('Ana Ríos', [
+          _atencion('e1', 'Sede Central', 'Dolor abdominal.', ordenes: [
+            {'id': 'o1', 'kind': 'imaging', 'kind_display': 'Imagenología',
+             'description': 'Ecografía abdominal', 'notes': ''},
+            {'id': 'o2', 'kind': 'laboratory', 'kind_display': 'Laboratorio',
+             'description': 'Hemograma completo', 'notes': ''},
+          ]),
+        ]),
+      },
+      resumenes: [
+        _resumen('e1', 't1', 'Qué encontramos: dolor abdominal.'),
+        _preparacion('o1', 'e1', 't1', 'Ven con 6 horas de ayuno.'),
+        // De una orden que no está en esta historia: no se pega a ninguna.
+        _preparacion('o9', 'e1', 't1', 'Ayuno de 12 horas.'),
+      ],
+    );
+
+    expect(find.byKey(const Key('preparacion')), findsOneWidget);
+    expect(find.text('Cómo prepararte'), findsOneWidget);
+    expect(find.text('Ven con 6 horas de ayuno.'), findsOneWidget);
+    expect(find.text('Revisado por Dra. Paz'), findsOneWidget);
+    expect(find.text('Ayuno de 12 horas.'), findsNothing);
+    // La preparación no se confunde con el resumen, ni al revés.
+    expect(find.text('Qué encontramos: dolor abdominal.'), findsOneWidget);
+    expect(find.text('Resumen de tu consulta'), findsOneWidget);
+  });
+
   testWidgets('US-39: muestra el resumen aprobado en su atención',
       (tester) async {
     _pantallaGrande(tester);

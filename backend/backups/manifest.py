@@ -144,6 +144,11 @@ TABLES: tuple[Table, ...] = (
           strategy=APPEND, draft_only_parent="encounter"),
     Table("encounters", "MedicalOrder", "Órdenes médicas",
           strategy=APPEND, draft_only_parent="encounter"),
+    # US-48: la calificación de una atención. La base no deja borrarla
+    # (trigger de `encounters/0008`): purgarla al restaurar fallaría. Sólo se
+    # agregan las que faltan; una que ya está queda como está.
+    Table("encounters", "EncounterRating", "Calificaciones de atenciones",
+          strategy=APPEND),
     # US-42: lo que la IA escribió para el paciente y lo que el médico validó.
     # Es parte de lo que se le dijo al paciente, y la base no deja borrarlo ni
     # cambiar lo decidido (trigger de `ai/0002`): sólo se agrega, como la

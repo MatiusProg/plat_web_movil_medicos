@@ -58,13 +58,16 @@ class ReviewSerializer(serializers.ModelSerializer):
         return services.diff(obj.generated_text, obj.final_text)
 
     def get_warnings(self, obj):
-        """US-39: lo que conviene mirar dos veces. Sólo en lo pendiente."""
-        if (obj.status != AiGeneratedText.Status.DRAFT
-                or obj.kind != AiGeneratedText.Kind.CONSULTATION_SUMMARY
-                or obj.encounter is None):
+        """US-39 y US-40: lo que conviene mirar dos veces. Sólo en lo pendiente."""
+        if obj.status != AiGeneratedText.Status.DRAFT or obj.encounter is None:
             return []
-        from .consultation_summary import warnings
-        return warnings(obj.encounter, obj.final_text or obj.generated_text)
+        if obj.kind == AiGeneratedText.Kind.CONSULTATION_SUMMARY:
+            from .consultation_summary import warnings
+            return warnings(obj.encounter, obj.final_text or obj.generated_text)
+        if obj.kind == AiGeneratedText.Kind.PREPARATION:
+            from .study_preparation import warnings
+            return warnings(obj)
+        return []
 
 
 class FinalTextSerializer(serializers.Serializer):

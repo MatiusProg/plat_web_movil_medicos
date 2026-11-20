@@ -8,6 +8,7 @@ from .views import (
     DiscardView,
     InboxView,
     PatientTextsView,
+    StudyPreparationView,
     TextDetailView,
 )
 
@@ -22,4 +23,7 @@ urlpatterns = [
     # US-39: reintentar el resumen de una atención firmada.
     path("encounters/<uuid:encounter_id>/summary/", ConsultationSummaryView.as_view(),
          name="consultation-summary"),
+    # US-40: reintentar la preparación de una orden de una atención firmada.
+    path("orders/<uuid:order_id>/preparation/", StudyPreparationView.as_view(),
+         name="study-preparation"),
 ]

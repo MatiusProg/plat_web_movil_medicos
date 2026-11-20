@@ -175,7 +175,9 @@ def test_la_bitacora_registra_el_pedido_sin_el_texto(borrador_clinico, laura, or
     with CON_GEMINI:
         firmar(laura, borrador_clinico)
     with tenant_context(org_a.id):
-        asiento = AuditLog.objects.get(action=Action.AI_TEXT_GENERATE)
+        # US-40 deja su propio asiento por orden; acá se mira el del resumen.
+        asiento = AuditLog.objects.get(action=Action.AI_TEXT_GENERATE,
+                                       detail__tipo="consultation_summary")
     assert asiento.detail == {"tipo": "consultation_summary", "resultado": "generated"}
 
 

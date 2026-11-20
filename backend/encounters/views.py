@@ -179,7 +179,17 @@ class EncounterSignView(APIView):
             request, Action.AI_TEXT_GENERATE, "encounters", entity_id=firmado.pk,
             detail={"tipo": "consultation_summary", "resultado": resumen["status"]},
         )
-        return Response({**EncounterSerializer(firmado).data, "patient_summary": resumen})
+        # US-40: la preparación de cada orden. Tampoco hace fallar la firma.
+        from ai.study_preparation import generate_for_encounter
+        preparaciones = generate_for_encounter(firmado)
+        for prep in preparaciones:
+            bitacora.record(
+                request, Action.AI_TEXT_GENERATE, "encounters", entity_id=firmado.pk,
+                detail={"tipo": "preparation", "orden": prep["order"],
+                        "resultado": prep["status"]},
+            )
+        return Response({**EncounterSerializer(firmado).data, "patient_summary": resumen,
+                         "study_preparations": preparaciones})
 
 
 class EncounterAmendView(APIView):
