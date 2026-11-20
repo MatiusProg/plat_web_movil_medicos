@@ -450,7 +450,7 @@ export function BarraPlataforma({
                     </button>
                 )}
                 <div className={`min-w-0 flex-1 leading-tight ${soloAncha}`}>
-                    <p className="text-[0.9375rem] font-semibold text-white">MediAdmin</p>
+                    <p className="text-[1.0625rem] font-semibold text-white">MediAdmin</p>
                     <p className="truncate text-xs text-tinta-400">
                         {usuario?.is_platform_admin ? 'Plataforma' : usuario?.organization}
                     </p>

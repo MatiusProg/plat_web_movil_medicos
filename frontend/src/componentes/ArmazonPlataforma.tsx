@@ -158,7 +158,7 @@ export function ArmazonPlataforma() {
                         <IconoHamburguesa />
                     </button>
 
-                    <span className="text-tinta-800 dark:text-tinta-100 text-[0.9375rem] font-semibold">
+                    <span className="text-tinta-800 dark:text-tinta-100 text-[1.0625rem] font-semibold">
                         MediAdmin
                     </span>
 

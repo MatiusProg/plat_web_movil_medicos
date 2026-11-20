@@ -47,7 +47,7 @@ export function Historial() {
       <Link to="/atencion" className="text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">Atención del día</Link>
       <p className="mt-3 text-sm font-medium text-marca-700 dark:text-marca-400">Historia clínica</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{datos.patient.full_name}</h1>
-      <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">{resumenHistorial(datos, 'Todavía no tiene atenciones firmadas.')}</p>
+      <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">{resumenHistorial(datos, 'Todavía no tiene atenciones firmadas.')}</p>
     </div>
     <LineaDeTiempo datos={datos} />
   </main>

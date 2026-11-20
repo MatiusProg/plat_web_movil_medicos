@@ -166,7 +166,7 @@ export function Reportes() {
       <div className="surgir">
         <p className="text-sm font-medium text-marca-700 dark:text-marca-400">Organización</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Reportes</h1>
-        <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">
+        <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">
           Elegí qué datos querés, con qué criterios y en qué orden. Podés pedirlo hablando y después revisarlo
           antes de generarlo.
         </p>

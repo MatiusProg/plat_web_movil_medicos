@@ -106,7 +106,7 @@ export function BuscarProfesionales() {
   if (!puede('catalog.professional.read')) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para consultar el catálogo de profesionales.
         </p>
       </main>
@@ -122,7 +122,7 @@ export function BuscarProfesionales() {
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           Buscar profesionales
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Por especialidad o por nombre. Cada resultado lleva a la
           disponibilidad del profesional.
         </p>
@@ -184,7 +184,7 @@ export function BuscarProfesionales() {
       {error && <Aviso codigo={error.codigo} mensaje={error.message} />}
 
       {resultados.length === 0 && !cargando ? (
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No hay profesionales que coincidan.
         </p>
       ) : (
@@ -218,7 +218,7 @@ export function BuscarProfesionales() {
       )}
 
       {cargando && (
-        <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
+        <p className="text-tinta-500 text-[1.0625rem]">Cargando…</p>
       )}
 
       {hayMas && !cargando && (

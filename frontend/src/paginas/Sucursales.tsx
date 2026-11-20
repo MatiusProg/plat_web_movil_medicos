@@ -13,7 +13,7 @@ import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-const INPUT = 'w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[0.9375rem] text-tinta-800 outline-none transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100'
+const INPUT = 'w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[1.0625rem] text-tinta-800 outline-none transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100'
 const PANEL = 'rounded-2xl border border-tinta-200 bg-white p-5 dark:border-tinta-800 dark:bg-tinta-900/50'
 const SECUNDARIO = 'inline-flex items-center justify-center gap-2 rounded-xl border border-tinta-300 px-4 py-2.5 text-sm font-semibold text-tinta-700 transition hover:bg-tinta-100 disabled:opacity-50 dark:border-tinta-700 dark:text-tinta-200 dark:hover:bg-tinta-800'
 const HORA = /^\d{2}:\d{2}(:\d{2})?$/
@@ -162,7 +162,7 @@ export function Sucursales() {
       <div>
         <p className="text-marca-700 dark:text-marca-400 text-sm font-medium">Catálogo del centro médico</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Sucursales</h1>
-        <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">Administrá las sedes y sus horarios de atención. Los profesionales y agendas utilizan este catálogo.</p>
+        <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">Administrá las sedes y sus horarios de atención. Los profesionales y agendas utilizan este catálogo.</p>
       </div>
       {crear && <Boton type="button" onClick={()=>void abrir()} className="w-auto"><Icono name="plus" className="size-4"/> Nueva sucursal</Boton>}
     </div>

@@ -103,7 +103,7 @@ export function RegistroPaciente() {
               <h1 className="text-tinta-900 dark:text-tinta-50 text-2xl font-semibold tracking-tight">
                 ¡Registro completado!
               </h1>
-              <p className="text-tinta-500 dark:text-tinta-400 mt-2 text-[0.9375rem]">
+              <p className="text-tinta-500 dark:text-tinta-400 mt-2 text-[1.0625rem]">
                 Tu cuenta de paciente ha sido creada exitosamente. Ya puedes iniciar sesión en la plataforma con tus credenciales.
               </p>
             </header>
@@ -129,7 +129,7 @@ export function RegistroPaciente() {
             <h1 className="text-tinta-900 dark:text-tinta-50 text-2xl font-semibold tracking-tight">
               Registrate como Paciente
             </h1>
-            <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[0.9375rem]">
+            <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[1.0625rem]">
               Crea tu ficha demográfica y cuenta para acceder a la atención médica.
             </p>
           </header>
@@ -185,7 +185,7 @@ export function RegistroPaciente() {
                   value={documentType}
                   onChange={(e) => setDocumentType(e.target.value as any)}
                   disabled={enviando}
-                  className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900/60 dark:text-tinta-50 py-2.5 px-3 text-[0.9375rem] transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/25 focus:outline-none"
+                  className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900/60 dark:text-tinta-50 py-2.5 px-3 text-[1.0625rem] transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/25 focus:outline-none"
                 >
                   <option value="CI">CI</option>
                   <option value="PAS">Pasaporte</option>
@@ -299,7 +299,7 @@ export function RegistroPaciente() {
                 value={sex}
                 onChange={(e) => setSex(e.target.value as any)}
                 disabled={enviando}
-                className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900/60 dark:text-tinta-50 py-2.5 px-3 text-[0.9375rem] transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/25 focus:outline-none"
+                className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900/60 dark:text-tinta-50 py-2.5 px-3 text-[1.0625rem] transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/25 focus:outline-none"
               >
                 <option value="">Seleccionar...</option>
                 <option value="M">Masculino</option>

@@ -62,7 +62,7 @@ export function Campo({
             undefined
           }
           className={[
-            'w-full rounded-xl border bg-white py-2.5 text-[0.9375rem] transition',
+            'w-full rounded-xl border bg-white py-2.5 text-[1.0625rem] transition',
             'placeholder:text-tinta-400',
             'dark:bg-tinta-900/60 dark:text-tinta-50',
             icono ? 'pl-11' : 'pl-3.5',

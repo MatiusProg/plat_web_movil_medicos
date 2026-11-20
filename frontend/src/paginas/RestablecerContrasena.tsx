@@ -125,7 +125,7 @@ export function RestablecerContrasena() {
       <section className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
         <div className="surgir w-full max-w-[26rem]">
           {comprobando ? (
-            <p className="text-tinta-500 text-center text-[0.9375rem]">
+            <p className="text-tinta-500 text-center text-[1.0625rem]">
               Comprobando el enlace…
             </p>
           ) : enlaceRoto ? (
@@ -136,7 +136,7 @@ export function RestablecerContrasena() {
                 <h1 className="text-tinta-900 dark:text-tinta-50 text-2xl font-semibold tracking-tight">
                   Elegí una contraseña nueva
                 </h1>
-                <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[0.9375rem]">
+                <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[1.0625rem]">
                   Para la cuenta <strong>{correo}</strong>. Al guardarla se
                   cierran todas las sesiones que tengas abiertas.
                 </p>
@@ -222,14 +222,14 @@ function EnlaceRoto({ error }: { error: ErrorApi }) {
     <div className="text-center">
       <Aviso codigo={error.codigo} mensaje={error.message} />
 
-      <p className="text-tinta-500 dark:text-tinta-400 mt-6 text-[0.9375rem]">
+      <p className="text-tinta-500 dark:text-tinta-400 mt-6 text-[1.0625rem]">
         Los enlaces duran 30 minutos y sirven una sola vez. Pedí uno nuevo y
         usalo apenas te llegue.
       </p>
 
       <Link
         to="/recuperar"
-        className="bg-marca-600 hover:bg-marca-700 focus-visible:outline-marca-600 mt-6 inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-[0.9375rem] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="bg-marca-600 hover:bg-marca-700 focus-visible:outline-marca-600 mt-6 inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-[1.0625rem] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         Pedir un enlace nuevo
       </Link>

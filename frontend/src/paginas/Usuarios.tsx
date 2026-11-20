@@ -91,7 +91,7 @@ export function Usuarios() {
   if (!puede('users.user.read')) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para ver los usuarios de la organización.
         </p>
       </main>
@@ -107,7 +107,7 @@ export function Usuarios() {
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           Usuarios y roles
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Quién trabaja en el centro médico y qué puede hacer cada uno. Un
           usuario puede tener más de un rol.
         </p>
@@ -122,16 +122,16 @@ export function Usuarios() {
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Buscar por nombre, apellido, documento o correo…"
-          className="w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[0.9375rem] text-tinta-800 outline-none focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100"
+          className="w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[1.0625rem] text-tinta-800 outline-none focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100"
         />
       </label>
 
       {usuarios === null ? (
-        <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
+        <p className="text-tinta-500 text-[1.0625rem]">Cargando…</p>
       ) : (
         <div>
           {usuarios.length === 0 && (
-            <p className="text-tinta-500 text-[0.9375rem]">
+            <p className="text-tinta-500 text-[1.0625rem]">
               {buscado ? 'Nadie coincide con esa búsqueda.' : 'No hay usuarios.'}
             </p>
           )}
@@ -325,7 +325,7 @@ function FilaUsuario({
               <select
                 value={elegido}
                 onChange={(e) => setElegido(e.target.value)}
-                className="border-tinta-300 dark:border-tinta-700 dark:bg-tinta-900/60 dark:text-tinta-50 focus:border-marca-500 focus:ring-marca-500/25 rounded-xl border bg-white px-3.5 py-2.5 text-[0.9375rem] focus:ring-4 focus:outline-none"
+                className="border-tinta-300 dark:border-tinta-700 dark:bg-tinta-900/60 dark:text-tinta-50 focus:border-marca-500 focus:ring-marca-500/25 rounded-xl border bg-white px-3.5 py-2.5 text-[1.0625rem] focus:ring-4 focus:outline-none"
               >
                 <option value="">Elegí un rol para agregar…</option>
                 {disponibles.map((rol) => (
@@ -339,7 +339,7 @@ function FilaUsuario({
                 type="button"
                 onClick={asignar}
                 disabled={!elegido || trabajando}
-                className="bg-marca-600 hover:bg-marca-700 rounded-xl px-4 py-2.5 text-[0.9375rem] font-semibold text-white transition disabled:pointer-events-none disabled:opacity-60"
+                className="bg-marca-600 hover:bg-marca-700 rounded-xl px-4 py-2.5 text-[1.0625rem] font-semibold text-white transition disabled:pointer-events-none disabled:opacity-60"
               >
                 Asignar
               </button>

@@ -79,7 +79,7 @@ export function RecuperarAcceso() {
                 <h1 className="text-tinta-900 dark:text-tinta-50 text-2xl font-semibold tracking-tight">
                   Recuperá tu acceso
                 </h1>
-                <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[0.9375rem]">
+                <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[1.0625rem]">
                   Te mandamos un enlace por correo para que elijas una
                   contraseña nueva. Dura 30 minutos y sirve una sola vez.
                 </p>
@@ -161,7 +161,7 @@ function Confirmacion({ mensaje }: { mensaje: string }) {
         Revisá tu correo
       </h1>
 
-      <p className="text-tinta-500 dark:text-tinta-400 mt-2 text-[0.9375rem]">
+      <p className="text-tinta-500 dark:text-tinta-400 mt-2 text-[1.0625rem]">
         {mensaje}
       </p>
 
