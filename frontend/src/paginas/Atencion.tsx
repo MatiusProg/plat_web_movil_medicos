@@ -9,6 +9,8 @@ import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
 import { PanelReceta, type Pendientes } from './RecetaAtencion'
+import { EditorSignos, VerSignos } from './SignosVitales'
+import { aTextos, leerSignos, mismosSignos, SIN_SIGNOS, type TextosSignos } from './signos_vitales'
 import { PanelResumenHistorial } from './ResumenHistorial'
 import { PanelChat } from './ChatAtencion'
 import { AvisoResumenPaciente, PedirResumenPaciente } from './TextosPorValidar'
@@ -60,13 +62,14 @@ export function Atencion() {
   const [resumenPaciente, setResumenPaciente] = useState<ResultadoResumen | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [confirmarFirma, setConfirmarFirma] = useState(false)
+  const [signos, setSignos] = useState<TextosSignos>(SIN_SIGNOS)
   const [pendientes, setPendientes] = useState<Pendientes>({ medicamento: false, orden: false })
   const [enmienda, setEnmienda] = useState<{ section: SeccionEnmendable; text: string }>({ section: 'reason', text: '' })
 
   const cargar = useCallback(async (signal?: AbortSignal) => {
     try {
       const e = await verEncuentro(id, { token }, signal)
-      setEncuentro(e); setBorrador(aBorrador(e)); setError(null)
+      setEncuentro(e); setBorrador(aBorrador(e)); setSignos(aTextos(e.vital_signs)); setError(null)
       // Los antecedentes son un extra: si fallan, la atención se registra igual.
       verAntecedentes(e.patient.id, { token }, signal).then(setAntecedentes).catch(() => {})
     } catch (e) { if (!(e instanceof DOMException && e.name === 'AbortError')) setError(mensajeError(e)) }
@@ -74,15 +77,21 @@ export function Atencion() {
 
   useEffect(() => { const c = new AbortController(); void cargar(c.signal); return () => c.abort() }, [cargar])
 
-  const cambios = encuentro && borrador ? SECCIONES.some(s => borrador[s.campo] !== encuentro[s.campo]) : false
+  const signosCambiaron = encuentro ? !mismosSignos(signos, aTextos(encuentro.vital_signs)) : false
+  const cambios = encuentro && borrador ? signosCambiaron || SECCIONES.some(s => borrador[s.campo] !== encuentro[s.campo]) : false
+  const lecturaSignos = leerSignos(signos)
+  const signosConError = Object.keys(lecturaSignos.errores).length > 0
 
   const guardar = async (e?: FormEvent) => {
     e?.preventDefault()
     if (!encuentro || !borrador || guardando) return null
+    if (signosConError) { setError('Hay un signo vital imposible: corrígelo o bórralo antes de guardar.'); return null }
     setGuardando(true); setError(null)
     try {
-      const nuevo = await guardarBorrador(encuentro.id, borrador, { token })
-      setEncuentro(nuevo); setAviso('Borrador guardado.')
+      // US-53: los signos van sólo si cambiaron; se reemplazan enteros.
+      const nuevo = await guardarBorrador(encuentro.id,
+        signosCambiaron ? { ...borrador, vital_signs: lecturaSignos.datos } : borrador, { token })
+      setEncuentro(nuevo); setSignos(aTextos(nuevo.vital_signs)); setAviso('Borrador guardado.')
       return nuevo
     } catch (err) { setError(mensajeError(err)); return null }
     finally { setGuardando(false) }
@@ -119,6 +128,7 @@ export function Atencion() {
   const faltan = OBLIGATORIAS_PARA_FIRMAR.filter(c => !borrador[c].trim())
   const bloqueos = [
     ...(faltan.length > 0 ? [`Falta completar: ${faltan.map(c => SECCIONES.find(s => s.campo === c)!.etiqueta.toLowerCase()).join(' y ')}.`] : []),
+    ...(signosConError ? ['Hay un signo vital imposible: corrígelo o bórralo.'] : []),
     ...(pendientes.medicamento ? ['Hay un medicamento escrito sin agregar: pulsa «Agregar medicamento» o borra los campos.'] : []),
     ...(pendientes.orden ? ['Hay una orden escrita sin agregar: pulsa «Agregar orden» o borra los campos.'] : []),
   ]
@@ -146,6 +156,14 @@ export function Atencion() {
     {verHistorialPermitido && <PanelResumenHistorial pacienteId={encuentro.patient.id} />}
 
     <form onSubmit={e => void guardar(e)} className={`${PANEL} space-y-5`}>
+      {firmado ? <section aria-labelledby="signos-titulo" className="space-y-2">
+        <h2 id="signos-titulo" className="text-sm font-medium text-tinta-700 dark:text-tinta-300">Signos vitales</h2>
+        {encuentro.vital_signs ? <VerSignos signos={encuentro.vital_signs} /> : <p className="text-sm text-tinta-500">No se tomaron.</p>}
+        {encuentro.amendments.filter(a => a.section === 'vital_signs').map(a => <div key={a.id} className="ml-3 border-l-2 border-marca-400 pl-3 text-sm">
+          <p className="text-xs text-tinta-500">Enmienda de {a.author_name} · {fechaHora(a.created_at)}</p>
+          <p className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{a.text}</p>
+        </div>)}
+      </section> : <EditorSignos textos={signos} onCambio={setSignos} />}
       {SECCIONES.map(s => <label key={s.campo} className="block space-y-1.5 text-sm">
         <span className="font-medium text-tinta-700 dark:text-tinta-300">{s.etiqueta}{!firmado && OBLIGATORIAS_PARA_FIRMAR.includes(s.campo) && <span className="text-alerta-600"> *</span>}</span>
         {firmado ? <p className="whitespace-pre-wrap rounded-xl bg-tinta-50 px-3.5 py-2.5 text-[1.0625rem] text-tinta-800 dark:bg-tinta-900 dark:text-tinta-100">{encuentro[s.campo] || '—'}</p>

@@ -100,7 +100,9 @@ class VitalSignsSerializer(serializers.ModelSerializer):
 
 def _rango(campo, decimales=False):
     minimo, maximo = VitalSigns.LIMITS[campo]
-    nombre = VitalSigns._meta.get_field(campo).verbose_name
+    # DRF formatea el mensaje con `%`: el «(%)» de la saturación lo rompía y
+    # una SpO₂ de 101 devolvía un 500 en vez del mensaje (test_us53).
+    nombre = str(VitalSigns._meta.get_field(campo).verbose_name).replace("%", "%%")
     mensajes = {
         "min_value": f"{nombre[:1].upper()}{nombre[1:]}: el mínimo posible es {minimo}.",
         "max_value": f"{nombre[:1].upper()}{nombre[1:]}: el máximo posible es {maximo}.",
