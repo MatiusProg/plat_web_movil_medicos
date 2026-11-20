@@ -329,3 +329,75 @@ class EncounterRating(models.Model):
     def editable_until(self):
         import datetime as dt
         return self.created_at + dt.timedelta(days=self.EDITABLE_DAYS)
+
+
+# --------------------------------------------------------------------------
+#  US-49 — Las tomas de los medicamentos de la receta
+# --------------------------------------------------------------------------
+#
+# Los avisos son **locales** del teléfono: no dependen del servidor ni de la
+# conexión. Lo que sí llega al servidor es cada toma que el paciente marca,
+# para que el médico vea el cumplimiento del tratamiento («12 de 15 tomas»).
+#
+# `dose_number` es el número de toma dentro del horario que sale de
+# `frequency.interpretar` (1 a `total_doses`). Es lo que hace imposible marcar
+# dos veces la misma toma: `(prescription_item, dose_number)` es único, aunque
+# el teléfono reintente después de perder la conexión.
+#
+# Una toma marcada no se cambia ni se borra (migración 0010): es un registro
+# de lo que el paciente dijo, igual que un mensaje del chat.
+
+
+class MedicationIntake(models.Model):
+    """Una toma de un medicamento recetado, marcada por el paciente."""
+
+    class Status(models.TextChoices):
+        TAKEN = "taken", "Tomada"
+        SKIPPED = "skipped", "Salteada"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="medication_intakes",
+    )
+    prescription_item = models.ForeignKey(
+        PrescriptionItem, on_delete=models.PROTECT, related_name="intakes",
+    )
+    patient = models.ForeignKey(
+        "patients.Patient", on_delete=models.PROTECT,
+        related_name="medication_intakes",
+    )
+    dose_number = models.PositiveSmallIntegerField("número de toma")
+    status = models.CharField(max_length=8, choices=Status.choices)
+    # Cuándo tocaba según el horario que eligió el paciente. Puede ser nulo:
+    # la toma se marca igual aunque el teléfono no lo mande.
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    # El paciente o el titular de su dependiente.
+    recorded_by = models.ForeignKey(
+        "accounts.User", on_delete=models.PROTECT,
+        related_name="medication_intakes",
+    )
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "encounter_medication_intakes"
+        verbose_name = "toma de medicamento"
+        verbose_name_plural = "tomas de medicamentos"
+        ordering = ["prescription_item", "dose_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["prescription_item", "dose_number"],
+                name="uq_intake_item_dose",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["taken", "skipped"]),
+                name="ck_intake_status",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(dose_number__gte=1),
+                name="ck_intake_dose_number",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.prescription_item_id} · toma {self.dose_number} · {self.status}"

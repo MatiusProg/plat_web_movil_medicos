@@ -64,9 +64,29 @@ export interface Medicamento {
   duration: string
   instructions: string
   created_at: string
+  /** US-49: el horario que sale de la frecuencia, o `null` con su motivo. */
+  schedule?: HorarioDeTomas | null
+  schedule_reason?: string | null
+  /** US-49: las tomas que marcó el paciente. */
+  adherence?: Cumplimiento
 }
 
-export type DatosMedicamento = Omit<Medicamento, 'id' | 'created_at'>
+export interface HorarioDeTomas {
+  interval_hours: number
+  days: number
+  total_doses: number
+}
+
+export interface Cumplimiento {
+  taken: number
+  skipped: number
+  /** `null` si la indicación no tiene horario fijo. */
+  total: number | null
+  /** Fracción entre 0 y 1, o `null` sin total. */
+  rate: number | null
+}
+
+export type DatosMedicamento = Pick<Medicamento, 'medication' | 'dose' | 'frequency' | 'duration' | 'instructions'>
 
 export type TipoOrden = 'laboratory' | 'imaging' | 'other'
 

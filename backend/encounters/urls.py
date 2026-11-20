@@ -1,9 +1,10 @@
 """Rutas de la atención médica: US-24 (registro), US-25 (historial), US-41 (resumen)
-y US-48 (calificación)."""
+US-48 (calificación) y US-49 (tomas de la receta)."""
 
 from django.urls import path
 
 from .history_views import PatientHistorySummaryView, PatientHistoryView
+from .intake_views import MedicationIntakesView, MyMedicationsView
 from .rating_views import EncounterRatingView, MyRatingsView
 from .views import (
     AgendaView,
@@ -44,4 +45,9 @@ urlpatterns = [
     # US-48: el paciente califica la atención; el médico ve su promedio.
     path("<uuid:pk>/rating/", EncounterRatingView.as_view(), name="rating"),
     path("ratings/mine/", MyRatingsView.as_view(), name="my-ratings"),
+    # US-49: las tomas de la receta y *Mis medicamentos*.
+    path("prescription/<uuid:item_pk>/intakes/", MedicationIntakesView.as_view(),
+         name="intakes"),
+    path("medications/<uuid:patient_id>/", MyMedicationsView.as_view(),
+         name="medications"),
 ]

@@ -48,6 +48,23 @@ class PrescriptionItemSerializer(serializers.ModelSerializer):
                   "instructions", "created_at"]
         read_only_fields = ["id", "created_at"]
 
+    def to_representation(self, instance):
+        """US-49: el horario que sale de la frecuencia y el cumplimiento.
+
+        ``schedule`` es ``None`` con su motivo cuando la indicación no tiene
+        horario fijo («según dolor») o no dice por cuántos días: ahí la app no
+        ofrece el recordatorio. ``adherence`` lo ven el paciente y el médico.
+        """
+        from .frequency import para_la_api
+        from .intakes import cumplimiento
+
+        datos = super().to_representation(instance)
+        horario = para_la_api(instance.frequency, instance.duration)
+        datos.update(horario)
+        if instance.pk:
+            datos["adherence"] = cumplimiento(instance, horario["schedule"])
+        return datos
+
 
 class MedicalOrderSerializer(serializers.ModelSerializer):
     """US-26 — Una orden de laboratorio o de estudio."""
