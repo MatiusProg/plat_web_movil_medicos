@@ -76,16 +76,31 @@ class Medicamento {
 /// US-26 — Una orden de laboratorio o de estudio.
 class Orden {
   const Orden({
+    this.id = '',
     required this.kindDisplay,
     required this.description,
     required this.notes,
+    this.preparacion,
   });
 
+  final String id;
   final String kindDisplay;
   final String description;
   final String notes;
 
+  /// US-40: cómo prepararse, aprobado por el médico, o `null` si no hay.
+  final TextoAprobado? preparacion;
+
+  Orden conPreparacion(TextoAprobado? preparacion) => Orden(
+        id: id,
+        kindDisplay: kindDisplay,
+        description: description,
+        notes: notes,
+        preparacion: preparacion,
+      );
+
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
+        id: json['id'] as String? ?? '',
         kindDisplay: json['kind_display'] as String? ?? '',
         description: json['description'] as String? ?? '',
         notes: json['notes'] as String? ?? '',
@@ -123,7 +138,9 @@ class Atencion {
   /// US-39: el resumen aprobado por el médico, o `null` si no hay.
   final ResumenConsulta? resumen;
 
-  Atencion conResumen(ResumenConsulta? resumen) => Atencion(
+  Atencion conResumen(ResumenConsulta? resumen,
+          [Map<String, TextoAprobado> preparaciones = const {}]) =>
+      Atencion(
         id: id,
         startsAt: startsAt,
         practitionerName: practitionerName,
@@ -133,7 +150,9 @@ class Atencion {
         signedAt: signedAt,
         enmiendas: enmiendas,
         medicamentos: medicamentos,
-        ordenes: ordenes,
+        ordenes: [
+          for (final o in ordenes) o.conPreparacion(preparaciones[o.id]),
+        ],
         resumen: resumen,
       );
 
@@ -168,6 +187,9 @@ class Atencion {
       );
 }
 
+/// US-39 y US-40 — Un texto de la IA tal como lo aprobó el médico.
+typedef TextoAprobado = ResumenConsulta;
+
 /// US-39 — El resumen de una consulta, tal como lo aprobó el médico.
 class ResumenConsulta {
   const ResumenConsulta({
@@ -175,8 +197,14 @@ class ResumenConsulta {
     required this.texto,
     required this.aprobadoPor,
     required this.aprobadoEl,
+    this.kind = 'consultation_summary',
+    this.orderId,
   });
 
+  final String kind;
+
+  /// US-40: la orden de la que sale, si es una preparación.
+  final String? orderId;
   final String encounterId;
   final String texto;
   final String aprobadoPor;
@@ -187,6 +215,8 @@ class ResumenConsulta {
         texto: (json['text'] as String? ?? '').trim(),
         aprobadoPor: json['practitioner_name'] as String? ?? '',
         aprobadoEl: DateTime.tryParse(json['approved_at'] as String? ?? ''),
+        kind: json['kind'] as String? ?? 'consultation_summary',
+        orderId: json['medical_order'] as String?,
       );
 }
 
@@ -231,44 +261,54 @@ Future<HistoriaClinica> verHistoriaClinica(
   );
   if (historia.atenciones.isEmpty) return historia;
 
-  final resumenes = await verResumenesAprobados(client, patientId: patientId);
+  final (resumenes, preparaciones) =
+      await verTextosAprobados(client, patientId: patientId);
   return HistoriaClinica(
     patientName: historia.patientName,
     sucursales: historia.sucursales,
     atenciones: [
-      for (final a in historia.atenciones) a.conResumen(resumenes[a.id]),
+      for (final a in historia.atenciones)
+        a.conResumen(resumenes[a.id], preparaciones),
     ],
   );
 }
 
-/// US-39 — Los resúmenes aprobados de las consultas de un paciente, por
-/// atención.
+/// US-39 y US-40 — Los textos aprobados de un paciente, en un solo pedido:
+/// los resúmenes por atención y las preparaciones por orden.
 ///
-/// Si no se pueden traer, la historia se muestra igual sin ellos: el resumen
-/// es una ayuda, la historia clínica es lo que el paciente vino a ver.
-Future<Map<String, ResumenConsulta>> verResumenesAprobados(
+/// Si no se pueden traer, la historia se muestra igual sin ellos: son una
+/// ayuda, la historia clínica es lo que el paciente vino a ver.
+Future<(Map<String, TextoAprobado>, Map<String, TextoAprobado>)>
+    verTextosAprobados(
   ApiClient client, {
   required String patientId,
 }) async {
   try {
     final query = Uri(queryParameters: {
       'patient': patientId,
-      'kind': 'consultation_summary',
       'page_size': '100',
     }).query;
     final data = await client.get('/ai/texts/mine/?$query');
-    final filas = data is Map<String, dynamic>
-        ? (data['results'] as List? ?? const [])
-        : const [];
-    return {
-      for (final r in filas
-          .whereType<Map<String, dynamic>>()
-          .map(ResumenConsulta.fromJson)
-          .where((r) => r.texto.isNotEmpty))
-        r.encounterId: r,
-    };
+    final filas = (data is Map<String, dynamic>
+            ? (data['results'] as List? ?? const [])
+            : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ResumenConsulta.fromJson)
+        .where((r) => r.texto.isNotEmpty)
+        .toList();
+    return (
+      {
+        for (final r in filas)
+          if (r.kind == 'consultation_summary') r.encounterId: r,
+      },
+      {
+        for (final r in filas)
+          if (r.kind == 'preparation' && (r.orderId ?? '').isNotEmpty)
+            r.orderId!: r,
+      },
+    );
   } on ApiError {
-    return const {};
+    return (const <String, TextoAprobado>{}, const <String, TextoAprobado>{});
   }
 }
 

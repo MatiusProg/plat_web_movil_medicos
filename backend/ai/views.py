@@ -149,6 +149,39 @@ class ConsultationSummaryView(APIView):
         return Response(resultado)
 
 
+class StudyPreparationView(APIView):
+    """US-40 — ``POST /api/ai/orders/<id>/preparation/``
+
+    Vuelve a pedir la preparación de una orden de una atención firmada:
+    cuando el catálogo no la tenía y ya se cargó, cuando la IA no estaba, o
+    cuando el médico descartó la anterior. Sólo el médico de la atención.
+    """
+
+    permission_classes = [IsAuthenticated, CanReviewTexts]
+
+    def post(self, request, order_id):
+        from encounters.models import MedicalOrder
+        from encounters.services import is_own
+
+        from .study_preparation import generate
+
+        orden = (MedicalOrder.objects
+                 .filter(organization=request.user.organization, pk=order_id)
+                 .select_related("encounter", "organization")
+                 .first())
+        if orden is None or not is_own(request.user, orden.encounter):
+            raise Http404
+        if not orden.encounter.is_signed:
+            raise services.Conflict("La preparación se genera sobre una atención firmada.")
+        resultado = generate(orden)
+        bitacora.record(
+            request, Action.AI_TEXT_GENERATE, "encounters", entity_id=orden.encounter_id,
+            detail={"tipo": "preparation", "orden": str(orden.pk),
+                    "resultado": resultado["status"]},
+        )
+        return Response(resultado)
+
+
 class PatientTextsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, CanReadOwnHistory]
     serializer_class = PatientTextSerializer
