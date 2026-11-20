@@ -442,7 +442,7 @@ export function Suscripciones() {
                         Suscripciones
                     </h1>
 
-                    <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-6 text-tinta-500">
+                    <p className="mt-1.5 max-w-2xl text-[1.0625rem] leading-6 text-tinta-500">
                         Consulta el plan vigente de cada
                         organización y administra sus
                         cambios de suscripción.

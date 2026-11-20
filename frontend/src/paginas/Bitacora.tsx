@@ -156,7 +156,7 @@ export function Bitacora() {
   if (!autorizada) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para consultar la bitácora de auditoría.
         </p>
       </main>
@@ -172,7 +172,7 @@ export function Bitacora() {
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           Bitácora de auditoría
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Registro cronológico de las acciones sensibles de tu organización. Es
           de sólo lectura: no se edita ni se borra desde la aplicación.
         </p>
@@ -267,7 +267,7 @@ export function Bitacora() {
       </p>
 
       {asientos.length === 0 && !cargando ? (
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           {hayFiltros
             ? 'No hay asientos que coincidan con estos filtros.'
             : 'Todavía no hay nada registrado.'}

@@ -21,6 +21,20 @@
    ========================================================================= */
 
 @theme {
+  /* Escala de texto, un paso más grande que la de Tailwind (19/11/26).
+     Los médicos leen rápido entre paciente y paciente, y muchos usan lentes:
+     el texto de uso diario (`text-sm`) pasa de 14 a 16 px. Sólo cambia el
+     texto, no el espaciado ni los cortes de pantalla, así que el diseño no se
+     desarma. El cuerpo de lectura (`text-[1.0625rem]`) queda en 17 px. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
+  --text-sm: 1rem;
+  --text-sm--line-height: calc(1.5 / 1);
+  --text-base: 1.0625rem;
+  --text-base--line-height: calc(1.625 / 1.0625);
+  --text-lg: 1.25rem;
+  --text-lg--line-height: calc(1.75 / 1.25);
+
   /* Marca */
   --color-marca-50: #eefdfa;
   --color-marca-100: #d3f9f1;

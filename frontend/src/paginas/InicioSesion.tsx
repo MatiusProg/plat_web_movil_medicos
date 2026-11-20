@@ -120,7 +120,7 @@ export function InicioSesion() {
             <h1 className="text-tinta-900 dark:text-tinta-50 text-2xl font-semibold tracking-tight">
               Iniciá sesión
             </h1>
-            <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[0.9375rem]">
+            <p className="text-tinta-500 dark:text-tinta-400 mt-1.5 text-[1.0625rem]">
               Ingresá con tus credenciales para acceder según tu rol.
             </p>
           </header>

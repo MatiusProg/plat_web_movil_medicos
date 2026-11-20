@@ -66,7 +66,7 @@ export function MiHistoria() {
     <div className="surgir flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Mi historia clínica</h1>
-        <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">
+        <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">
           Lo que registraron y firmaron los médicos que te atendieron, de todas las sucursales. Para cambiar algo, habla con tu médico.
         </p>
       </div>

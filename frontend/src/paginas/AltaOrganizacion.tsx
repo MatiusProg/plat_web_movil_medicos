@@ -101,7 +101,7 @@ export function AltaOrganizacion() {
     return (
       <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
         <main className="mx-auto max-w-4xl px-5 py-10">
-          <p className="text-tinta-500 text-[0.9375rem]">
+          <p className="text-tinta-500 text-[1.0625rem]">
             Registrar organizaciones es del Superadministrador de Plataforma.
           </p>
         </main>
@@ -132,7 +132,7 @@ export function AltaOrganizacion() {
           <h1 className="text-tinta-900 dark:text-tinta-50 mt-2 text-2xl font-semibold tracking-tight">
             Registrar organización
           </h1>
-          <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+          <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
             Queda operativa al instante: con su plan, sus roles y su primer
             administrador.
           </p>
@@ -217,7 +217,7 @@ export function AltaOrganizacion() {
                 name="plan_code"
                 required
                 defaultValue=""
-                className="border-tinta-300 dark:border-tinta-700 dark:bg-tinta-900 text-tinta-900 dark:text-tinta-50 focus:border-marca-500 focus:ring-marca-500/30 w-full rounded-xl border bg-white px-3.5 py-2.5 text-[0.9375rem] transition focus:ring-4 focus:outline-none"
+                className="border-tinta-300 dark:border-tinta-700 dark:bg-tinta-900 text-tinta-900 dark:text-tinta-50 focus:border-marca-500 focus:ring-marca-500/30 w-full rounded-xl border bg-white px-3.5 py-2.5 text-[1.0625rem] transition focus:ring-4 focus:outline-none"
               >
                 <option value="" disabled>
                   {planes.length === 0 ? 'Cargando planes…' : 'Elegí un plan'}
@@ -345,7 +345,7 @@ function Credenciales({
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           {creada.name}
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Ya tiene su plan {creada.current_plan?.name}, sus roles y su
           administrador.
         </p>

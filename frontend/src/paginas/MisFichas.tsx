@@ -286,7 +286,7 @@ export function MisFichas() {
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           Reservas
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Pagá tu reserva para confirmarla, mostrá el comprobante en recepción y
           confirmá que vas a asistir. Cancelá o reprogramá dentro del plazo de
           anticipación de tu centro médico: fuera de plazo, la cancelación no da
@@ -313,9 +313,9 @@ export function MisFichas() {
       )}
 
       {cargando ? (
-        <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
+        <p className="text-tinta-500 text-[1.0625rem]">Cargando…</p>
       ) : fichas.length === 0 ? (
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           Todavía no reservaste ninguna ficha.
         </p>
       ) : (

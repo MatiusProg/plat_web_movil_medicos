@@ -147,7 +147,7 @@ export function Agendas() {
   if (!puede('scheduling.schedule.read')) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para ver las agendas.
         </p>
       </main>
@@ -164,7 +164,7 @@ export function Agendas() {
           <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
             Agendas médicas
           </h1>
-          <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+          <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
             La agenda se guarda como regla; de ella se derivan los espacios
             reservables.
           </p>

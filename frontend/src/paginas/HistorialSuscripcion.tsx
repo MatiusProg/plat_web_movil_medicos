@@ -290,7 +290,7 @@ export function HistorialSuscripcion() {
                     Historial de suscripción
                 </h1>
 
-                <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-6 text-tinta-500">
+                <p className="mt-1.5 max-w-2xl text-[1.0625rem] leading-6 text-tinta-500">
                     Consulta todos los cambios de plan realizados
                     para esta organización.
                 </p>

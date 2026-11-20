@@ -116,7 +116,7 @@ export function MisComprobantes() {
         <h1 className="text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">
           Mis comprobantes
         </h1>
-        <p className="mt-1.5 text-[0.9375rem] text-tinta-500">
+        <p className="mt-1.5 text-[1.0625rem] text-tinta-500">
           Pídelos hablando o escribiendo y verás el código QR de cada uno.
         </p>
       </div>

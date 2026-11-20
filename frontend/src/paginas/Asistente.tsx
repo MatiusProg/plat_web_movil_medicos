@@ -371,7 +371,7 @@ export function Asistente() {
             onKeyDown={alPresionar}
             disabled={esperando}
             placeholder="Tus síntomas, o un horario o precio…"
-            className="border-tinta-300 dark:border-tinta-700 focus:border-marca-500 focus:ring-marca-500/25 placeholder:text-tinta-400 dark:bg-tinta-900/60 dark:text-tinta-50 disabled:bg-tinta-100 dark:disabled:bg-tinta-900 max-h-40 min-h-11 flex-1 resize-none rounded-xl border bg-white px-3.5 py-2.5 text-[0.9375rem] [field-sizing:content] focus:ring-4 focus:outline-none"
+            className="border-tinta-300 dark:border-tinta-700 focus:border-marca-500 focus:ring-marca-500/25 placeholder:text-tinta-400 dark:bg-tinta-900/60 dark:text-tinta-50 disabled:bg-tinta-100 dark:disabled:bg-tinta-900 max-h-40 min-h-11 flex-1 resize-none rounded-xl border bg-white px-3.5 py-2.5 text-[1.0625rem] [field-sizing:content] focus:ring-4 focus:outline-none"
           />
           <button
             type="submit"
@@ -437,7 +437,7 @@ function Bienvenida({ alElegir }: { alElegir: (ejemplo: string) => void }) {
       <div className="bg-marca-50 text-marca-600 dark:bg-marca-950 dark:text-marca-400 mx-auto grid size-14 place-items-center rounded-2xl">
         <IconoConversacion />
       </div>
-      <p className="text-tinta-700 dark:text-tinta-200 mx-auto mt-4 max-w-md text-[0.9375rem]">
+      <p className="text-tinta-700 dark:text-tinta-200 mx-auto mt-4 max-w-md text-[1.0625rem]">
         Describe tus síntomas y te sugiero con qué especialidad consultar.
       </p>
       <p className="text-tinta-500 mx-auto mt-2 max-w-md text-sm">
@@ -468,7 +468,7 @@ function Bienvenida({ alElegir }: { alElegir: (ejemplo: string) => void }) {
 function BurbujaPaciente({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="bg-marca-600 max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 text-[0.9375rem] whitespace-pre-wrap text-white">
+      <p className="bg-marca-600 max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 text-[1.0625rem] whitespace-pre-wrap text-white">
         {texto}
       </p>
     </div>
@@ -478,7 +478,7 @@ function BurbujaPaciente({ texto }: { texto: string }) {
 function Burbuja({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-start">
-      <div className="border-tinta-200 dark:border-tinta-800 dark:bg-tinta-900/60 max-w-[85%] space-y-3 rounded-2xl rounded-bl-md border bg-white px-4 py-3 text-[0.9375rem]">
+      <div className="border-tinta-200 dark:border-tinta-800 dark:bg-tinta-900/60 max-w-[85%] space-y-3 rounded-2xl rounded-bl-md border bg-white px-4 py-3 text-[1.0625rem]">
         {children}
       </div>
     </div>

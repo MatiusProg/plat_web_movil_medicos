@@ -155,7 +155,7 @@ export function Disponibilidad() {
   if (!puede('scheduling.slot.read')) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para consultar la disponibilidad.
         </p>
       </main>
@@ -171,7 +171,7 @@ export function Disponibilidad() {
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           Disponibilidad consolidada
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Los espacios libres de un profesional en todas las sucursales donde
           atiende, en una sola vista.
         </p>
@@ -250,14 +250,14 @@ export function Disponibilidad() {
       )}
 
       {!profesional ? (
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           Elegí un profesional para ver su disponibilidad.
         </p>
       ) : cargando ? (
-        <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
+        <p className="text-tinta-500 text-[1.0625rem]">Cargando…</p>
       ) : totalEspacios === 0 ? (
         <div className="space-y-4">
-          <p className="text-tinta-500 text-[0.9375rem]">
+          <p className="text-tinta-500 text-[1.0625rem]">
             No hay espacios libres en ese rango.
           </p>
           {puedeReservar && (

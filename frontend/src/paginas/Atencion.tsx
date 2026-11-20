@@ -128,7 +128,7 @@ export function Atencion() {
       <div>
         <Link to="/atencion" className="text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">← Atención del día</Link>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{encuentro.patient.full_name}</h1>
-        <p className="mt-1 text-[0.9375rem] text-tinta-500">{[encuentro.patient.document_number && `CI ${encuentro.patient.document_number}`, fechaHora(encuentro.appointment_starts_at), encuentro.branch_name].filter(Boolean).join(' · ')}</p>
+        <p className="mt-1 text-[1.0625rem] text-tinta-500">{[encuentro.patient.document_number && `CI ${encuentro.patient.document_number}`, fechaHora(encuentro.appointment_starts_at), encuentro.branch_name].filter(Boolean).join(' · ')}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
       {verHistorialPermitido && <Link to={`/historial/${encuentro.patient.id}`} className={SECONDARY}>Ver historial clínico</Link>}
@@ -148,7 +148,7 @@ export function Atencion() {
     <form onSubmit={e => void guardar(e)} className={`${PANEL} space-y-5`}>
       {SECCIONES.map(s => <label key={s.campo} className="block space-y-1.5 text-sm">
         <span className="font-medium text-tinta-700 dark:text-tinta-300">{s.etiqueta}{!firmado && OBLIGATORIAS_PARA_FIRMAR.includes(s.campo) && <span className="text-alerta-600"> *</span>}</span>
-        {firmado ? <p className="whitespace-pre-wrap rounded-xl bg-tinta-50 px-3.5 py-2.5 text-[0.9375rem] text-tinta-800 dark:bg-tinta-900 dark:text-tinta-100">{encuentro[s.campo] || '—'}</p>
+        {firmado ? <p className="whitespace-pre-wrap rounded-xl bg-tinta-50 px-3.5 py-2.5 text-[1.0625rem] text-tinta-800 dark:bg-tinta-900 dark:text-tinta-100">{encuentro[s.campo] || '—'}</p>
           : <textarea className={`${INPUT} min-h-24 resize-y`} value={borrador[s.campo]} maxLength={s.campo === 'evolution' ? 10000 : 5000}
             onChange={e => setBorrador({ ...borrador, [s.campo]: e.target.value })} placeholder={s.ayuda} />}
         {firmado && encuentro.amendments.filter(a => a.section === s.campo).map(a => <div key={a.id} className="ml-3 border-l-2 border-marca-400 pl-3 text-sm">

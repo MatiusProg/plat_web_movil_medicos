@@ -23,7 +23,7 @@ const fechaHora = (iso: string) =>
 
 /** Lo que cambió el médico: lo tachado lo escribió la IA, lo resaltado lo puso él. */
 function Diferencia({ tramos }: { tramos: TramoDiferencia[] }) {
-  return <p className="whitespace-pre-wrap text-[0.9375rem] leading-7 text-tinta-800 dark:text-tinta-100">
+  return <p className="whitespace-pre-wrap text-[1.0625rem] leading-7 text-tinta-800 dark:text-tinta-100">
     {tramos.map((t, i) => t.op === 'equal' ? <span key={i}>{t.text}</span>
       : t.op === 'delete'
         ? <del key={i} className="rounded bg-alerta-50 px-0.5 text-alerta-700 dark:bg-alerta-500/15 dark:text-alerta-300">{t.text}</del>
@@ -194,7 +194,7 @@ function Decidido({ texto }: { texto: TextoIa }) {
     </div>
     {aprobado && texto.was_edited
       ? <Diferencia tramos={texto.diff} />
-      : <p className={`whitespace-pre-wrap text-[0.9375rem] leading-7 ${aprobado ? 'text-tinta-800 dark:text-tinta-100' : 'text-tinta-500 line-through'}`}>
+      : <p className={`whitespace-pre-wrap text-[1.0625rem] leading-7 ${aprobado ? 'text-tinta-800 dark:text-tinta-100' : 'text-tinta-500 line-through'}`}>
         {aprobado ? texto.final_text : texto.generated_text}</p>}
     {texto.reviewed_at && <p className="text-xs text-tinta-500">
       {aprobado ? 'Aprobado' : 'Descartado'} por {texto.reviewed_by_name} el {fechaHora(texto.reviewed_at)}.
@@ -250,7 +250,7 @@ export function TextosPorValidar() {
       <div>
         <p className="text-sm font-medium text-marca-700 dark:text-marca-400">Historia clínica</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Textos por validar</h1>
-        <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">
+        <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">
           Lo que la IA redactó para tus pacientes a partir de tus atenciones. Ninguno les llega hasta que lo apruebes: corrígelo si hace falta, apruébalo o descártalo.
         </p>
       </div>

@@ -142,7 +142,7 @@ export function BloqueosAgenda() {
   if (!puede('scheduling.block.read')) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para ver los bloqueos de agenda.
         </p>
       </main>
@@ -159,7 +159,7 @@ export function BloqueosAgenda() {
           <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
             Bloqueos y feriados
           </h1>
-          <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+          <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
             Los espacios bloqueados dejan de ofrecerse; la regla de agenda no se
             toca.
           </p>

@@ -97,7 +97,7 @@ export function Roles() {
   if (!puede('users.role.read')) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-tinta-500 text-[0.9375rem]">
+        <p className="text-tinta-500 text-[1.0625rem]">
           No tenés permiso para ver los roles de la organización.
         </p>
       </main>
@@ -114,7 +114,7 @@ export function Roles() {
           <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
             Roles y permisos
           </h1>
-          <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+          <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
             Cada rol reúne los permisos que una persona necesita para trabajar.
             Los cuatro que trae la organización se pueden ajustar; también podés
             crear los tuyos.
@@ -128,7 +128,7 @@ export function Roles() {
               setCreando(true)
               setEnEdicion(null)
             }}
-            className="bg-marca-600 hover:bg-marca-700 focus-visible:outline-marca-600 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[0.9375rem] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-marca-600 hover:bg-marca-700 focus-visible:outline-marca-600 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[1.0625rem] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Crear rol
           </button>
@@ -150,13 +150,13 @@ export function Roles() {
       )}
 
       {roles === null ? (
-        <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
+        <p className="text-tinta-500 text-[1.0625rem]">Cargando…</p>
       ) : roles.length === 0 && !error ? (
         <div className="border-tinta-200 dark:border-tinta-800 dark:bg-tinta-900/50 rounded-2xl border bg-white px-5 py-10 text-center">
           <span className="bg-tinta-100 dark:bg-tinta-800 text-tinta-400 mx-auto grid size-11 place-items-center rounded-xl">
             <IconoEscudo className="size-5" />
           </span>
-          <p className="text-tinta-600 dark:text-tinta-300 mt-3 text-[0.9375rem] font-medium">
+          <p className="text-tinta-600 dark:text-tinta-300 mt-3 text-[1.0625rem] font-medium">
             La organización todavía no tiene roles.
           </p>
         </div>
@@ -546,7 +546,7 @@ function FormularioDeRol({
         <button
           type="button"
           onClick={alCancelar}
-          className="text-tinta-600 dark:text-tinta-300 hover:bg-tinta-100 dark:hover:bg-tinta-800 rounded-xl px-4 py-2.5 text-[0.9375rem] font-medium transition"
+          className="text-tinta-600 dark:text-tinta-300 hover:bg-tinta-100 dark:hover:bg-tinta-800 rounded-xl px-4 py-2.5 text-[1.0625rem] font-medium transition"
         >
           Cancelar
         </button>

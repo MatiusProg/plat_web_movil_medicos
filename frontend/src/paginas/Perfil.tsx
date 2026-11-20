@@ -65,7 +65,7 @@ export function Perfil() {
         <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
           {perfil?.full_name ?? 'Tus datos'}
         </h1>
-        <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+        <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
           Mantén al día tus datos de contacto: son los que usa tu centro médico
           para avisarte de tus fichas.
         </p>
@@ -74,7 +74,7 @@ export function Perfil() {
       {error && <Aviso codigo={error.codigo} mensaje={error.message} />}
 
       {!perfil && !error && (
-        <p className="text-tinta-500 text-[0.9375rem]">Cargando tu perfil…</p>
+        <p className="text-tinta-500 text-[1.0625rem]">Cargando tu perfil…</p>
       )}
 
       {perfil && (

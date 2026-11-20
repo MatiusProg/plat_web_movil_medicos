@@ -57,7 +57,7 @@ export function Organizaciones() {
     return (
       <div className="bg-tinta-50 dark:bg-tinta-950 min-h-dvh">
         <main className="mx-auto max-w-4xl px-5 py-10">
-          <p className="text-tinta-500 text-[0.9375rem]">
+          <p className="text-tinta-500 text-[1.0625rem]">
             Esta sección es del Superadministrador de Plataforma.
           </p>
         </main>
@@ -76,7 +76,7 @@ export function Organizaciones() {
             <h1 className="text-tinta-900 dark:text-tinta-50 mt-1 text-2xl font-semibold tracking-tight">
               Organizaciones
             </h1>
-            <p className="text-tinta-500 mt-1.5 text-[0.9375rem]">
+            <p className="text-tinta-500 mt-1.5 text-[1.0625rem]">
               Los centros médicos que usan la plataforma, cada uno con sus datos
               aislados del resto.
             </p>
@@ -84,7 +84,7 @@ export function Organizaciones() {
 
           <Link
             to="/organizaciones/nueva"
-            className="bg-marca-600 hover:bg-marca-700 focus-visible:outline-marca-600 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[0.9375rem] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-marca-600 hover:bg-marca-700 focus-visible:outline-marca-600 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[1.0625rem] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Registrar organización
           </Link>
@@ -93,13 +93,13 @@ export function Organizaciones() {
         {error && <Aviso codigo={error.codigo} mensaje={error.message} />}
 
         {organizaciones === null ? (
-          <p className="text-tinta-500 text-[0.9375rem]">Cargando…</p>
+          <p className="text-tinta-500 text-[1.0625rem]">Cargando…</p>
         ) : organizaciones.length === 0 && !error ? (
           <div className="border-tinta-200 dark:border-tinta-800 dark:bg-tinta-900/50 rounded-2xl border bg-white px-5 py-10 text-center">
             <span className="bg-tinta-100 dark:bg-tinta-800 text-tinta-400 mx-auto grid size-11 place-items-center rounded-xl">
               <IconoEdificio className="size-5" />
             </span>
-            <p className="text-tinta-600 dark:text-tinta-300 mt-3 text-[0.9375rem] font-medium">
+            <p className="text-tinta-600 dark:text-tinta-300 mt-3 text-[1.0625rem] font-medium">
               Todavía no hay ninguna organización registrada.
             </p>
             <p className="text-tinta-500 mt-1 text-sm">

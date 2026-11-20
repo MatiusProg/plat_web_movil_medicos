@@ -129,7 +129,7 @@ export function PanelChat({ encuentroId, titulo = true }: { encuentroId: string;
 
     <Receta datos={datos} />
 
-    {urgencia && <div role="alert" className="rounded-xl border border-alerta-300 bg-alerta-50 px-4 py-3 text-[0.9375rem] font-medium text-alerta-800 dark:border-alerta-500/40 dark:bg-alerta-500/15 dark:text-alerta-200">
+    {urgencia && <div role="alert" className="rounded-xl border border-alerta-300 bg-alerta-50 px-4 py-3 text-[1.0625rem] font-medium text-alerta-800 dark:border-alerta-500/40 dark:bg-alerta-500/15 dark:text-alerta-200">
       {urgencia}
       <span className="mt-1 block text-sm font-normal">Tu mensaje le llegó a tu médico igual, pero no esperes su respuesta para ir.</span>
     </div>}
@@ -146,7 +146,7 @@ export function PanelChat({ encuentroId, titulo = true }: { encuentroId: string;
               ? 'border border-alerta-300 bg-alerta-50 text-tinta-900 dark:border-alerta-500/40 dark:bg-alerta-500/15 dark:text-tinta-50'
               : 'bg-tinta-100 text-tinta-900 dark:bg-tinta-800 dark:text-tinta-50'}`}>
             {m.flagged_emergency && <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-alerta-700 dark:text-alerta-300">Posible urgencia: se le indicó ir a emergencias</p>}
-            <p className="whitespace-pre-wrap text-[0.9375rem] leading-6">{m.body}</p>
+            <p className="whitespace-pre-wrap text-[1.0625rem] leading-6">{m.body}</p>
             <p className={`mt-1 text-xs ${m.mine ? 'text-marca-100' : 'text-tinta-500'}`}>{m.mine ? 'Tú' : m.author_name} · {fechaHora(m.created_at)}</p>
           </div>
         </div>)}
@@ -216,7 +216,7 @@ export function ConsultasPacientes() {
     <div className="surgir">
       <p className="text-sm font-medium text-marca-700 dark:text-marca-400">Atención</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Consultas de pacientes</h1>
-      <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">
+      <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">
         Lo que te escribieron los pacientes que atendiste, sobre la medicación o las indicaciones de esa atención. Arriba, lo que no leíste.
       </p>
     </div>

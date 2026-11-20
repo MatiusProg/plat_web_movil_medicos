@@ -56,7 +56,7 @@ export function PanelResumenHistorial({ pacienteId }: { pacienteId: string }) {
       {datos.generated_by === 'sin_datos'
         ? <p className="text-sm text-tinta-500">El paciente no tiene atenciones firmadas todavía.</p>
         : <>
-          <ul className="space-y-2 text-[0.9375rem] leading-6 text-tinta-800 dark:text-tinta-100">
+          <ul className="space-y-2 text-[1.0625rem] leading-6 text-tinta-800 dark:text-tinta-100">
             {datos.sentences.map((o, i) => <li key={i}>
               {o.text}{' '}
               {o.refs.map(r => { const f = fuente(r); return <span key={r} title={f ? `${fecha(f.date)} · ${f.branch} · ${f.practitioner}` : r}

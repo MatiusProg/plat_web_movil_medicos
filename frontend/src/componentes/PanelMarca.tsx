@@ -23,7 +23,7 @@ export function PanelMarca({ organizacion }: { organizacion?: string }) {
             <IconoPulso className="size-5.5" />
           </span>
           <div className="leading-tight">
-            <p className="text-[0.9375rem] font-semibold">Centro Médico</p>
+            <p className="text-[1.0625rem] font-semibold">Centro Médico</p>
             <p className="text-xs text-white/70">Plataforma de atención ambulatoria</p>
           </div>
         </div>
@@ -35,7 +35,7 @@ export function PanelMarca({ organizacion }: { organizacion?: string }) {
         <h2 className="text-[2rem] leading-[1.15] font-semibold tracking-tight text-balance">
           La historia clínica de cada paciente, en un solo lugar.
         </h2>
-        <p className="mt-4 text-[0.9375rem] leading-relaxed text-pretty text-white/75">
+        <p className="mt-4 text-[1.0625rem] leading-relaxed text-pretty text-white/75">
           Agendá fichas, registrá consultas y consultá antecedentes desde
           cualquiera de las sucursales, con la información siempre al día.
         </p>
