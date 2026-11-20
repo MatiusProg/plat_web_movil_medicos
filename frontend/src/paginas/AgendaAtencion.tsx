@@ -4,6 +4,7 @@ import { abrirAtencion, verAgenda, type Agenda, type FichaAgenda } from '@/api/a
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { INPUT, PANEL, SECONDARY, ErrorCatalogo, IconoCatalogo, mensajeError } from './catalogo_comun'
+import { MiPromedio } from './TarjetaSatisfaccion'
 
 /** Hoy en la hora local del navegador, como AAAA-MM-DD. */
 function hoy() {
@@ -71,6 +72,7 @@ export function AgendaAtencion() {
         <p className="text-sm font-medium text-marca-700 dark:text-marca-400">Historia clínica</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">Atención del día</h1>
         <p className="mt-1.5 max-w-2xl text-[0.9375rem] text-tinta-500">{agenda ? `Fichas de ${agenda.practitioner}.` : 'Tus fichas del día.'} Abrí una para registrar la atención: motivo, evolución, diagnóstico, indicaciones y tratamiento.</p>
+        <MiPromedio />
       </div>
       <div className="flex items-center gap-2">
         <label className="sr-only" htmlFor="fecha-agenda">Fecha</label>

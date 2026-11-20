@@ -18,6 +18,7 @@ import { Bloque, Cifra } from '@/componentes/Indicadores'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { CampoSeleccion, ErrorCatalogo, INPUT, mensajeError } from './catalogo_comun'
+import { TarjetaSatisfaccion } from './TarjetaSatisfaccion'
 
 const aIso = (fecha: Date) => fecha.toLocaleDateString('en-CA')
 
@@ -292,6 +293,9 @@ export function Kpis() {
             <span className="tabular-nums font-medium text-tinta-900 dark:text-tinta-100">{dinero(i.total, i.currency)}</span>
           </li>)}</ul>
       </Bloque>}
+
+      {/* US-48: cómo se atendió, no sólo cuánto. */}
+      <TarjetaSatisfaccion desde={desde} hasta={hasta} sucursal={sucursal} />
     </div>}
   </main>
 }

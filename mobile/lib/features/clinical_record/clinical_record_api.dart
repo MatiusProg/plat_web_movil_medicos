@@ -41,11 +41,11 @@ class Enmienda {
   final DateTime? createdAt;
 
   factory Enmienda.fromJson(Map<String, dynamic> json) => Enmienda(
-        section: json['section'] as String? ?? '',
-        text: json['text'] as String? ?? '',
-        authorName: json['author_name'] as String? ?? '',
-        createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
-      );
+    section: json['section'] as String? ?? '',
+    text: json['text'] as String? ?? '',
+    authorName: json['author_name'] as String? ?? '',
+    createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
+  );
 }
 
 /// US-26 — Un medicamento de la receta.
@@ -65,12 +65,12 @@ class Medicamento {
   final String instructions;
 
   factory Medicamento.fromJson(Map<String, dynamic> json) => Medicamento(
-        medication: json['medication'] as String? ?? '',
-        dose: json['dose'] as String? ?? '',
-        frequency: json['frequency'] as String? ?? '',
-        duration: json['duration'] as String? ?? '',
-        instructions: json['instructions'] as String? ?? '',
-      );
+    medication: json['medication'] as String? ?? '',
+    dose: json['dose'] as String? ?? '',
+    frequency: json['frequency'] as String? ?? '',
+    duration: json['duration'] as String? ?? '',
+    instructions: json['instructions'] as String? ?? '',
+  );
 }
 
 /// US-26 — Una orden de laboratorio o de estudio.
@@ -92,19 +92,19 @@ class Orden {
   final TextoAprobado? preparacion;
 
   Orden conPreparacion(TextoAprobado? preparacion) => Orden(
-        id: id,
-        kindDisplay: kindDisplay,
-        description: description,
-        notes: notes,
-        preparacion: preparacion,
-      );
+    id: id,
+    kindDisplay: kindDisplay,
+    description: description,
+    notes: notes,
+    preparacion: preparacion,
+  );
 
   factory Orden.fromJson(Map<String, dynamic> json) => Orden(
-        id: json['id'] as String? ?? '',
-        kindDisplay: json['kind_display'] as String? ?? '',
-        description: json['description'] as String? ?? '',
-        notes: json['notes'] as String? ?? '',
-      );
+    id: json['id'] as String? ?? '',
+    kindDisplay: json['kind_display'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    notes: json['notes'] as String? ?? '',
+  );
 }
 
 class Atencion {
@@ -120,6 +120,7 @@ class Atencion {
     this.medicamentos = const [],
     this.ordenes = const [],
     this.resumen,
+    this.calificacion,
   });
 
   final String id;
@@ -138,57 +139,90 @@ class Atencion {
   /// US-39: el resumen aprobado por el médico, o `null` si no hay.
   final ResumenConsulta? resumen;
 
-  Atencion conResumen(ResumenConsulta? resumen,
-          [Map<String, TextoAprobado> preparaciones = const {}]) =>
-      Atencion(
-        id: id,
-        startsAt: startsAt,
-        practitionerName: practitionerName,
-        branchName: branchName,
-        secciones: secciones,
-        signedByName: signedByName,
-        signedAt: signedAt,
-        enmiendas: enmiendas,
-        medicamentos: medicamentos,
-        ordenes: [
-          for (final o in ordenes) o.conPreparacion(preparaciones[o.id]),
-        ],
-        resumen: resumen,
-      );
+  /// US-48: lo que el paciente calificó, o `null` si todavía no.
+  final Calificacion? calificacion;
+
+  Atencion conResumen(
+    ResumenConsulta? resumen, [
+    Map<String, TextoAprobado> preparaciones = const {},
+  ]) => Atencion(
+    id: id,
+    startsAt: startsAt,
+    practitionerName: practitionerName,
+    branchName: branchName,
+    secciones: secciones,
+    signedByName: signedByName,
+    signedAt: signedAt,
+    enmiendas: enmiendas,
+    medicamentos: medicamentos,
+    ordenes: [for (final o in ordenes) o.conPreparacion(preparaciones[o.id])],
+    resumen: resumen,
+    calificacion: calificacion,
+  );
 
   /// Hay algo que bajar en PDF.
   bool get tieneReceta => medicamentos.isNotEmpty || ordenes.isNotEmpty;
 
   factory Atencion.fromJson(Map<String, dynamic> json) => Atencion(
-        id: json['id'] as String? ?? '',
-        startsAt:
-            DateTime.tryParse(json['appointment_starts_at'] as String? ?? ''),
-        practitionerName: json['practitioner_name'] as String? ?? '',
-        branchName: json['branch_name'] as String? ?? '',
-        secciones: {
-          for (final (campo, _) in seccionesDeAtencion)
-            if ((json[campo] as String? ?? '').trim().isNotEmpty)
-              campo: (json[campo] as String).trim(),
-        },
-        signedByName: json['signed_by_name'] as String? ?? '',
-        signedAt: DateTime.tryParse(json['signed_at'] as String? ?? ''),
-        enmiendas: (json['amendments'] as List? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(Enmienda.fromJson)
-            .toList(),
-        medicamentos: (json['prescription_items'] as List? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(Medicamento.fromJson)
-            .toList(),
-        ordenes: (json['orders'] as List? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(Orden.fromJson)
-            .toList(),
-      );
+    id: json['id'] as String? ?? '',
+    startsAt: DateTime.tryParse(json['appointment_starts_at'] as String? ?? ''),
+    practitionerName: json['practitioner_name'] as String? ?? '',
+    branchName: json['branch_name'] as String? ?? '',
+    secciones: {
+      for (final (campo, _) in seccionesDeAtencion)
+        if ((json[campo] as String? ?? '').trim().isNotEmpty)
+          campo: (json[campo] as String).trim(),
+    },
+    signedByName: json['signed_by_name'] as String? ?? '',
+    signedAt: DateTime.tryParse(json['signed_at'] as String? ?? ''),
+    enmiendas: (json['amendments'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(Enmienda.fromJson)
+        .toList(),
+    medicamentos: (json['prescription_items'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(Medicamento.fromJson)
+        .toList(),
+    ordenes: (json['orders'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(Orden.fromJson)
+        .toList(),
+    calificacion: json['rating'] is Map<String, dynamic>
+        ? Calificacion.fromJson(json['rating'] as Map<String, dynamic>)
+        : null,
+  );
 }
 
 /// US-39 y US-40 — Un texto de la IA tal como lo aprobó el médico.
 typedef TextoAprobado = ResumenConsulta;
+
+/// US-48 — La calificación de una atención, tal como la dejó el paciente.
+///
+/// Se corrige durante 7 días (`editable`); después queda fija. El médico
+/// nunca la recibe: sólo ve su promedio, sin nombres.
+class Calificacion {
+  const Calificacion({
+    required this.estrellas,
+    required this.comentario,
+    required this.editable,
+    required this.editableHasta,
+  });
+
+  final int estrellas;
+  final String comentario;
+  final bool editable;
+  final DateTime? editableHasta;
+
+  factory Calificacion.fromJson(Map<String, dynamic> json) => Calificacion(
+    estrellas: (json['stars'] as num?)?.toInt() ?? 0,
+    comentario: json['comment'] as String? ?? '',
+    editable: json['editable'] as bool? ?? false,
+    editableHasta: DateTime.tryParse(json['editable_until'] as String? ?? ''),
+  );
+}
+
+/// El máximo de caracteres del comentario; lo vuelve a revisar el backend.
+const maxComentarioCalificacion = 500;
 
 /// US-39 — El resumen de una consulta, tal como lo aprobó el médico.
 class ResumenConsulta {
@@ -210,7 +244,8 @@ class ResumenConsulta {
   final String aprobadoPor;
   final DateTime? aprobadoEl;
 
-  factory ResumenConsulta.fromJson(Map<String, dynamic> json) => ResumenConsulta(
+  factory ResumenConsulta.fromJson(Map<String, dynamic> json) =>
+      ResumenConsulta(
         encounterId: json['encounter'] as String? ?? '',
         texto: (json['text'] as String? ?? '').trim(),
         aprobadoPor: json['practitioner_name'] as String? ?? '',
@@ -238,8 +273,9 @@ class HistoriaClinica {
     return HistoriaClinica(
       patientName: paciente['full_name'] as String? ?? '',
       sucursales: {
-        for (final s in (json['branches'] as List? ?? const [])
-            .whereType<Map<String, dynamic>>())
+        for (final s
+            in (json['branches'] as List? ?? const [])
+                .whereType<Map<String, dynamic>>())
           s['name'] as String? ?? '': s['encounters'] as int? ?? 0,
       },
       atenciones: (json['encounters'] as List? ?? const [])
@@ -254,15 +290,18 @@ Future<HistoriaClinica> verHistoriaClinica(
   ApiClient client, {
   required String patientId,
 }) async {
-  final data = await client
-      .get('/encounters/history/${Uri.encodeComponent(patientId)}/');
+  final data = await client.get(
+    '/encounters/history/${Uri.encodeComponent(patientId)}/',
+  );
   final historia = HistoriaClinica.fromJson(
     data is Map<String, dynamic> ? data : const <String, dynamic>{},
   );
   if (historia.atenciones.isEmpty) return historia;
 
-  final (resumenes, preparaciones) =
-      await verTextosAprobados(client, patientId: patientId);
+  final (resumenes, preparaciones) = await verTextosAprobados(
+    client,
+    patientId: patientId,
+  );
   return HistoriaClinica(
     patientName: historia.patientName,
     sucursales: historia.sucursales,
@@ -279,23 +318,20 @@ Future<HistoriaClinica> verHistoriaClinica(
 /// Si no se pueden traer, la historia se muestra igual sin ellos: son una
 /// ayuda, la historia clínica es lo que el paciente vino a ver.
 Future<(Map<String, TextoAprobado>, Map<String, TextoAprobado>)>
-    verTextosAprobados(
-  ApiClient client, {
-  required String patientId,
-}) async {
+verTextosAprobados(ApiClient client, {required String patientId}) async {
   try {
-    final query = Uri(queryParameters: {
-      'patient': patientId,
-      'page_size': '100',
-    }).query;
+    final query = Uri(
+      queryParameters: {'patient': patientId, 'page_size': '100'},
+    ).query;
     final data = await client.get('/ai/texts/mine/?$query');
-    final filas = (data is Map<String, dynamic>
-            ? (data['results'] as List? ?? const [])
-            : const [])
-        .whereType<Map<String, dynamic>>()
-        .map(ResumenConsulta.fromJson)
-        .where((r) => r.texto.isNotEmpty)
-        .toList();
+    final filas =
+        (data is Map<String, dynamic>
+                ? (data['results'] as List? ?? const [])
+                : const [])
+            .whereType<Map<String, dynamic>>()
+            .map(ResumenConsulta.fromJson)
+            .where((r) => r.texto.isNotEmpty)
+            .toList();
     return (
       {
         for (final r in filas)
@@ -320,8 +356,26 @@ Future<(Map<String, TextoAprobado>, Map<String, TextoAprobado>)>
 Future<ArchivoRecibido> descargarReceta(
   ApiClient client, {
   required String encounterId,
-}) =>
-    client.download(
-      'GET',
-      '/encounters/${Uri.encodeComponent(encounterId)}/prescription.pdf',
-    );
+}) => client.download(
+  'GET',
+  '/encounters/${Uri.encodeComponent(encounterId)}/prescription.pdf',
+);
+
+/// US-48 — Calificar una atención firmada (`primera`) o cambiar lo calificado.
+Future<Calificacion> calificarAtencion(
+  ApiClient client, {
+  required String encounterId,
+  required bool primera,
+  required int estrellas,
+  required String comentario,
+}) async {
+  final ruta = '/encounters/${Uri.encodeComponent(encounterId)}/rating/';
+  final cuerpo = {'stars': estrellas, 'comment': comentario};
+  final data = primera
+      ? await client.post(ruta, body: cuerpo)
+      : await client.patch(ruta, body: cuerpo);
+  final rating = data is Map<String, dynamic> ? data['rating'] : null;
+  return Calificacion.fromJson(
+    rating is Map<String, dynamic> ? rating : const <String, dynamic>{},
+  );
+}
