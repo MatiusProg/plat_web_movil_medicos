@@ -1,10 +1,12 @@
 """Entrada y salida de `/api/encounters/`."""
 
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from appointments.models import Appointment
 
-from .models import Encounter, EncounterAmendment, MedicalOrder, PrescriptionItem
+from .models import Encounter, EncounterAmendment, MedicalOrder, PrescriptionItem, VitalSigns
 
 
 class PatientSummarySerializer(serializers.Serializer):
@@ -81,6 +83,61 @@ class MedicalOrderSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
+class VitalSignsSerializer(serializers.ModelSerializer):
+    """US-53 — Los signos vitales, con el IMC y lo anormal ya calculados."""
+
+    bmi = serializers.FloatField(read_only=True)
+    alerts = serializers.DictField(child=serializers.CharField(), read_only=True)
+    temperature = serializers.FloatField(allow_null=True)
+    weight_kg = serializers.FloatField(allow_null=True)
+    height_cm = serializers.FloatField(allow_null=True)
+
+    class Meta:
+        model = VitalSigns
+        fields = [*VitalSigns.FIELDS, "bmi", "alerts"]
+        read_only_fields = fields
+
+
+def _rango(campo, decimales=False):
+    minimo, maximo = VitalSigns.LIMITS[campo]
+    # DRF formatea el mensaje con `%`: el «(%)» de la saturación lo rompía y
+    # una SpO₂ de 101 devolvía un 500 en vez del mensaje (test_us53).
+    nombre = str(VitalSigns._meta.get_field(campo).verbose_name).replace("%", "%%")
+    mensajes = {
+        "min_value": f"{nombre[:1].upper()}{nombre[1:]}: el mínimo posible es {minimo}.",
+        "max_value": f"{nombre[:1].upper()}{nombre[1:]}: el máximo posible es {maximo}.",
+    }
+    if decimales:
+        return serializers.DecimalField(
+            max_digits=4, decimal_places=1, min_value=Decimal(str(minimo)),
+            max_value=Decimal(str(maximo)), required=False, allow_null=True,
+            error_messages=mensajes,
+        )
+    return serializers.IntegerField(min_value=minimo, max_value=maximo, required=False,
+                                    allow_null=True, error_messages=mensajes)
+
+
+class VitalSignsWriteSerializer(serializers.Serializer):
+    """Lo que el médico carga. Todo opcional; lo imposible se rechaza."""
+
+    systolic = _rango("systolic")
+    diastolic = _rango("diastolic")
+    heart_rate = _rango("heart_rate")
+    temperature = _rango("temperature", decimales=True)
+    spo2 = _rango("spo2")
+    weight_kg = _rango("weight_kg", decimales=True)
+    height_cm = _rango("height_cm", decimales=True)
+    glucose = _rango("glucose")
+
+    def validate(self, attrs):
+        sistolica, diastolica = attrs.get("systolic"), attrs.get("diastolic")
+        if sistolica is not None and diastolica is not None and sistolica <= diastolica:
+            raise serializers.ValidationError(
+                {"diastolic": ["La diastólica tiene que ser menor que la sistólica."]},
+            )
+        return attrs
+
+
 class EncounterSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     patient = PatientSummarySerializer(read_only=True)
@@ -91,6 +148,7 @@ class EncounterSerializer(serializers.ModelSerializer):
     amendments = AmendmentSerializer(many=True, read_only=True)
     prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
     orders = MedicalOrderSerializer(many=True, read_only=True)
+    vital_signs = serializers.SerializerMethodField()
 
     class Meta:
         model = Encounter
@@ -99,9 +157,17 @@ class EncounterSerializer(serializers.ModelSerializer):
             "patient", "practitioner_name", "branch_name",
             "reason", "evolution", "diagnosis", "indications", "treatment",
             "signed_at", "signed_by_name", "amendments",
-            "prescription_items", "orders", "created_at", "updated_at",
+            "prescription_items", "orders", "vital_signs", "created_at", "updated_at",
         ]
         read_only_fields = fields
+
+    def get_vital_signs(self, encuentro):
+        """US-53: ``None`` si no se tomaron; nunca un objeto con todo vacío."""
+        try:
+            signos = encuentro.vital_signs
+        except VitalSigns.DoesNotExist:
+            return None
+        return None if signos.is_empty else VitalSignsSerializer(signos).data
 
 
 class EncounterDraftSerializer(serializers.Serializer):
@@ -112,6 +178,9 @@ class EncounterDraftSerializer(serializers.Serializer):
     diagnosis = serializers.CharField(required=False, allow_blank=True, max_length=5000)
     indications = serializers.CharField(required=False, allow_blank=True, max_length=5000)
     treatment = serializers.CharField(required=False, allow_blank=True, max_length=5000)
+    # US-53: viajan con el borrador, así «Guardar» y «Firmar» los guardan sin
+    # un paso aparte. `null` los borra (sólo mientras es borrador).
+    vital_signs = VitalSignsWriteSerializer(required=False, allow_null=True)
 
 
 class OpenEncounterSerializer(serializers.Serializer):

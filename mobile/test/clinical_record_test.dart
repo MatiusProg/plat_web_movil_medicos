@@ -18,6 +18,7 @@ import 'package:http/testing.dart';
 
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/files/archivos.dart';
+import 'package:mobile/features/clinical_record/clinical_record_api.dart';
 import 'package:mobile/features/clinical_record/clinical_record_screen.dart';
 
 http.Response _json(Object cuerpo) => http.Response(
@@ -52,6 +53,7 @@ Map<String, dynamic> _atencion(
   List<Map<String, dynamic>> enmiendas = const [],
   List<Map<String, dynamic>> medicamentos = const [],
   List<Map<String, dynamic>> ordenes = const [],
+  Map<String, dynamic>? signos,
 }) =>
     {
       'id': id,
@@ -69,6 +71,7 @@ Map<String, dynamic> _atencion(
       'amendments': enmiendas,
       'prescription_items': medicamentos,
       'orders': ordenes,
+      'vital_signs': signos,
     };
 
 class _GuardadoFalso implements GuardadoDeArchivos {
@@ -268,6 +271,81 @@ void main() {
 
     expect(find.text('Migraña.'), findsOneWidget);
     expect(find.text('Resumen de tu consulta'), findsNothing);
+  });
+
+  // US-53: los signos vitales, con lo anormal marcado y la enmienda debajo.
+  testWidgets('US-53: muestra los signos vitales con lo anormal marcado',
+      (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(tester, {
+      't1': _historia('Ana Ríos', [
+        _atencion('e1', 'Sede Central', 'Cuadro febril.',
+            signos: {
+              'systolic': 150,
+              'diastolic': 95,
+              'heart_rate': 72,
+              'temperature': 39.2,
+              'spo2': 88,
+              'weight_kg': 62.0,
+              'height_cm': 160.0,
+              'glucose': null,
+              'bmi': 24.2,
+              'alerts': {
+                'blood_pressure': 'Alta',
+                'temperature': 'Alta',
+                'spo2': 'Baja',
+              },
+            },
+            enmiendas: [
+              {
+                'id': 'm1',
+                'section': 'vital_signs',
+                'section_display': 'Signos vitales',
+                'text': 'La temperatura correcta es 38,2 °C.',
+                'author_name': 'Dra. Paz',
+                'created_at': '2026-09-21T10:00:00Z',
+              },
+            ]),
+      ]),
+    });
+
+    expect(find.text('Signos vitales'), findsOneWidget);
+    expect(find.text('150/95 mmHg'), findsOneWidget);
+    expect(find.text('39,2 °C'), findsOneWidget);
+    expect(find.text('88 %'), findsOneWidget);
+    expect(find.text('62 kg'), findsOneWidget);
+    expect(find.text('24,2'), findsOneWidget);
+    expect(find.text('Alta'), findsNWidgets(2));
+    expect(find.text('Baja'), findsOneWidget);
+    // Lo que no se tomó no aparece.
+    expect(find.text('Glucosa'), findsNothing);
+    // La corrección se agrega debajo; lo firmado sigue a la vista.
+    expect(find.text('La temperatura correcta es 38,2 °C.'), findsOneWidget);
+  });
+
+  testWidgets('US-53: sin signos tomados no hay sección', (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(tester, {
+      't1': _historia('Ana Ríos', [_atencion('e1', 'Sede Central', 'Migraña.')]),
+    });
+    expect(find.text('Signos vitales'), findsNothing);
+  });
+
+  test('US-53: lee los signos, con decimales como texto o número', () {
+    final s = SignosVitales.fromJson({
+      'systolic': 120,
+      'temperature': '36.6',
+      'weight_kg': 70,
+      'bmi': null,
+      'alerts': {},
+    });
+    expect(s.sistolica, 120);
+    expect(s.temperatura, 36.6);
+    expect(s.peso, 70.0);
+    expect(s.imc, isNull);
+    // Sólo la diastólica: la presión se muestra igual, con un guion.
+    expect(SignosVitales.fromJson({'diastolic': 80}).filas.single.valor,
+        '—/80 mmHg');
   });
 
   testWidgets('muestra la línea de tiempo con la enmienda debajo de lo firmado',

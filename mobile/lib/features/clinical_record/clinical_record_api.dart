@@ -119,6 +119,95 @@ class Orden {
   );
 }
 
+/// US-53 — Los signos vitales que tomó el médico en la atención.
+///
+/// Todos opcionales: se muestra sólo lo que se tomó. El IMC y lo anormal
+/// (`alertas`) ya vienen calculados del backend, con los mismos umbrales que
+/// ve el médico en la web.
+class SignosVitales {
+  const SignosVitales({
+    this.sistolica,
+    this.diastolica,
+    this.frecuencia,
+    this.temperatura,
+    this.saturacion,
+    this.glucosa,
+    this.peso,
+    this.talla,
+    this.imc,
+    this.alertas = const {},
+  });
+
+  final int? sistolica;
+  final int? diastolica;
+  final int? frecuencia;
+  final double? temperatura;
+  final int? saturacion;
+  final int? glucosa;
+  final double? peso;
+  final double? talla;
+  final double? imc;
+
+  /// `blood_pressure`, `temperature`, `spo2` → «Alta» / «Baja».
+  final Map<String, String> alertas;
+
+  static int? _entero(Object? v) => v is num ? v.toInt() : null;
+  static double? _decimal(Object? v) =>
+      v is num ? v.toDouble() : (v is String ? double.tryParse(v) : null);
+
+  factory SignosVitales.fromJson(Map<String, dynamic> json) => SignosVitales(
+    sistolica: _entero(json['systolic']),
+    diastolica: _entero(json['diastolic']),
+    frecuencia: _entero(json['heart_rate']),
+    temperatura: _decimal(json['temperature']),
+    saturacion: _entero(json['spo2']),
+    glucosa: _entero(json['glucose']),
+    peso: _decimal(json['weight_kg']),
+    talla: _decimal(json['height_cm']),
+    imc: _decimal(json['bmi']),
+    alertas: {
+      for (final e in (json['alerts'] as Map? ?? const {}).entries)
+        if (e.value is String) '${e.key}': e.value as String,
+    },
+  );
+
+  /// Lo que se tomó, en el orden en que lo lee el médico.
+  List<({String etiqueta, String valor, String? alerta})> get filas {
+    String n(num v) => v == v.roundToDouble()
+        ? v.toInt().toString()
+        : v.toString().replaceAll('.', ',');
+    final presion = '${sistolica ?? '—'}/${diastolica ?? '—'} mmHg';
+    return [
+      if (sistolica != null || diastolica != null)
+        (
+          etiqueta: 'Presión arterial',
+          valor: presion,
+          alerta: alertas['blood_pressure'],
+        ),
+      if (frecuencia != null)
+        (etiqueta: 'Frecuencia cardíaca', valor: '$frecuencia lpm', alerta: null),
+      if (temperatura != null)
+        (
+          etiqueta: 'Temperatura',
+          valor: '${n(temperatura!)} °C',
+          alerta: alertas['temperature'],
+        ),
+      if (saturacion != null)
+        (
+          etiqueta: 'Saturación O₂',
+          valor: '$saturacion %',
+          alerta: alertas['spo2'],
+        ),
+      if (glucosa != null)
+        (etiqueta: 'Glucosa', valor: '$glucosa mg/dL', alerta: null),
+      if (peso != null) (etiqueta: 'Peso', valor: '${n(peso!)} kg', alerta: null),
+      if (talla != null)
+        (etiqueta: 'Talla', valor: '${n(talla!)} cm', alerta: null),
+      if (imc != null) (etiqueta: 'IMC', valor: n(imc!), alerta: null),
+    ];
+  }
+}
+
 class Atencion {
   const Atencion({
     required this.id,
@@ -133,6 +222,7 @@ class Atencion {
     this.ordenes = const [],
     this.resumen,
     this.calificacion,
+    this.signos,
   });
 
   final String id;
@@ -154,6 +244,9 @@ class Atencion {
   /// US-48: lo que el paciente calificó, o `null` si todavía no.
   final Calificacion? calificacion;
 
+  /// US-53: los signos vitales, o `null` si no se tomaron.
+  final SignosVitales? signos;
+
   Atencion conResumen(
     ResumenConsulta? resumen, [
     Map<String, TextoAprobado> preparaciones = const {},
@@ -170,6 +263,7 @@ class Atencion {
     ordenes: [for (final o in ordenes) o.conPreparacion(preparaciones[o.id])],
     resumen: resumen,
     calificacion: calificacion,
+    signos: signos,
   );
 
   /// Hay algo que bajar en PDF.
@@ -201,6 +295,9 @@ class Atencion {
         .toList(),
     calificacion: json['rating'] is Map<String, dynamic>
         ? Calificacion.fromJson(json['rating'] as Map<String, dynamic>)
+        : null,
+    signos: json['vital_signs'] is Map<String, dynamic>
+        ? SignosVitales.fromJson(json['vital_signs'] as Map<String, dynamic>)
         : null,
   );
 }
