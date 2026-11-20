@@ -352,6 +352,13 @@ class Recordatorios extends ChangeNotifier implements AvisosLocales {
   /// Tocar el cuerpo del aviso: lo fija la app, que tiene el router.
   void Function()? alTocarAviso;
 
+  /// Tocar un aviso que no es de medicamento (el push de una ficha o del
+  /// chat). El plugin de avisos locales es uno solo y el último `initialize`
+  /// define a quién llama: si los recordatorios se inician después que el
+  /// push, los toques llegan acá y hay que devolvérselos. Lo fija la app.
+  /// Sin esto, tocar «Tu médico te respondió» no abría el chat (20/11/26).
+  void Function(String? payload)? alTocarOtroAviso;
+
   /// Con qué cliente mandar las tomas en cuanto se marcan. Lo fija la app;
   /// `null` si no hay sesión, y quedan pendientes.
   ApiClient? Function()? clienteParaEnviar;
@@ -541,7 +548,10 @@ class Recordatorios extends ChangeNotifier implements AvisosLocales {
 
   /// Lo que pasa al tocar un aviso de medicamento o uno de sus botones.
   Future<void> responder(String? payload, String? accion) async {
-    if (!esDeMedicamento(payload)) return;
+    if (!esDeMedicamento(payload)) {
+      alTocarOtroAviso?.call(payload);
+      return;
+    }
     final partes = payload!.split('|');
     if (partes.length != 3) return;
     final itemId = partes[1];

@@ -221,6 +221,26 @@ void main() {
       expect(Recordatorios.esDeMedicamento('appointment-id'), isFalse);
     });
 
+    // 20/11/26, en el celu: el plugin de avisos es uno solo y, si los
+    // recordatorios se inician después que el push, el toque de «Tu médico
+    // te respondió» les llega a ellos. Lo tienen que devolver, no tragarlo.
+    test('un aviso del chat o de una ficha se devuelve al push', () async {
+      final a = _armar();
+      final devueltos = <String?>[];
+      var medicamentos = false;
+      a.r
+        ..alTocarAviso = (() => medicamentos = true)
+        ..alTocarOtroAviso = devueltos.add;
+      await a.r.responder('chat:e1', null);
+      await a.r.responder('a1b2c3', null);
+      expect(devueltos, ['chat:e1', 'a1b2c3']);
+      expect(medicamentos, isFalse);
+
+      await a.r.responder('med|item-1|2', null);
+      expect(devueltos, hasLength(2), reason: 'el de medicamento es suyo');
+      expect(medicamentos, isTrue);
+    });
+
     test('marcar dos veces la misma toma no la duplica', () async {
       final a = _armar();
       await a.r.activar(_loratadina());
