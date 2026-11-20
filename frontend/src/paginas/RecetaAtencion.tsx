@@ -10,7 +10,7 @@
  * Los antecedentes de US-08 no se repiten acá: `Atencion.tsx` ya los muestra
  * arriba de todo, a la vista mientras se receta.
  */
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   TIPOS_DE_ORDEN, agregarMedicamento, agregarOrden, descargarReceta, quitarMedicamento, quitarOrden,
   type DatosMedicamento, type DatosOrden, type Encuentro,
@@ -78,14 +78,32 @@ function Listas({ encuentro, quitar }: {
   </div>
 }
 
-/** US-26 — Emitir la receta y las órdenes desde la atención. */
-export function PanelReceta({ encuentro, onCambio }: { encuentro: Encuentro; onCambio: (e: Encuentro) => void }) {
+/** Lo escrito en un formulario que todavía no se agregó a la atención. */
+export interface Pendientes { medicamento: boolean; orden: boolean }
+
+/**
+ * US-26 — Emitir la receta y las órdenes desde la atención.
+ *
+ * `onPendientes` avisa a la atención si quedó un medicamento o una orden
+ * escritos sin apretar «Agregar»: si se firmara así, se perderían sin aviso.
+ */
+export function PanelReceta({ encuentro, onCambio, onPendientes }: {
+  encuentro: Encuentro
+  onCambio: (e: Encuentro) => void
+  onPendientes?: (p: Pendientes) => void
+}) {
   const { token } = useSesion()
   const [medicamento, setMedicamento] = useState<DatosMedicamento>(MEDICAMENTO_VACIO)
   const [orden, setOrden] = useState<DatosOrden>(ORDEN_VACIA)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const firmado = encuentro.status === 'signed'
+
+  const medicamentoPendiente = Object.values(medicamento).some(v => v.trim() !== '')
+  const ordenPendiente = orden.description.trim() !== '' || orden.notes.trim() !== ''
+  useEffect(() => {
+    onPendientes?.({ medicamento: medicamentoPendiente, orden: ordenPendiente })
+  }, [medicamentoPendiente, ordenPendiente, onPendientes])
 
   const ejecutar = async (accion: () => Promise<Encuentro>, despues?: () => void) => {
     setOcupado(true); setError(null)
