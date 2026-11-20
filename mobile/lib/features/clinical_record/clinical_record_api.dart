@@ -16,6 +16,7 @@ library;
 
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
+import 'package:mobile/features/medications/medications_api.dart';
 
 /// Las secciones de una atención, en el orden en que las escribe el médico.
 /// Las mismas palabras que `SECCIONES` en `frontend/src/api/atencion.ts`.
@@ -51,20 +52,31 @@ class Enmienda {
 /// US-26 — Un medicamento de la receta.
 class Medicamento {
   const Medicamento({
+    this.id = '',
     required this.medication,
     required this.dose,
     required this.frequency,
     required this.duration,
     required this.instructions,
+    this.horario,
+    this.motivoSinHorario,
   });
 
+  final String id;
   final String medication;
   final String dose;
   final String frequency;
   final String duration;
   final String instructions;
 
+  /// US-49: el horario de tomas, o `null` si no tiene horario fijo.
+  final HorarioDeTomas? horario;
+  final String? motivoSinHorario;
+
   factory Medicamento.fromJson(Map<String, dynamic> json) => Medicamento(
+    id: json['id'] as String? ?? '',
+    horario: HorarioDeTomas.fromJson(json['schedule']),
+    motivoSinHorario: json['schedule_reason'] as String?,
     medication: json['medication'] as String? ?? '',
     dose: json['dose'] as String? ?? '',
     frequency: json['frequency'] as String? ?? '',

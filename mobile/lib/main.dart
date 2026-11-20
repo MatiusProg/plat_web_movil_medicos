@@ -18,6 +18,7 @@ import 'app.dart';
 import 'core/notifications/push.dart';
 import 'core/session/session.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/medications/recordatorios.dart';
 
 Future<void> main() async {
   // Hace falta antes de tocar el almacenamiento seguro: `restore()` usa un
@@ -28,6 +29,10 @@ Future<void> main() async {
   // abrió tocando un aviso, lo guarda hasta que la app pueda abrir la ficha.
   // Sin los --dart-define de Firebase no hace nada (ver core/notifications/push.dart).
   unawaited(Push.instance.iniciar());
+
+  // US-49: los avisos de medicamentos son locales y no dependen de Firebase.
+  // Lee lo activado y atiende el aviso con el que se abrió la app, si lo hubo.
+  unawaited(Recordatorios.instance.iniciar());
 
   final session = Session();
 
