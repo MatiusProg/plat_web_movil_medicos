@@ -67,6 +67,7 @@ def _own_encounter(request, pk):
         .select_related("patient", "practitioner", "branch", "appointment",
                         "signed_by")
         .prefetch_related("amendments__author", "prescription_items", "orders")
+        .select_related("vital_signs")
         .first()
     )
     if encuentro is None or not services.is_own(request.user, encuentro):
@@ -288,6 +289,7 @@ class PrescriptionPdfView(APIView):
             .select_related("organization", "patient", "practitioner", "branch",
                             "appointment", "signed_by")
             .prefetch_related("amendments__author", "prescription_items", "orders")
+            .select_related("vital_signs")
             .first()
         )
         if encuentro is None:

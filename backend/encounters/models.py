@@ -93,6 +93,8 @@ class Encounter(models.Model):
         **SECTIONS,
         "prescription": "Receta",
         "orders": "Órdenes",
+        # US-53: firmados, los signos vitales también se corrigen así.
+        "vital_signs": "Signos vitales",
     }
 
     class Meta:
@@ -401,3 +403,112 @@ class MedicationIntake(models.Model):
 
     def __str__(self):
         return f"{self.prescription_item_id} · toma {self.dose_number} · {self.status}"
+
+# --------------------------------------------------------------------------
+#  US-53 — Signos vitales
+# --------------------------------------------------------------------------
+#
+# Hasta acá la historia no tenía un solo número: si se anotaba la presión,
+# quedaba como texto en «Evolución» y no se podía ver su tendencia.
+#
+# Uno a uno con el encuentro, en su propia tabla, como la receta: se cargan
+# mientras es borrador y se firman con él. Lo que la base hace cumplir
+# (migraciones 0011 y 0012), y no sólo la vista:
+# - todos los campos son opcionales, pero lo **imposible** no se guarda: una
+#   temperatura de 60 °C o una talla de 3 m son un error de tipeo, no un dato;
+# - la sistólica es mayor que la diastólica;
+# - firmado el encuentro, no se tocan (trigger, igual que la receta).
+#
+# Lo **anormal** no se bloquea: se marca (`alerts`). Un paciente con 39 °C
+# existe, y el médico tiene que poder registrarlo.
+
+
+# Lo posible: fuera de esto es un error de tipeo. (mínimo, máximo)
+VITAL_LIMITS = {
+    "systolic": (50, 300),
+    "diastolic": (20, 200),
+    "heart_rate": (20, 250),
+    "temperature": (30, 45),
+    "spo2": (50, 100),
+    "weight_kg": (0.5, 400),
+    "height_cm": (30, 250),
+    "glucose": (10, 1000),
+}
+
+
+class VitalSigns(models.Model):
+    """Los signos vitales tomados en una atención."""
+
+    LIMITS = VITAL_LIMITS
+    FIELDS = tuple(VITAL_LIMITS)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="vital_signs",
+    )
+    encounter = models.OneToOneField(
+        Encounter, on_delete=models.PROTECT, related_name="vital_signs",
+    )
+    systolic = models.PositiveSmallIntegerField("presión sistólica (mmHg)", null=True, blank=True)
+    diastolic = models.PositiveSmallIntegerField("presión diastólica (mmHg)", null=True, blank=True)
+    heart_rate = models.PositiveSmallIntegerField("frecuencia cardíaca (lpm)", null=True, blank=True)
+    temperature = models.DecimalField("temperatura (°C)", max_digits=3, decimal_places=1,
+                                      null=True, blank=True)
+    spo2 = models.PositiveSmallIntegerField("saturación de oxígeno (%)", null=True, blank=True)
+    weight_kg = models.DecimalField("peso (kg)", max_digits=4, decimal_places=1,
+                                    null=True, blank=True)
+    height_cm = models.DecimalField("talla (cm)", max_digits=4, decimal_places=1,
+                                    null=True, blank=True)
+    glucose = models.PositiveSmallIntegerField("glucosa (mg/dL)", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "encounter_vital_signs"
+        verbose_name = "signos vitales"
+        verbose_name_plural = "signos vitales"
+        constraints = [
+            *[
+                models.CheckConstraint(
+                    condition=models.Q(**{f"{campo}__isnull": True})
+                    | models.Q(**{f"{campo}__gte": minimo, f"{campo}__lte": maximo}),
+                    name=f"ck_vitals_{campo}_posible",
+                )
+                for campo, (minimo, maximo) in VITAL_LIMITS.items()
+            ],
+            models.CheckConstraint(
+                condition=models.Q(systolic__isnull=True) | models.Q(diastolic__isnull=True)
+                | models.Q(systolic__gt=models.F("diastolic")),
+                name="ck_vitals_sistolica_mayor",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Signos vitales de {self.encounter_id}"
+
+    @property
+    def bmi(self):
+        """El IMC, con un decimal. Sin peso o sin talla no se calcula."""
+        if self.weight_kg is None or self.height_cm is None:
+            return None
+        metros = float(self.height_cm) / 100
+        return round(float(self.weight_kg) / (metros * metros), 1)
+
+    @property
+    def alerts(self) -> dict[str, str]:
+        """Lo anormal, para marcarlo sin bloquearlo. Clave → «Alta»/«Baja»."""
+        alertas = {}
+        if (self.systolic is not None and self.systolic >= 140) or (
+            self.diastolic is not None and self.diastolic >= 90
+        ):
+            alertas["blood_pressure"] = "Alta"
+        if self.spo2 is not None and self.spo2 < 92:
+            alertas["spo2"] = "Baja"
+        if self.temperature is not None and self.temperature >= 38:
+            alertas["temperature"] = "Alta"
+        return alertas
+
+    @property
+    def is_empty(self) -> bool:
+        return all(getattr(self, campo) is None for campo in self.FIELDS)

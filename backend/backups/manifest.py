@@ -144,6 +144,9 @@ TABLES: tuple[Table, ...] = (
           strategy=APPEND, draft_only_parent="encounter"),
     Table("encounters", "MedicalOrder", "Órdenes médicas",
           strategy=APPEND, draft_only_parent="encounter"),
+    # US-53: misma regla que la receta (trigger de `encounters/0012`).
+    Table("encounters", "VitalSigns", "Signos vitales",
+          strategy=APPEND, draft_only_parent="encounter"),
     # US-48: la calificación de una atención. La base no deja borrarla
     # (trigger de `encounters/0008`): purgarla al restaurar fallaría. Sólo se
     # agregan las que faltan; una que ya está queda como está.

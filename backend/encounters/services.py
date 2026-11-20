@@ -31,7 +31,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from appointments.models import Appointment
 from catalog.models import Practitioner
 
-from .models import Encounter, EncounterAmendment, MedicalOrder, PrescriptionItem
+from .models import Encounter, EncounterAmendment, MedicalOrder, PrescriptionItem, VitalSigns
 
 ATTENDABLE_STATUSES = [
     Appointment.Status.PENDING_PAYMENT,
@@ -111,6 +111,7 @@ def open_encounter(user, appointment):
     return encuentro, True
 
 
+@transaction.atomic
 def update_draft(encounter, data):
     if encounter.is_signed:
         raise Conflict(
@@ -120,7 +121,33 @@ def update_draft(encounter, data):
     for campo in campos:
         setattr(encounter, campo, data[campo])
     encounter.save(update_fields=[*campos, "updated_at"])
+    if "vital_signs" in data:
+        _save_vital_signs(encounter, data["vital_signs"])
     return encounter
+
+
+def _save_vital_signs(encounter, valores):
+    """US-53 — Guarda, reemplaza o borra los signos vitales del borrador.
+
+    Se reemplazan enteros, no se mezclan: un campo que no viene queda vacío.
+    `None`, o todo vacío, los borra. El trigger de la migración 0012 es el que
+    no deja tocarlos con el encuentro firmado; `update_draft` ya lo rechazó
+    antes con un 409 legible.
+    """
+    existentes = VitalSigns.objects.filter(encounter=encounter).first()
+    if not valores or all(valores.get(c) is None for c in VitalSigns.FIELDS):
+        if existentes is not None:
+            existentes.delete()
+        return
+    completos = {campo: valores.get(campo) for campo in VitalSigns.FIELDS}
+    if existentes is None:
+        VitalSigns.objects.create(
+            organization=encounter.organization, encounter=encounter, **completos,
+        )
+        return
+    for campo, valor in completos.items():
+        setattr(existentes, campo, valor)
+    existentes.save(update_fields=[*VitalSigns.FIELDS, "updated_at"])
 
 
 @transaction.atomic
