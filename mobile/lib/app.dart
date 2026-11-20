@@ -43,6 +43,9 @@ class _CentroMedicoAppState extends State<CentroMedicoApp> {
     // toma marcada desde el aviso se manda en seguida si hay sesión.
     Recordatorios.instance
       ..alTocarAviso = (() => _abrirFicha('medicamentos'))
+      // Si los recordatorios se iniciaron después que el push, el toque de
+      // «Tu médico te respondió» les llega a ellos: lo devuelven al push.
+      ..alTocarOtroAviso = Push.instance.tocarAviso
       ..clienteParaEnviar = (() => widget.session.isSignedIn
           ? ApiClient(auth: widget.session)
           : null);

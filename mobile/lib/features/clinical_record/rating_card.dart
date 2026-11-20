@@ -211,13 +211,18 @@ class _TarjetaCalificacionState extends State<TarjetaCalificacion> {
           const SizedBox(height: 8),
           Row(
             children: [
-              FilledButton(
-                onPressed: _estrellas == 0 || _enviando ? null : _enviar,
-                child: Text(_enviando
-                    ? 'Guardando…'
-                    : guardada == null
-                        ? 'Enviar calificación'
-                        : 'Guardar cambio'),
+              // `Expanded`: el tema le da al FilledButton todo el ancho
+              // (`Size.fromHeight`), y suelto en un `Row` no se dibuja: en la
+              // APK quedaba un hueco sin botón para enviar (20/11/26).
+              Expanded(
+                child: FilledButton(
+                  onPressed: _estrellas == 0 || _enviando ? null : _enviar,
+                  child: Text(_enviando
+                      ? 'Guardando…'
+                      : guardada == null
+                          ? 'Enviar calificación'
+                          : 'Guardar cambio'),
+                ),
               ),
               if (guardada != null) ...[
                 const SizedBox(width: 8),

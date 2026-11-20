@@ -85,3 +85,41 @@ Con la APK compilada desde `main` contra la API de producción, en un Xiaomi 231
 |---|---|
 | `US-39-01-web-resumen-de-la-consulta.png` | *Mi historia clínica* de Jimena en la web (17/11): «Resumen de tu consulta» arriba de la atención, con «Redactado con IA y revisado por Mauricio Copa Choque · 17 nov 2026, 17:34». Ventana de 1536 × 695. |
 | `US-39-02-movil-resumen-de-la-consulta.png` | El mismo resumen en el móvil. |
+
+## Pruebas en el celular contra producción (20/11/26)
+
+Con la APK de main apuntando a Railway (con push) y la atención de hoy de
+Jimena (`paciente1@sangabriel.test`) con Mauricio (`medico1`): receta de
+GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
+
+| Archivo | Caso que muestra |
+|---|---|
+| `US-40-01-movil-como-prepararte.png` | US-40 contra el backend local (19/11). |
+| `US-40-02-produccion-como-prepararte.png` | **US-40 en producción:** la orden de Perfil lipídico con «Cómo prepararte», redactado por Gemini y revisado por Mauricio. |
+| `US-40-03-produccion-resumen-con-estudio.png` | El resumen de la consulta (US-39) nombra el estudio pendiente. |
+| `US-49-01-movil-mis-medicamentos.png` | *Mis medicamentos*: las tres recetas de Jimena con «Recordarme» apagado. |
+| `US-49-02-movil-recordarme-activo-proxima-toma.png` | Con «Recordarme» activo: «En curso», Día 1 de 5, próxima toma hoy 13:00, «Tomada» / «No la tomé». |
+| `US-49-03-movil-notificacion-hora-de-tu-toma.png` | La notificación local a la 1:01: «Hora de tu GRASABYEBYE · toma 1 de 15». |
+| `US-49-04-movil-notificacion-tomada-posponer.png` | La notificación abierta, con «Tomada» y «Posponer 15 min». |
+| `US-49-05-movil-toma-marcada-desde-la-notificacion.png` | Tras «Tomada» desde la notificación: 1 de 15, próxima toma 21:00 e historial «hoy 13:00 · tomada». En la web, el médico ve 1/15 y el porcentaje. |
+| `US-48-01-movil-defecto-sin-boton-enviar.png` | **Defecto encontrado:** con estrellas y comentario no hay botón para enviar; queda un hueco. |
+| `US-48-02-movil-calificacion-enviada.png` | Con el arreglo: «Calificaste con ★★★★★», el comentario tal cual y «Cambiar (hasta el 27 de noviembre)». |
+| `US-47-30-movil-produccion-mensaje-enviado.png` | La consulta de Jimena en el chat, con la receta y la orden de la atención. |
+| `US-47-31-movil-produccion-respuesta-del-medico.png` | Las respuestas de Mauricio aparecen en el chat abierto. |
+| `US-47-32-movil-produccion-push-tu-medico-te-respondio.png` | El push «Tu médico te respondió». |
+| `US-47-33-movil-produccion-push-abre-el-chat.png` | Con el arreglo: tocar el push abre esa conversación. |
+| `US-47-34-movil-produccion-atras-vuelve-al-inicio.png` | «Atrás» desde el chat abierto por el push vuelve al inicio, no cierra la app (el pendiente del 13/11). |
+
+**Lo que salió al probar y se corrigió:**
+1. **US-48: no había cómo enviar la calificación.** El tema le da al
+   `FilledButton` todo el ancho (`Size.fromHeight`) y en un `Row` no se
+   dibuja. Las pruebas no lo veían porque no usaban el tema de la app; ahora
+   sí, y fallan sin el arreglo (`rating_card.dart`, `test/rating_test.dart`).
+2. **US-47 + US-49: tocar el push no abría el chat.** El plugin de avisos
+   locales es uno solo y el último `initialize` decide a quién se le avisa:
+   los recordatorios se iniciaban después que el push y se tragaban el toque.
+   Ahora se lo devuelven (`Recordatorios.alTocarOtroAviso`); la prueba nueva de
+   `test/medications_test.dart` falla sin el arreglo.
+3. **Detalle sin arreglar:** el ícono chico de las notificaciones es el de
+   Flutter, no el de la app.
+

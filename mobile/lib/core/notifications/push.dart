@@ -286,8 +286,9 @@ class Push implements DeviceRegistrar {
     return data['appointment_id'] as String?;
   }
 
-  /// Lo mismo que pasa al tocar un aviso, para las pruebas.
-  @visibleForTesting
+  /// Lo mismo que pasa al tocar un aviso. Lo usan las pruebas y
+  /// `Recordatorios`, cuando el toque de un aviso del push le llega a él
+  /// (ver `Recordatorios.alTocarOtroAviso`).
   void tocarAviso(String? appointmentId) => _abrir(appointmentId);
 
   void _responderLocal(NotificationResponse respuesta) {

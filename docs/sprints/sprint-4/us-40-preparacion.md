@@ -74,4 +74,8 @@ pulsar «Agregar orden» se perdía al firmar sin aviso. Se corrigió en la web:
 - No deja firmar si hay un medicamento o una orden escritos sin agregar.
 - El diálogo avisa si la atención va sin receta ni órdenes.
 
-**Pendiente:** la captura contra producción, con Gemini, después del deploy.
+**Probado en producción (20/11/26).** Mauricio firmó la atención de Jimena con
+una orden de «Perfil lipídico» y aprobó en *Textos por validar* la preparación
+que redactó Gemini. En el móvil, con la APK apuntando a Railway, la orden
+muestra «Cómo prepararte» con «Revisado por Mauricio Copa Choque»
+(`docs/capturas/sprint-4/US-40-02-produccion-como-prepararte.png`).

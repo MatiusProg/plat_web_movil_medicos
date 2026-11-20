@@ -17,6 +17,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:mobile/core/api/client.dart';
+import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/clinical_record/clinical_record_api.dart';
 import 'package:mobile/features/clinical_record/rating_card.dart';
 
@@ -54,7 +55,11 @@ Future<List<http.Request>> _montar(
       }, request.method == 'POST' ? 201 : 200);
     }),
   );
+  // Con el tema real de la app: su `FilledButton` pide todo el ancho
+  // (`Size.fromHeight`), y sin él la prueba no ve que el botón no se dibuja
+  // dentro de un `Row` (pasó en el celu el 20/11/26).
   await tester.pumpWidget(MaterialApp(
+    theme: AppTheme.light,
     home: Scaffold(
       body: SingleChildScrollView(
         child: TarjetaCalificacion(
