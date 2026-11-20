@@ -17,6 +17,7 @@ import { listarOpcionesDePaciente, type OpcionDePaciente } from '@/api/pacientes
 import { verResumenesAprobados, type ResumenAprobado } from '@/api/textos_ia'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
+import { CalificarAtencion } from './CalificarAtencion'
 import { ErrorCatalogo, PANEL, mensajeError } from './catalogo_comun'
 import { LineaDeTiempo, resumenHistorial } from './Historial'
 
@@ -91,9 +92,13 @@ export function MiHistoria() {
         ? <div className={`${PANEL} text-center text-sm text-tinta-500`}>Cuando un médico atienda y firme la consulta, aparece acá.</div>
         : <LineaDeTiempo key={elegido} datos={datos}
           cabeza={e => { const r = resumenes.get(e.id); return r && <ResumenDeLaConsulta resumen={r} /> }}
-          pie={chat ? e => <Link to={`/consultas/${e.id}`}
-          className="mt-3 inline-flex text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">
-          Escribir al médico sobre esta atención →</Link> : undefined} />}
+          pie={e => <>
+            {/* US-48: la calificación, remontada al cambiar de persona. */}
+            <CalificarAtencion key={`${elegido}-${e.id}`} encuentroId={e.id} inicial={e.rating ?? null} />
+            {chat && <Link to={`/consultas/${e.id}`}
+              className="mt-3 inline-flex text-sm font-medium text-marca-700 hover:underline dark:text-marca-400">
+              Escribir al médico sobre esta atención →</Link>}
+          </>} />}
     </>}
   </main>
 }

@@ -26,6 +26,7 @@ import 'package:mobile/features/dependents/dependents_api.dart';
 import 'package:mobile/features/dependents/patient_selector.dart';
 
 import 'clinical_record_api.dart';
+import 'rating_card.dart';
 
 const _meses = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
@@ -226,6 +227,7 @@ class _ClinicalRecordScreenState extends State<ClinicalRecordScreen> {
               _EnLaLinea(
                 ultima: i == atenciones.length - 1,
                 child: _TarjetaAtencion(
+                  client: client,
                   atencion: atencion,
                   bajando: _bajando.contains(atencion.id),
                   onDescargar: () => _descargarReceta(atencion),
@@ -289,11 +291,13 @@ class _EnLaLinea extends StatelessWidget {
 
 class _TarjetaAtencion extends StatelessWidget {
   const _TarjetaAtencion({
+    required this.client,
     required this.atencion,
     required this.bajando,
     required this.onDescargar,
   });
 
+  final ApiClient client;
   final Atencion atencion;
   final bool bajando;
   final VoidCallback onDescargar;
@@ -368,6 +372,14 @@ class _TarjetaAtencion extends StatelessWidget {
               'Firmada por ${atencion.signedByName} · '
               '${_fechaHora(atencion.signedAt)}',
               style: theme.textTheme.labelSmall?.copyWith(color: suave),
+            ),
+            // US-48: cómo lo atendieron. La clave remonta la tarjeta al
+            // cambiar de persona en el selector.
+            TarjetaCalificacion(
+              key: ValueKey('calificacion-${atencion.id}'),
+              client: client,
+              encounterId: atencion.id,
+              inicial: atencion.calificacion,
             ),
             // US-47: las dudas sobre esta atención, con el médico que la firmó.
             const SizedBox(height: 8),

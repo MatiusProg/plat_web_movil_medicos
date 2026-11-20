@@ -62,12 +62,25 @@ class PatientHistoryView(APIView):
         )
 
         por_sucursal = Counter(e.branch.name for e in encuentros)
+        datos = EncounterSerializer(encuentros, many=True).data
+        if alcance == services.OWN:
+            # US-48: el paciente ve su calificación junto a cada atención. El
+            # médico no la recibe: no tiene que saber quién lo calificó.
+            from .models import EncounterRating
+            from .rating_views import leer
+
+            propias = {r.encounter_id: r for r in EncounterRating.objects.filter(
+                organization=request.user.organization,
+                encounter_id__in=[e.id for e in encuentros],
+            )}
+            for fila, encuentro in zip(datos, encuentros):
+                fila["rating"] = leer(propias.get(encuentro.id))
         return Response({
             "patient": PatientSummarySerializer(paciente).data,
             "scope": alcance,
             "branches": [{"name": n, "encounters": c}
                          for n, c in sorted(por_sucursal.items())],
-            "encounters": EncounterSerializer(encuentros, many=True).data,
+            "encounters": datos,
         })
 
 
