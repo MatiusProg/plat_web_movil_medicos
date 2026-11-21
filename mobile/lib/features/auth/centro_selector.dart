@@ -117,10 +117,15 @@ class _SelectorCentroState extends State<SelectorCentro> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _ListaCentros(
-        centros: centros,
-        actual: widget.valor,
-        conPlataforma: widget.conPlataforma,
+      // Con el teclado abierto (el buscador), la hoja sube por encima de él
+      // en vez de quedar tapada.
+      builder: (hoja) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(hoja).bottom),
+        child: _ListaCentros(
+          centros: centros,
+          actual: widget.valor,
+          conPlataforma: widget.conPlataforma,
+        ),
       ),
     );
     if (elegido != null) widget.onCambio(elegido);
