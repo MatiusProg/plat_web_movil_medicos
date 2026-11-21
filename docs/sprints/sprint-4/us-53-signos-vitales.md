@@ -103,5 +103,14 @@ Las capturas `docs/capturas/sprint-4/US-53-01` a `US-53-06` muestran:
 - la atención firmada con una enmienda de temperatura;
 - el historial del médico.
 
-**Pendiente:** el celular contra producción, después del deploy y con la APK
-nueva.
+## Probado en el celular contra producción (21/11/26)
+
+Después del deploy del PR #120 (migraciones 0011–0013 aplicadas en Supabase),
+con la APK nueva:
+- Mauricio (medico1) firmó una atención de Jimena (paciente1) con 150/95,
+  38,6 °C, 96 %, 68,5 kg y 165 cm, más una enmienda de la temperatura.
+- En el celular, Jimena la ve con las marcas **Alta**, el IMC 25,2 y la
+  enmienda debajo (`US-53-07`).
+
+**Pendiente:** las gráficas de evolución (pestaña «Evolución» del médico y
+«Mis signos vitales» del paciente).

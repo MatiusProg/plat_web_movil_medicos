@@ -124,7 +124,7 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
    Flutter, no el de la app.
 
 
-## US-53: Signos vitales (web local, 20/11/26)
+## US-53: Signos vitales (web local 20/11/26, móvil en producción 21/11/26)
 
 | Archivo | Caso que muestra |
 |---|---|
@@ -134,3 +134,4 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
 | `US-53-04-web-firmar-bloqueado.png` | Con un signo imposible, la firma queda bloqueada: «Hay un signo vital imposible: corrígelo o bórralo.» |
 | `US-53-05-web-firmada-con-enmienda.png` | Atención firmada: los signos en solo lectura, con sus marcas, el IMC y una enmienda que corrige la temperatura. |
 | `US-53-06-web-historial-del-medico.png` | El historial del médico muestra los signos en la línea de tiempo. |
+| `US-53-07-movil-paciente-produccion.png` | **Producción, celular:** Jimena (paciente1) ve en *Mi historia clínica* los signos que cargó Mauricio: 150/95 y 38,6 °C marcados **Alta**, IMC 25,2 y la enmienda de la temperatura debajo. |
