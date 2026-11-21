@@ -4,7 +4,7 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="54" android:pivotY="54">
+    <group android:scaleX="0.68" android:scaleY="0.68" android:pivotX="54" android:pivotY="54">
         <path android:pathData="M54,82 C34,68 22,56 22,42 C22,32 30,25 39,25 C46,25 51,29 54,34 C57,29 62,25 69,25 C78,25 86,32 86,42 C86,56 74,68 54,82 Z" android:fillColor="#00000000"
             android:strokeColor="#FFFFFF" android:strokeWidth="7" android:strokeLineJoin="round" />
         <path android:pathData="M28,52 L42,52 L48,41 L56,63 L62,49 L80,52" android:fillColor="#00000000"
