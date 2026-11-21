@@ -27,7 +27,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/errors.dart';
 import '../../core/session/session_scope.dart';
 import '../../core/widgets/brand_header.dart';
+import '../../core/api/client.dart';
 import 'auth_service.dart';
+import 'centro_selector.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -38,7 +40,10 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _organization = TextEditingController();
+  /// `null`: todavía no eligió; `''`: administración de la plataforma.
+  String? _centro;
+  bool _faltaCentro = false;
+  late final Future<List<Centro>> Function() _cargarCentros;
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _passwordFocus = FocusNode();
@@ -62,13 +67,15 @@ class _SignInScreenState extends State<SignInScreen> {
     super.didChangeDependencies();
     if (_prefilled) return;
     _prefilled = true;
-    _organization.text = SessionScope.of(context).organizationSlug ?? '';
+    final guardado = SessionScope.of(context).organizationSlug ?? '';
+    _centro = guardado.isEmpty ? null : guardado;
+    final client = ApiClient();
+    _cargarCentros = () => listarCentros(client);
   }
 
   @override
   void dispose() {
     _countdown?.cancel();
-    _organization.dispose();
     _email.dispose();
     _password.dispose();
     _passwordFocus.dispose();
@@ -85,7 +92,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future<void> _submit() async {
     if (_frozen) return;
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final sinCentro = _centro == null;
+    if (sinCentro != _faltaCentro) setState(() => _faltaCentro = sinCentro);
+    if (!(_formKey.currentState?.validate() ?? false) || sinCentro) return;
 
     // Cierra el teclado: en un teléfono tapa medio formulario y el cartel de
     // error aparecería detrás.
@@ -100,7 +109,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
     try {
       await AuthService(session: session).signIn(
-        organization: _organization.text.trim(),
+        organization: (_centro ?? '').trim(),
         email: _email.text.trim(),
         password: _password.text,
       );
@@ -157,9 +166,11 @@ class _SignInScreenState extends State<SignInScreen> {
 
     // El error del slug se pinta debajo de su campo y no en el cartel: es un
     // dato mal escrito, no un problema de credenciales.
-    final organizationError = _error?.code == 'organizacion_no_disponible'
-        ? (_error?.forField('organization') ?? _error?.message)
-        : null;
+    final organizationError = _faltaCentro
+        ? 'Elige tu centro médico.'
+        : _error?.code == 'organizacion_no_disponible'
+            ? (_error?.forField('organization') ?? _error?.message)
+            : null;
 
     return Scaffold(
       body: SafeArea(
@@ -198,19 +209,17 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                           const SizedBox(height: 28),
 
-                          TextFormField(
-                      controller: _organization,
-                      enabled: !_frozen,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: 'Centro médico',
-                        hintText: 'kolping',
-                        helperText:
-                            'Déjalo vacío solo si administras la plataforma.',
-                        errorText: organizationError,
-                        prefixIcon: const Icon(Icons.apartment_outlined),
-                      ),
+                          SelectorCentro(
+                      cargar: _cargarCentros,
+                      valor: _centro,
+                      conPlataforma: true,
+                      habilitado: !_frozen,
+                      errorText: organizationError,
+                      onCambio: (v) => setState(() {
+                        _centro = v;
+                        _faltaCentro = false;
+                        if (_error?.code == 'organizacion_no_disponible') _error = null;
+                      }),
                     ),
                     const SizedBox(height: 16),
 

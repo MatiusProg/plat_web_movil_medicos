@@ -15,10 +15,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api/client.dart';
 import '../../core/api/errors.dart';
 import '../../core/session/session_scope.dart';
 import '../../core/widgets/brand_header.dart';
 import 'auth_service.dart';
+import 'centro_selector.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,7 +31,12 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _organization = TextEditingController();
+  String? _centro;
+  bool _faltaCentro = false;
+  final _cargarCentros = (() {
+    final client = ApiClient();
+    return () => listarCentros(client);
+  })();
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
   final _documentNumber = TextEditingController();
@@ -43,7 +50,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _organization.dispose();
     _firstName.dispose();
     _lastName.dispose();
     _documentNumber.dispose();
@@ -55,7 +61,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (_submitting) return;
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final sinCentro = _centro == null || _centro!.trim().isEmpty;
+    if (sinCentro != _faltaCentro) setState(() => _faltaCentro = sinCentro);
+    if (!(_formKey.currentState?.validate() ?? false) || sinCentro) return;
 
     FocusScope.of(context).unfocus();
 
@@ -68,7 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await AuthService(session: session).registerPatient(
-        organization: _organization.text.trim(),
+        organization: _centro!.trim(),
         email: _email.text.trim(),
         password: _password.text,
         passwordConfirmation: _passwordConfirmation.text,
@@ -138,21 +146,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 28),
 
-                          TextFormField(
-                      controller: _organization,
-                      enabled: !_submitting,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: 'Centro médico',
-                        hintText: 'kolping',
-                        helperText: 'El identificador que te dio tu centro médico.',
-                        errorText: _error?.forField('organization'),
-                        prefixIcon: const Icon(Icons.apartment_outlined),
-                      ),
-                      validator: (value) => (value ?? '').trim().isEmpty
-                          ? 'Escribe tu centro médico.'
-                          : null,
+                          SelectorCentro(
+                      cargar: _cargarCentros,
+                      valor: _centro,
+                      habilitado: !_submitting,
+                      ayuda: 'El centro médico en el que te registras.',
+                      errorText: _faltaCentro
+                          ? 'Elige tu centro médico.'
+                          : _error?.forField('organization'),
+                      onCambio: (v) => setState(() {
+                        _centro = v;
+                        _faltaCentro = false;
+                      }),
                     ),
                     const SizedBox(height: 16),
 

@@ -14,17 +14,17 @@
  * Se compara siempre contra `codigo`, nunca contra el texto del mensaje.
  */
 
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { Boton } from '@/componentes/Boton'
 import { Campo } from '@/componentes/Campo'
+import { SelectorCentro } from '@/componentes/SelectorCentro'
 import { PanelMarca } from '@/componentes/PanelMarca'
 import {
   IconoCorreo,
-  IconoEdificio,
   IconoLlave,
   IconoOjo,
   IconoOjoTachado,
@@ -39,7 +39,13 @@ export function InicioSesion() {
   const ubicacion = useLocation()
   useTitulo('Iniciar sesión')
 
-  const [organizacion, setOrganizacion] = useState(leerOrganizacion)
+  // `null`: todavía no eligió centro; `''`: administración de la plataforma.
+  const [organizacion, setOrganizacion] = useState<string | null>(() => leerOrganizacion() || null)
+  const [nombreCentro, setNombreCentro] = useState<string | undefined>()
+  const [faltaCentro, setFaltaCentro] = useState(false)
+  const elegirCentro = useCallback((slug: string | null, nombre?: string) => {
+    setOrganizacion(slug); setNombreCentro(nombre); setFaltaCentro(false)
+  }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [verClave, setVerClave] = useState(false)
@@ -68,14 +74,16 @@ export function InicioSesion() {
 
   const bloqueada = error?.codigo === 'cuenta_bloqueada'
   const inactiva = error?.codigo === 'cuenta_inactiva'
-  const errorOrganizacion =
-    error?.codigo === 'organizacion_no_disponible'
+  const errorOrganizacion = faltaCentro
+    ? 'Elegí tu centro médico.'
+    : error?.codigo === 'organizacion_no_disponible'
       ? (error.porCampo?.organization?.[0] ?? error.message)
       : undefined
 
   const enviar = async (evento: FormEvent) => {
     evento.preventDefault()
     if (enviando || bloqueada) return
+    if (organizacion === null) { setFaltaCentro(true); return }
 
     aborto.current?.abort()
     const control = new AbortController()
@@ -111,7 +119,7 @@ export function InicioSesion() {
 
   return (
     <main className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <PanelMarca organizacion={organizacion.trim() || undefined} />
+      <PanelMarca organizacion={nombreCentro ?? (organizacion?.trim() || undefined)} />
 
       {/* ---------------- Formulario ---------------- */}
       <section className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
@@ -135,18 +143,12 @@ export function InicioSesion() {
           )}
 
           <form onSubmit={enviar} noValidate className="space-y-5">
-            <Campo
-              etiqueta="Centro médico"
-              name="organization"
-              autoComplete="organization"
-              spellCheck={false}
-              placeholder="kolping"
-              value={organizacion}
-              onChange={(e) => setOrganizacion(e.target.value)}
+            <SelectorCentro
+              valor={organizacion}
+              onCambio={elegirCentro}
+              conPlataforma
               disabled={formularioTrabado}
-              icono={<IconoEdificio className="size-5" />}
               error={errorOrganizacion}
-              ayuda="Dejalo vacío sólo si administrás la plataforma."
             />
 
             <Campo

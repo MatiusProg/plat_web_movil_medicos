@@ -1,4 +1,4 @@
-import { useState, type FormEvent, useRef } from 'react'
+import { useCallback, useState, type FormEvent, useRef } from 'react'
 import { Link } from 'react-router-dom'
 
 import { registrarPaciente } from '@/api/registro'
@@ -6,10 +6,10 @@ import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { Boton } from '@/componentes/Boton'
 import { Campo } from '@/componentes/Campo'
+import { SelectorCentro } from '@/componentes/SelectorCentro'
 import { PanelMarca } from '@/componentes/PanelMarca'
 import {
   IconoCorreo,
-  IconoEdificio,
   IconoLlave,
   IconoOjo,
   IconoOjoTachado,
@@ -20,7 +20,11 @@ import { useTitulo } from '@/rutas/useTitulo'
 export function RegistroPaciente() {
   useTitulo('Registrarse como Paciente')
 
-  const [organizacion, setOrganizacion] = useState('')
+  const [organizacion, setOrganizacion] = useState<string | null>(null)
+  const [nombreCentro, setNombreCentro] = useState<string | undefined>()
+  const elegirCentro = useCallback((slug: string | null, nombre?: string) => {
+    setOrganizacion(slug); setNombreCentro(nombre)
+  }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
@@ -43,6 +47,13 @@ export function RegistroPaciente() {
   const enviar = async (evento: FormEvent) => {
     evento.preventDefault()
     if (enviando) return
+
+    if (!organizacion?.trim()) {
+      setError(new ErrorApi('Elegí el centro médico.', 'desconocido', 400, {
+        porCampo: { organization: ['Elegí el centro médico en el que te registrás.'] },
+      }))
+      return
+    }
 
     if (password !== passwordConfirmation) {
       setError(
@@ -93,7 +104,7 @@ export function RegistroPaciente() {
   if (exito) {
     return (
       <main className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <PanelMarca organizacion={organizacion.trim() || undefined} />
+        <PanelMarca organizacion={nombreCentro ?? (organizacion?.trim() || undefined)} />
         <section className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
           <div className="surgir w-full max-w-[26rem] text-center space-y-6">
             <div className="mx-auto bg-marca-50 dark:bg-marca-950 text-marca-600 dark:text-marca-400 size-16 rounded-full flex items-center justify-center">
@@ -121,7 +132,7 @@ export function RegistroPaciente() {
 
   return (
     <main className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <PanelMarca organizacion={organizacion.trim() || undefined} />
+      <PanelMarca organizacion={nombreCentro ?? (organizacion?.trim() || undefined)} />
 
       <section className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
         <div className="surgir w-full max-w-[28rem] space-y-8">
@@ -135,19 +146,13 @@ export function RegistroPaciente() {
           </header>
 
           <form onSubmit={enviar} noValidate className="space-y-4">
-            <Campo
-              etiqueta="Centro médico *"
-              name="organization"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Ej: kolping"
-              value={organizacion}
-              onChange={(e) => setOrganizacion(e.target.value)}
+            <SelectorCentro
+              valor={organizacion}
+              onCambio={elegirCentro}
               disabled={enviando}
-              icono={<IconoEdificio className="size-5" />}
               error={error?.porCampo?.organization?.[0]}
-              ayuda="Slug del centro médico en el que deseas registrarte."
-              required
+              ayuda="El centro médico en el que te registrás."
+              etiqueta="Centro médico *"
             />
 
             <div className="grid grid-cols-2 gap-4">

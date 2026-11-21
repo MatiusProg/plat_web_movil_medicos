@@ -17,6 +17,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views.auth import login, logout, me, refresh
+from .views.centers import centers
 from .views.password_reset import confirm_reset, request_reset, verify_reset
 from .views.profile import change_password, profile
 from .views.registration import register_patient
@@ -53,6 +54,8 @@ urlpatterns = router.urls + [
 
     # ---------- US-02 (Karen): inicio de sesión ---------------------------
     path("login/", login, name="login"),
+    # Los centros activos para el desplegable del login (21/11/26).
+    path("centers/", centers, name="centers"),
     path("token/refresh/", refresh, name="token-refresh"),
     path("logout/", logout, name="logout"),
 
