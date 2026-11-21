@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- marca-600: el color con que Android tiñe el ícono de la notificación. -->
+    <color name="marca">#0D8F88</color>
+</resources>

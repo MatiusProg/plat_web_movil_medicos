@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono chico de las notificaciones (push y recordatorios). Android lo
+     pinta de un solo color: sólo cuenta la silueta blanca. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="72" android:viewportHeight="72">
+    <group android:translateX="-18" android:translateY="-18">
+        <path android:pathData="M54,82 C34,68 22,56 22,42 C22,32 30,25 39,25 C46,25 51,29 54,34 C57,29 62,25 69,25 C78,25 86,32 86,42 C86,56 74,68 54,82 Z" android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF" android:strokeWidth="7" android:strokeLineJoin="round" />
+        <path android:pathData="M28,52 L42,52 L48,41 L56,63 L62,49 L80,52" android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF" android:strokeWidth="6"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>

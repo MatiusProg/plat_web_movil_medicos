@@ -143,7 +143,7 @@ class Push implements DeviceRegistrar {
 
       await _locales.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          android: AndroidInitializationSettings('@drawable/ic_notificacion'),
         ),
         // US-49: el plugin es uno solo y el último `initialize` define a
         // quién se llama. Los avisos de medicamentos van a `Recordatorios`.

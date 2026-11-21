@@ -28,6 +28,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
     IconoEdificio,
     IconoEscudo,
+    IconoLogo,
     IconoPulso,
     IconoSalir,
 } from '@/componentes/iconos'
@@ -444,7 +445,7 @@ export function BarraPlataforma({
                 mouse. Ctrl+B hace lo mismo. */}
             <div className={['group/cabecera flex h-16 shrink-0 items-center gap-3 px-4', plegada ? 'md:justify-center md:px-0' : ''].join(' ')}>
                 <div className={['grid size-9 shrink-0 place-items-center rounded-xl bg-marca-500 text-tinta-950', plegada ? 'md:group-hover/cabecera:hidden' : ''].join(' ')}>
-                    <IconoEscudo className="size-5" />
+                    <IconoLogo className="size-5" />
                 </div>
                 {plegada && (
                     <button

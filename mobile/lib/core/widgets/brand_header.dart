@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
+import 'logo.dart';
 
 class BrandHeader extends StatefulWidget {
   const BrandHeader({super.key, this.organization, this.compact = false});
@@ -89,11 +90,7 @@ class _BrandHeaderState extends State<BrandHeader>
                             color: Colors.white.withValues(alpha: 0.25),
                           ),
                         ),
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        child: const Center(child: LogoMarca(size: 22)),
                       ),
                       const SizedBox(width: 12),
                       const Column(
