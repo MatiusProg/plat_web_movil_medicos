@@ -9,7 +9,7 @@
  * que importa en un teléfono— pero no desaparece, para no perder esa respuesta.
  */
 
-import { IconoEscudo, IconoPulso } from './iconos'
+import { IconoEscudo, IconoLogo } from './iconos'
 
 export function PanelMarca({ organizacion }: { organizacion?: string }) {
   return (
@@ -20,7 +20,7 @@ export function PanelMarca({ organizacion }: { organizacion?: string }) {
       <div className="relative">
         <div className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
-            <IconoPulso className="size-5.5" />
+            <IconoLogo className="size-5.5" />
           </span>
           <div className="leading-tight">
             <p className="text-[1.0625rem] font-semibold">Centro Médico</p>

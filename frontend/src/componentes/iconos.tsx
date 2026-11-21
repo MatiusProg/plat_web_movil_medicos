@@ -113,6 +113,16 @@ export function IconoEscudo({ className }: Props) {
   )
 }
 
+/** El logo del Centro Médico: corazón con pulso (el mismo del favicon y de la app). */
+export function IconoLogo({ className }: Props) {
+  return (
+    <svg {...base} strokeWidth={2.2} className={className}>
+      <path d="M12 21.3C5.3 16.7 1.3 12.7 1.3 8c0-3.3 2.7-5.7 5.7-5.7 2.3 0 4 1.4 5 3 1-1.6 2.7-3 5-3 3 0 5.7 2.4 5.7 5.7 0 4.7-4 8.7-10.7 13.3Z" />
+      <path d="M3.3 11.3H8l2-3.6 2.7 7.3 2-4.7h6" />
+    </svg>
+  )
+}
+
 export function IconoPulso({ className }: Props) {
   return (
     <svg {...base} className={className}>
