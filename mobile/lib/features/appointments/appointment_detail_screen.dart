@@ -26,6 +26,7 @@ import 'package:mobile/core/theme/theme.dart';
 import 'package:mobile/features/payments/payments_api.dart';
 
 import 'appointments_api.dart';
+import 'preconsulta_plus.dart';
 import 'formato.dart';
 
 /// Abre una URL fuera de la aplicación. Se inyecta en las pruebas.
@@ -511,6 +512,21 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
           ),
         );
       }
+    }
+
+    if (ficha.isConfirmed || ficha.status == AppointmentStatus.attended) {
+      acciones.add(Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: OutlinedButton.icon(
+          icon: const Icon(Icons.auto_awesome_outlined),
+          label: const Text('Mi experiencia Plus'),
+          onPressed: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            builder: (_) => PreconsultaPlusSheet(client: _client!, ficha: ficha),
+          ),
+        ),
+      ));
     }
 
     if (ficha.isConfirmed) {

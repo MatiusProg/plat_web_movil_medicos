@@ -3,6 +3,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .preconsultation_views import PreconsultationView
 from .booking import AppointmentViewSet
 from .counter import CounterBookingView
 from .changes import CancelAppointmentView, RescheduleAppointmentView
@@ -25,6 +26,7 @@ router.register(
 )
 
 urlpatterns = router.urls + [
+    path("appointments/<uuid:pk>/preconsultation/", PreconsultationView.as_view(), name="preconsultation"),
     path("counter/book/", CounterBookingView.as_view(), name="counter-book"),
     # ---------- US-20 — Cancelación y reprogramación --------------------
     path(

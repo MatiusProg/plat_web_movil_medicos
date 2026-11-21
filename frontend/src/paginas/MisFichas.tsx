@@ -23,6 +23,7 @@ import {
 import { ErrorApi } from '@/api/tipos'
 import { Aviso } from '@/componentes/Aviso'
 import { ModalComprobante } from '@/componentes/ModalComprobante'
+import { ExperienciaPlus } from '@/componentes/ExperienciaPlus'
 import { ModalReprogramarFicha } from '@/componentes/ModalReprogramarFicha'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
@@ -121,6 +122,7 @@ export function MisFichas() {
   const [pagandoId, setPagandoId] = useState<string | null>(null)
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null)
   const [comprobanteId, setComprobanteId] = useState<string | null>(null)
+  const [fichaPlus, setFichaPlus] = useState<Ficha | null>(null)
 
   const [fichaAReprogramar, setFichaAReprogramar] = useState<Ficha | null>(null)
   const [reprogramando, setReprogramando] = useState(false)
@@ -402,6 +404,9 @@ export function MisFichas() {
                       </button>
                     )}
                     {conComprobante && (
+                      <button type="button" onClick={() => setFichaPlus(ficha)} className="rounded-xl border border-blue-500 px-3 py-1.5 text-sm font-semibold text-blue-700 dark:text-blue-300">Mi experiencia Plus</button>
+                    )}
+                    {conComprobante && (
                       <button
                         type="button"
                         onClick={() => setComprobanteId(ficha.id)}
@@ -508,6 +513,7 @@ export function MisFichas() {
         </section>
       )}
 
+      {fichaPlus && <ExperienciaPlus ficha={fichaPlus} cerrar={() => setFichaPlus(null)} />}
       <ModalComprobante
         fichaId={comprobanteId}
         onCerrar={() => setComprobanteId(null)}
