@@ -123,3 +123,14 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
 3. **Detalle sin arreglar:** el ícono chico de las notificaciones es el de
    Flutter, no el de la app.
 
+
+## US-53: Signos vitales (web local, 20/11/26)
+
+| Archivo | Caso que muestra |
+|---|---|
+| `US-53-01-web-signos-normales-con-imc.png` | Valores normales: 120/80, 36,6 °C, 62 kg y 160 cm dan un **IMC de 24,2**, sin marcas. |
+| `US-53-02-web-anormal-se-marca.png` | 150/95, 39,2 °C y SpO₂ 88 % se guardan y se marcan **Alta** / **Baja**. |
+| `US-53-03-web-imposible-no-se-guarda.png` | **Borde:** 60 °C («El máximo posible es 45.») y una diastólica de 160 con sistólica 150 («Tiene que ser menor que la sistólica.»). |
+| `US-53-04-web-firmar-bloqueado.png` | Con un signo imposible, la firma queda bloqueada: «Hay un signo vital imposible: corrígelo o bórralo.» |
+| `US-53-05-web-firmada-con-enmienda.png` | Atención firmada: los signos en solo lectura, con sus marcas, el IMC y una enmienda que corrige la temperatura. |
+| `US-53-06-web-historial-del-medico.png` | El historial del médico muestra los signos en la línea de tiempo. |

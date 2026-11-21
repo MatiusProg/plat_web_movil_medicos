@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SECCIONES, verHistorial, type Historial as DatosHistorial } from '@/api/atencion'
+import { VerSignos } from './SignosVitales'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { ErrorCatalogo, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
@@ -88,6 +89,14 @@ export function LineaDeTiempo({ datos, cabeza, pie }: {
             <p className="text-sm text-tinta-500">{e.branch_name} · {e.practitioner_name}</p>
           </header>
           {cabeza?.(e)}
+          {(e.vital_signs || e.amendments.some(a => a.section === 'vital_signs')) && <div className="mt-3 space-y-1">
+            <h3 className="text-sm font-medium text-tinta-700 dark:text-tinta-300">Signos vitales</h3>
+            <VerSignos signos={e.vital_signs} />
+            {e.amendments.filter(a => a.section === 'vital_signs').map(a => <p key={a.id} className="ml-3 border-l-2 border-marca-400 pl-3 text-sm">
+              <span className="block text-xs text-tinta-500">Enmienda de {a.author_name} · {fechaHora(a.created_at)}</span>
+              <span className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{a.text}</span>
+            </p>)}
+          </div>}
           <dl className="mt-3 space-y-3 text-sm">
             {SECCIONES.filter(s => e[s.campo] || e.amendments.some(a => a.section === s.campo)).map(s => <div key={s.campo}>
               <dt className="font-medium text-tinta-700 dark:text-tinta-300">{s.etiqueta}</dt>

@@ -47,12 +47,39 @@ export interface Agenda {
 }
 
 /** US-26: lo enmendable de una atención firmada incluye la receta y las órdenes. */
-export type SeccionEnmendable = Seccion | 'prescription' | 'orders'
+export type SeccionEnmendable = Seccion | 'prescription' | 'orders' | 'vital_signs'
 
 export const ENMENDABLES: { campo: SeccionEnmendable; etiqueta: string }[] = [
   ...SECCIONES.map(({ campo, etiqueta }) => ({ campo, etiqueta })),
   { campo: 'prescription', etiqueta: 'Receta' },
   { campo: 'orders', etiqueta: 'Órdenes' },
+  { campo: 'vital_signs', etiqueta: 'Signos vitales' },
+]
+
+/** US-53: los signos vitales de la atención. Todos opcionales. */
+export type CampoSigno = 'systolic' | 'diastolic' | 'heart_rate' | 'temperature' | 'spo2'
+  | 'weight_kg' | 'height_cm' | 'glucose'
+
+export interface SignosVitales extends Record<CampoSigno, number | null> {
+  /** Con peso y talla; si falta uno, `null`. */
+  bmi: number | null
+  /** Lo anormal: `blood_pressure`, `temperature`, `spo2` → «Alta»/«Baja». */
+  alerts: Partial<Record<'blood_pressure' | 'temperature' | 'spo2', string>>
+}
+
+/** Lo que se manda: números, o `null` para dejarlo vacío. */
+export type DatosSignos = Partial<Record<CampoSigno, number | null>>
+
+/** Los mismos límites que la base (`VITAL_LIMITS`): fuera de esto es un error de tipeo. */
+export const SIGNOS: { campo: CampoSigno; etiqueta: string; unidad: string; min: number; max: number; decimales: boolean }[] = [
+  { campo: 'systolic', etiqueta: 'Presión sistólica', unidad: 'mmHg', min: 50, max: 300, decimales: false },
+  { campo: 'diastolic', etiqueta: 'Presión diastólica', unidad: 'mmHg', min: 20, max: 200, decimales: false },
+  { campo: 'heart_rate', etiqueta: 'Frecuencia cardíaca', unidad: 'lpm', min: 20, max: 250, decimales: false },
+  { campo: 'temperature', etiqueta: 'Temperatura', unidad: '°C', min: 30, max: 45, decimales: true },
+  { campo: 'spo2', etiqueta: 'Saturación O₂', unidad: '%', min: 50, max: 100, decimales: false },
+  { campo: 'glucose', etiqueta: 'Glucosa', unidad: 'mg/dL', min: 10, max: 1000, decimales: false },
+  { campo: 'weight_kg', etiqueta: 'Peso', unidad: 'kg', min: 0.5, max: 400, decimales: true },
+  { campo: 'height_cm', etiqueta: 'Talla', unidad: 'cm', min: 30, max: 250, decimales: true },
 ]
 
 /** US-26: un medicamento de la receta. */
@@ -131,6 +158,8 @@ export interface Encuentro extends Record<Seccion, string> {
   amendments: Enmienda[]
   prescription_items: Medicamento[]
   orders: Orden[]
+  /** US-53: `null` si no se tomaron. */
+  vital_signs: SignosVitales | null
   created_at: string
   updated_at: string
   /** US-48: sólo en el historial propio. El médico nunca la recibe. */
@@ -163,7 +192,9 @@ export const abrirAtencion = (fichaId: string, contexto: Contexto) =>
 export const verEncuentro = (id: string, contexto: Contexto, senal?: AbortSignal) =>
   pedir<Encuentro>(`${base}${encodeURIComponent(id)}/`, { ...contexto, senal })
 
-export const guardarBorrador = (id: string, datos: Partial<Record<Seccion, string>>, contexto: Contexto) =>
+export const guardarBorrador = (
+  id: string, datos: Partial<Record<Seccion, string>> & { vital_signs?: DatosSignos | null }, contexto: Contexto,
+) =>
   pedir<Encuentro>(`${base}${encodeURIComponent(id)}/`, { ...contexto, metodo: 'PATCH', cuerpo: datos })
 
 /** US-39: firmar también pide el resumen para el paciente, y dice cómo le fue. */

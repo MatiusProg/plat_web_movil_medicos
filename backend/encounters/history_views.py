@@ -53,6 +53,7 @@ class PatientHistoryView(APIView):
                             "signed_by")
             .prefetch_related("amendments__author", "prescription_items__intakes",
                               "orders")
+            .select_related("vital_signs")
             .order_by("-appointment__starts_at")
         )
 

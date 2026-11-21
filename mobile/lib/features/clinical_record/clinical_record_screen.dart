@@ -334,6 +334,16 @@ class _TarjetaAtencion extends StatelessWidget {
             const SizedBox(height: 8),
             const Divider(height: 1),
             if (atencion.resumen != null) _Resumen(resumen: atencion.resumen!),
+            // US-53: lo que se midió, con lo anormal marcado.
+            if (atencion.signos != null ||
+                atencion.enmiendas.any((e) => e.section == 'vital_signs'))
+              _SignosVitales(
+                signos: atencion.signos,
+                enmiendas: [
+                  for (final e in atencion.enmiendas)
+                    if (e.section == 'vital_signs') e,
+                ],
+              ),
             for (final (campo, etiqueta) in secciones) ...[
               const SizedBox(height: 12),
               Text(etiqueta, style: theme.textTheme.labelLarge),
@@ -396,6 +406,87 @@ class _TarjetaAtencion extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// US-53 — Los signos vitales de la atención. Lo anormal lleva una marca
+/// («Alta», «Baja») para que el paciente vea qué miró el médico; una
+/// corrección del médico (enmienda) va debajo, sin borrar lo original.
+class _SignosVitales extends StatelessWidget {
+  const _SignosVitales({required this.signos, required this.enmiendas});
+
+  final SignosVitales? signos;
+  final List<Enmienda> enmiendas;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final suave = theme.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Signos vitales', style: theme.textTheme.labelLarge),
+          for (final fila in signos?.filas ?? const [])
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      fila.etiqueta,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: suave),
+                    ),
+                  ),
+                  Text(fila.valor, style: theme.textTheme.bodyMedium),
+                  if (fila.alerta != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        fila.alerta!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          for (final enmienda in enmiendas)
+            Container(
+              margin: const EdgeInsets.only(top: 8, left: 4),
+              padding: const EdgeInsets.only(left: 10),
+              decoration: const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Marca.primaryLight, width: 2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enmienda de ${enmienda.authorName} · '
+                    '${_fechaHora(enmienda.createdAt)}',
+                    style: theme.textTheme.labelSmall?.copyWith(color: suave),
+                  ),
+                  Text(enmienda.text, style: theme.textTheme.bodyMedium),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
