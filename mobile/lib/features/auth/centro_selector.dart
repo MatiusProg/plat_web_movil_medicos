@@ -360,3 +360,59 @@ class _Vacio extends StatelessWidget {
         ),
       );
 }
+
+/// «Centro médico: Clínica San Gabriel» en el inicio, con el nombre en lugar
+/// del slug. Mientras llega la lista, o si no llega, queda el slug.
+class NombreDelCentro extends StatefulWidget {
+  const NombreDelCentro({super.key, required this.slug, this.style, this.cargar});
+
+  final String? slug;
+  final TextStyle? style;
+
+  /// Para las pruebas; por defecto, la lista pública del backend.
+  final Future<List<Centro>> Function()? cargar;
+
+  @override
+  State<NombreDelCentro> createState() => _NombreDelCentroState();
+}
+
+class _NombreDelCentroState extends State<NombreDelCentro> {
+  String? _nombre;
+
+  @override
+  void initState() {
+    super.initState();
+    _buscar();
+  }
+
+  // Otra sesión, otro centro: el nombre anterior ya no vale.
+  @override
+  void didUpdateWidget(NombreDelCentro viejo) {
+    super.didUpdateWidget(viejo);
+    if (viejo.slug != widget.slug) {
+      _nombre = null;
+      _buscar();
+    }
+  }
+
+  void _buscar() {
+    final slug = widget.slug;
+    if (slug == null || slug.isEmpty) return;
+    (widget.cargar ?? () => listarCentros(ApiClient()))().then((centros) {
+      for (final c in centros) {
+        if (c.slug == slug && widget.slug == slug && mounted) {
+          setState(() => _nombre = c.name);
+        }
+      }
+    }).catchError((_) {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slug = widget.slug;
+    final texto = slug == null || slug.isEmpty
+        ? SelectorCentro.plataforma
+        : _nombre ?? slug;
+    return Text('Centro médico: $texto', style: widget.style);
+  }
+}
