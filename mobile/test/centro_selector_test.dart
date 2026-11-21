@@ -145,4 +145,23 @@ void main() {
     expect(pedido.headers.containsKey('Authorization'), isFalse);
     expect([for (final c in centros) c.name], ['Andina']);
   });
+
+  testWidgets('el inicio muestra el nombre del centro, no el slug',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: NombreDelCentro(slug: 'sangabriel', cargar: () async => _tres),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Centro médico: Clínica San Gabriel'), findsOneWidget);
+
+    // Sin la lista queda el slug; sin slug es la plataforma.
+    await tester.pumpWidget(MaterialApp(
+      home: NombreDelCentro(
+          slug: 'otro', cargar: () async => throw Exception('sin red')),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Centro médico: otro'), findsOneWidget);
+    await tester.pumpWidget(const MaterialApp(home: NombreDelCentro(slug: '')));
+    expect(find.text('Centro médico: ${SelectorCentro.plataforma}'), findsOneWidget);
+  });
 }

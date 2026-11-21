@@ -141,3 +141,13 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
 | `US-53-11-web-paciente-graficas-presion-y-peso.png` | Las gráficas de presión y peso del paciente. |
 | `US-53-12-movil-mis-signos-vitales-produccion.png` | **Producción, celular:** «Mis signos vitales» de Jimena, con la última medición (21/11) y el comienzo del gráfico de presión. |
 | `US-53-13-movil-graficas-presion-y-peso-produccion.png` | **Producción, celular:** presión y peso de julio a noviembre, con la franja normal; el punto de noviembre va hueco porque tiene una enmienda. |
+
+## Elegir el centro médico en el login (móvil en producción, 21/11/26)
+
+| Archivo | Caso que muestra |
+|---|---|
+| `LOGIN-01-movil-centro-elegido.png` | Al cerrar sesión, el login vuelve con el último centro usado ya elegido, por su nombre y no por el slug. |
+| `LOGIN-02-movil-hoja-de-centros.png` | La hoja con los centros activos de producción, el buscador (hay más de 6) y la marca en el elegido. |
+| `LOGIN-03-movil-plataforma-aparte.png` | Al final y separada, «Administración de la plataforma», sólo para el superadministrador. |
+| `LOGIN-04-movil-buscador-sobre-el-teclado.png` | Con el buscador y el teclado abiertos, la hoja sube por encima del teclado y los resultados quedan a la vista. |
+| `LOGIN-05-movil-inicio-con-nombre-del-centro.png` | El inicio muestra «Centro médico: Clínica San Gabriel», el nombre y no el slug. |

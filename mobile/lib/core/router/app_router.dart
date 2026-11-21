@@ -16,6 +16,7 @@ import '../../features/appointments/appointment_detail_screen.dart';
 import '../../features/appointments/my_appointments_screen.dart';
 import '../../features/appointments/reschedule_screen.dart';
 import '../../features/assistant/assistant_screen.dart';
+import '../../features/auth/centro_selector.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/availability/availability_screen.dart';
@@ -679,8 +680,8 @@ class _HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Centro médico: ${session.organizationSlug ?? "—"}',
+                NombreDelCentro(
+                  slug: session.organizationSlug,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: Marca.ink500),
                 ),
