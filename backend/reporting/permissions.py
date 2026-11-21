@@ -55,3 +55,15 @@ class CanReadKpis(RequiresPermission):
     porque muestra ingresos, y eso no se le da a quien sólo arma listados."""
 
     code = "reporting.kpi.read"
+
+
+class CanReadAccounting(RequiresPermission):
+    """US-50 — la contabilidad: ingresos, honorarios, gastos y utilidad."""
+
+    code = "finance.accounting.read"
+
+
+class CanManageExpenses(RequiresPermission):
+    """US-50 — cargar gastos y ajustar la comisión de la pasarela."""
+
+    code = "finance.expense.manage"

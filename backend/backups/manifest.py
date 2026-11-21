@@ -168,6 +168,10 @@ TABLES: tuple[Table, ...] = (
 
     # ---------- Reportes ----------
     Table("reporting", "SavedReport", "Reportes guardados"),
+    # US-50: la contabilidad. Los gastos apuntan a sucursales (más arriba) y la
+    # comisión de la pasarela es una fila por organización.
+    Table("reporting", "Expense", "Gastos"),
+    Table("reporting", "FinanceSettings", "Comisión de la pasarela"),
 
     # ---------- Sólo copia, nunca restauración ----------
     # La organización en sí no entra en ninguna de las dos listas: es el

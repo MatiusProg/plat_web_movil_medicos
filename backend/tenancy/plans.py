@@ -56,6 +56,8 @@ PLAN_RULES = {
                                       "noshow/scoring.py y el comando train_noshow omiten a las organizaciones sin la función"),
     "waitlist": ("aplicado", "appointments/waitlist.py y waitlist_views.py · anotarse en la lista de espera y su resumen (US-52); "
                              "el proceso process_waitlist omite a las organizaciones sin la función"),
+    "accounting": ("aplicado", "reporting/finance_views.py · el área de contabilidad: ingresos, honorarios, gastos y "
+                               "utilidad, y las preguntas por voz sobre ellos (US-50)"),
     "ai_summaries": ("pendiente", "resúmenes por IA, US-39 a US-42 (Sprint 4)"),
     "online_payment": ("aplicado", "payments/views.py · checkout del pago en línea (US-18)"),
     "storage_mb": ("no_aplica", "el sistema no guarda archivos de la organización: "

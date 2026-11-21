@@ -1,0 +1,334 @@
+US-50 — FINANZAS POR VOZ Y AREA DE CONTABILIDAD
+Guia para probar, mostrar y defender EN LA VERSION DESPLEGADA
+=====================================================================
+
+Esta guia es para el sistema desplegado (Railway + Supabase), no para el
+entorno local. Todo lo que dice "dato a confirmar" depende de la base de
+produccion y se llena al entrar, no se da por supuesto.
+
+  Frontend:  https://platwebmovilmedicos-production-ae19.up.railway.app
+  Backend:   https://web-production-872fa.up.railway.app/api
+
+Las pruebas automaticas (1599 en la suite del backend, 96 propias de US-50)
+corrieron contra una base local de pruebas. Lo que se comprueba aqui, en
+produccion, es lo que falta: que lo desplegado se comporta igual con datos
+reales.
+
+
+1. QUE ES, EN DOS FRASES
+---------------------------------------------------------------------
+La administracion del centro ve cuanto entra, cuanto se devuelve, cuanto se
+queda la pasarela, cuanto se paga a los profesionales, cuanto se gasta y que
+queda (la utilidad). Puede agruparlo y compararlo, exportarlo, y preguntarlo
+hablando o escribiendo ("cuanto ganamos este mes").
+
+Es de los planes Pro y Premium. Solo la Administracion lo ve.
+
+
+2. PREPARAR LA DEMOSTRACION EN LO DESPLEGADO
+---------------------------------------------------------------------
+2.1 Que el despliegue este hecho
+  - El PR de US-50 esta fusionado en main y Railway termino de desplegar.
+  - Railway aplica las migraciones solo en cada arranque (scripts/start.sh):
+    reporting/0004 (gastos, ajustes, permisos), catalog/0008 (honorario) y
+    tenancy/0008 (funcion "accounting" en Pro y Premium).
+  - Comprobar: entrar con el admin, el menu Organizacion muestra
+    "Contabilidad". Si no aparece: revisar el despliegue y los permisos del
+    rol (finance.accounting.read lo reciben los roles de Administracion
+    existentes por la migracion).
+
+2.2 Con que usuario
+  - Un administrador REAL de la organizacion, en un centro con plan Pro o
+    Premium. La clave la tiene el equipo; no esta en esta guia ni en el repo.
+  - Un centro con plan Basico sirve para mostrar el bloqueo (ver seccion 4).
+
+2.3 Datos que hay que confirmar al entrar (anotarlos aqui)
+  - Organizacion y plan: ______________________
+  - Sedes (nombres exactos): ______________________
+  - Medicos (nombres exactos, y si hay apellidos repetidos): ______________
+  - Rango de fechas con pagos (primero y ultimo): ______________________
+  - Monedas con pagos (BOB, USD...): ______________________
+  - Hay devoluciones? ______   Hay pagos en efectivo? ______
+  Esto define que consultas dan resultado. Una pregunta sobre un periodo sin
+  pagos debe responder "No hay movimientos", y es un buen caso para mostrar.
+
+2.4 Datos de demostracion que hay que cargar (la contabilidad parte vacia)
+  Un centro recien actualizado tiene comision 0 %, honorarios 0 % y ningun
+  gasto, asi que las tarjetas de Comision, Honorarios y Gastos mostrarian 0.
+  Para que la demostracion se vea completa hay que cargar, desde la propia
+  pantalla (no hace falta tocar la base):
+    a) Pestana Comision: el porcentaje de la pasarela (por ejemplo 3,6 %).
+    b) Profesionales > editar > Honorario (%): uno por medico.
+    c) Pestana Gastos: varios gastos de los ultimos 2 o 3 meses, de distintas
+       categorias y sedes, y algunos "General (todo el centro)".
+  AVISO: esto escribe en datos reales de la organizacion. Hacerlo solo en un
+  centro de pruebas o con permiso de quien administra el centro, y borrar
+  despues los gastos de demostracion si es un centro de verdad.
+
+
+3. GUION DE LA DEMOSTRACION (7 MINUTOS)
+---------------------------------------------------------------------
+Paso 1 - Resumen (1 min)
+  Abrir Contabilidad. Mostrar las seis tarjetas: Ingresos, Devoluciones,
+  Comision, Honorarios, Gastos y Utilidad. Leer la formula al pie:
+  utilidad = ingresos - devoluciones - comision - honorarios - gastos.
+
+Paso 2 - Periodos y filtros (1 min)
+  Botones Hoy / 7 dias / Este mes / Mes pasado / 3 meses.
+  Filtrar por Sucursal y por Medico.
+
+Paso 3 - Comparar (30 s)
+  Marcar "Comparar con el periodo anterior". Aparecen las variaciones con
+  flecha y texto (no solo color). Si el periodo anterior estaba en cero, dice
+  "Sin periodo anterior con que comparar" y no inventa un porcentaje.
+
+Paso 4 - Agrupar (1,5 min)
+  Agrupar por Sede, Medico, Especialidad, Dia, Semana, Mes, Trimestre.
+  Mostrar que la fila Total no cambia al cambiar el criterio. Los gastos
+  generales (sin sede) tienen su propia fila "Gastos generales".
+
+Paso 5 - Voz (2 min)
+  Usar "Preguntale a tus numeros" (boton Hablar o escribir; la voz necesita
+  Chrome o Edge y permiso de microfono; sin ellos se escribe). Ver las
+  consultas de la seccion 5. Despues de la respuesta, "Ver en la tabla"
+  aplica esos filtros a la pantalla.
+
+Paso 6 - Gastos y comision (1 min)
+  Pestana Gastos: cargar un gasto (categoria, sede o General, monto, moneda,
+  nota), filtrar por categoria, borrar. Pestana Comision: cambiar el
+  porcentaje y ver que los numeros se recalculan.
+
+Paso 7 - Exportar y honorario (30 s)
+  Exportar PDF / Excel / CSV con la agrupacion elegida.
+  En Profesionales, abrir uno: campo "Honorario (%)" (solo lo ve quien maneja
+  la contabilidad).
+
+
+4. COMO VERIFICAR QUE LOS NUMEROS ESTAN BIEN (EN PRODUCCION)
+---------------------------------------------------------------------
+  a) Elegir un mes completo con pagos, sin agrupar. Anotar ingresos,
+     devoluciones, comision, honorarios y gastos.
+  b) Agrupar por Sede, luego Medico, Mes y Trimestre: la fila Total debe ser
+     identica en todas.
+  c) Comprobar a mano la utilidad con la formula.
+  d) Contrastar los ingresos con otra fuente que ya exista en lo desplegado:
+     el panel de Indicadores (Organizacion > Indicadores) muestra "Ingresos por
+     fichas" del mismo rango y debe dar lo mismo que la tarjeta Ingresos
+     (Indicadores cuenta los pagos cobrados; si hay devoluciones, la
+     contabilidad las muestra aparte).
+  e) Cambiar la comision en la pestana Comision (por ejemplo a 0 %): la
+     comision baja a 0,00 y la utilidad sube en ese monto. Volver a dejarla.
+
+Casos que se deben probar para mostrar los bordes:
+  - Gasto con monto 0 o negativo ............. se rechaza
+  - Moneda de mas de 3 letras ................ se rechaza
+  - Fecha de gasto de hace anios / muy futura . se rechaza
+  - Desde posterior a Hasta .................. avisa, no calcula
+  - Comision menor a 0 o mayor a 100 ......... se rechaza
+  - Honorario menor a 0 o mayor a 100 ........ se rechaza
+  - Periodo sin datos ........................ muestra aviso, no error
+  - Gasto en otra moneda ..................... aparece un bloque aparte; las
+    monedas nunca se mezclan
+  - Usuario sin permiso (recepcion, medico) .. pantalla "No tienes permiso"
+  - Centro con plan Basico ................... mensaje de plan, sin pantalla
+    rota (la API responde 403 plan_limit)
+
+
+5. CONSULTAS POR VOZ
+---------------------------------------------------------------------
+Estado de la prueba: estas frases se probaron con el analizador local contra
+nombres de sedes y medicos de un centro de prueba y con las 96 pruebas
+automaticas. NO se han probado todavia en lo desplegado. Hacerlo en el
+ensayo previo y marcar cada una:  [ ] funciona   [ ] no funciona.
+
+Donde dice [sede] o [medico], usar un nombre real tal como esta en el centro
+(anotado en 2.3). Con el medico basta el apellido si es unico ("la doctora
+Castro"); si dos medicos comparten apellido, el sistema pide el nombre
+completo, y eso tambien es un buen caso para mostrar.
+
+Cuanto entra y cuanto queda
+  [ ] cuanto ganamos este mes                    (utilidad, mes en curso)
+  [ ] cuanto ganamos el mes pasado
+  [ ] cuanto facturamos en [mes con pagos]       (ingresos)
+  [ ] cuanto facturamos hoy
+  [ ] ingresos de ayer
+  [ ] ingresos de esta semana
+  [ ] ingresos de la semana pasada
+  [ ] ingresos de los ultimos 15 dias
+  [ ] ingresos de las ultimas 4 semanas
+  [ ] dame un resumen de este mes                (devuelve la utilidad)
+
+Agrupadas
+  [ ] utilidad por sede del mes pasado
+  [ ] utilidad por medico de los ultimos 3 meses
+  [ ] ingresos por especialidad este anio
+  [ ] ingresos por dia de esta semana
+  [ ] ingresos por semana de [mes con pagos]
+  [ ] ingresos por mes de este anio
+  [ ] ingresos por trimestre de este anio
+
+Por medico
+  [ ] cuanto facturo la doctora [apellido] en [mes con pagos]
+  [ ] honorarios de la doctora [apellido] en [mes con pagos]
+  [ ] honorarios por medico del mes pasado
+  [ ] ticket promedio de la doctora [apellido]
+
+Por sede, gastos, comision, devoluciones
+  [ ] gastos de este mes
+  [ ] gastos por sede del mes pasado
+  [ ] gastos de la sede [sede] este mes
+  [ ] gastos de la sede [sede] de los ultimos 3 meses por semana
+  [ ] comision de la pasarela de este mes
+  [ ] devoluciones de este mes
+  [ ] ticket promedio por sede de [mes con pagos]
+
+Comparar
+  [ ] comparate este mes con el anterior         (utilidad vs periodo anterior)
+  [ ] comparate los ingresos de [mes] con el periodo anterior
+  [ ] utilidad de este mes comparada
+
+Frases que DEBEN rechazarse (para mostrar que no adivina)
+  [ ] ingresos y gastos ................. "Pide una cifra por vez"
+  [ ] ingresos por sede y por medico .... "Agrupa por una sola cosa a la vez"
+  [ ] ingresos de enero y marzo ......... "Pediste mas de un mes..."
+  [ ] ingresos de la doctora [nombre que no existe] .... lo dice
+  [ ] hola ............................... "No supe que cifra quieres..."
+  [ ] (vacio) ............................ "No escuche nada"
+
+Para la defensa (extras)
+  - cuanto ganamos este anio
+  - utilidad por mes de este anio
+  - utilidad por trimestre de este anio
+  - ingresos por sede de los ultimos 3 meses
+  - honorarios por medico de los ultimos 3 meses
+  - gastos por sede de los ultimos 3 meses
+  - utilidad de la sede [sede] del mes pasado
+  - comision de la pasarela de los ultimos 3 meses
+  - ticket promedio por medico de [mes con pagos]
+  - comparate la utilidad de este mes con el anterior
+  - cuanto ganamos en enero de 2020 (periodo sin datos: "No hay movimientos")
+
+Nota: con GEMINI_API_KEY configurada en Railway la frase pasa por el modelo;
+sin ella funciona igual con el analizador local. La respuesta indica cual
+uso ("generated_by": gemini o plantilla). Comprobar en produccion cual de los
+dos esta activo antes de la defensa.
+
+
+6. PREGUNTAS PROBABLES DEL JURADO Y RESPUESTAS
+---------------------------------------------------------------------
+P: Quien calcula las cifras, el modelo de IA?
+R: No. Las calcula Python en reporting/finance.py. El modelo, si responde,
+   solo traduce la frase a una consulta (metrica, periodo, comparar) con una
+   lista cerrada que se valida. La frase de respuesta tambien la arma Python
+   con lo que calculo. El modelo no ve datos ni nombres de medicos.
+
+P: Y si el modelo se equivoca o inventa algo?
+R: Sede, medico y agrupacion los decide Python ANTES de llegar al modelo y se
+   sacan de la frase, asi que no puede inventarlos ni ignorarlos. Lo que el
+   modelo devuelva se valida (metrica de la lista, fechas validas, rango
+   razonable); si no pasa, no se ejecuta nada y se explica por que.
+
+P: Que pasa si no hay proveedor de IA?
+R: Funciona igual con el analizador local por reglas. Lo que no entiende lo
+   dice; no improvisa.
+
+P: Como se evita contar dos veces un pago devuelto?
+R: Ingreso = pago cobrado por su fecha de cobro. Devolucion = pago devuelto por
+   su fecha de DEVOLUCION. Un pago cobrado en octubre y devuelto en noviembre
+   suma en octubre y resta en noviembre: cada mes dice lo que paso en el.
+   Comision y honorarios solo se calculan sobre lo cobrado y no devuelto.
+
+P: Por que la suma de los grupos siempre da el total?
+R: Cada comision y honorario se redondea al centavo por pago, y cada evento
+   cae en un solo grupo. Hay una prueba por cada agrupacion que lo verifica.
+
+P: Se mezclan monedas?
+R: Nunca. Todo va por moneda: si hay BOB y USD salen dos bloques.
+
+P: Como se aisla la informacion entre organizaciones?
+R: Las tablas nuevas (gastos y ajustes) tienen RLS en PostgreSQL con
+   FORCE ROW LEVEL SECURITY, mas una clave foranea compuesta que impide
+   colgar un gasto de una sucursal de otra organizacion. Hay pruebas de
+   aislamiento en test_isolation.py y en test_us50.py.
+
+P: Quien puede verlo?
+R: Permisos finance.accounting.read (ver) y finance.expense.manage (cargar
+   gastos, comision y honorarios), solo para la Administracion. Ademas el plan
+   debe incluir la funcion "accounting" (Pro y Premium); el Basico recibe
+   403 plan_limit con un mensaje claro. El honorario de cada profesional solo
+   lo ve quien tiene esos permisos.
+
+P: Que queda registrado en la bitacora?
+R: Quien consulto, exporto, cargo o borro gastos, y cambio la comision. De las
+   consultas por voz se registra la metrica y la agrupacion, NUNCA la frase
+   dictada, porque puede nombrar a un profesional.
+
+P: Por que la comision y el honorario son porcentajes?
+R: Es lo que pide la ampliacion del 17/11: comision de pasarela configurable y
+   honorario (%) por profesional. Una comision real de Stripe tiene un fijo
+   mas un porcentaje; aqui se modela solo el porcentaje, configurable.
+
+P: Que tan bien probado esta?
+R: 96 pruebas propias en test_us50.py (calculo con datos que se suman a mano,
+   cada agrupacion, cortes de dia/semana/mes/trimestre en la zona horaria del
+   centro, devoluciones entre meses, bordes, permisos, plan, aislamiento, voz
+   con el modelo simulado y bitacora). Suite completa del backend: 1599
+   pruebas pasadas, mas dos casos de aislamiento nuevos. Antes de subir se
+   comparo el total de ingresos con una suma directa en SQL sobre una base
+   local de 1.913 pagos y coincidio; en produccion se contrasta con el panel
+   de Indicadores (seccion 4d).
+
+P: Que NO hace todavia? (decirlo con honestidad)
+R: - La voz no filtra por categoria de gasto (para eso esta el filtro de la
+     pestana Gastos).
+   - No hay servicios/medicos top, cierre de caja diario en PDF ni proyeccion
+     y alertas: quedaron como trabajo futuro por el congelamiento del backend
+     del 21/11.
+   - No hay inventario de insumos: los insumos son gastos con categoria.
+   - Las capturas de pantalla en 390 y 1280 px, claro y oscuro, estan
+     pendientes.
+
+P: Por que gastos manuales y no un inventario?
+R: Un inventario completo (stock, entradas, salidas, costos) es otra historia.
+   Con gastos por sucursal y categoria se obtiene lo que la contabilidad
+   necesita (que entre a la utilidad) con una fraccion del trabajo.
+
+P: Que se podria mejorar?
+R: Filtrar por categoria en la voz, exportar con graficos, cierre de caja por
+   dia (efectivo vs Stripe), proyeccion del mes y alertas (sede en perdida,
+   caida fuerte, gasto atipico), comision con fijo + porcentaje.
+
+
+7. ARCHIVOS CLAVE (POR SI PIDEN VER CODIGO)
+---------------------------------------------------------------------
+Backend
+  reporting/finance.py          el calculo (ingresos, devoluciones, comision,
+                                honorarios, gastos, utilidad, agrupar,
+                                comparar, serie de 6 meses)
+  reporting/finance_voice.py    de la frase a la consulta + frase de respuesta
+  reporting/finance_views.py    endpoints, permisos, plan, bitacora, gastos
+  reporting/models.py           Expense y FinanceSettings
+  catalog/models.py             Practitioner.fee_percent
+  tests/test_us50.py            las pruebas
+Frontend
+  paginas/Contabilidad.tsx      la pantalla
+  api/finanzas.ts               el cliente
+  paginas/Profesionales.tsx     campo Honorario (%)
+Documentos
+  docs/sprints/sprint-4/us-50-finanzas-contabilidad.md
+
+
+8. CHEQUEO RAPIDO ANTES DE LA DEFENSA (EN LO DESPLEGADO)
+---------------------------------------------------------------------
+  [ ] PR fusionado y Railway desplegado sin errores
+  [ ] El menu muestra "Contabilidad" con el admin del centro
+  [ ] Plan del centro: Pro o Premium
+  [ ] Datos de demostracion cargados (comision, honorarios, gastos)
+  [ ] Datos de 2.3 anotados (sedes, medicos, meses con pagos)
+  [ ] Resumen, agrupar, comparar y exportar probados
+  [ ] Cada consulta de la seccion 5 marcada como funciona / no funciona
+  [ ] 3 consultas por voz con el microfono real (Chrome o Edge)
+  [ ] Un gasto en otra moneda para mostrar monedas separadas
+  [ ] Una devolucion real o creada para mostrar la tarjeta Devoluciones
+  [ ] Pantalla en ancho de telefono (390 px) y en modo oscuro
+  [ ] Los gastos de demostracion se borran despues si el centro es real

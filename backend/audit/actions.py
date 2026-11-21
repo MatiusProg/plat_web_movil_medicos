@@ -72,6 +72,14 @@ class Action:
     # una persona.
     PATIENT_VOICE_QUERY = "patient.voice.query"
     PATIENT_RECEIPTS_EXPORT = "patient.receipts.export"
+    # US-50 — la contabilidad. Se asienta qué se consultó (métrica, agrupación),
+    # nunca la frase dictada.
+    FINANCE_QUERY = "finance.query"
+    FINANCE_EXPORT = "finance.export"
+    FINANCE_EXPENSE_CREATE = "finance.expense.create"
+    FINANCE_EXPENSE_UPDATE = "finance.expense.update"
+    FINANCE_EXPENSE_DELETE = "finance.expense.delete"
+    FINANCE_SETTINGS_UPDATE = "finance.settings.update"
 
     # ---------- Asistente — US-31, US-32 y US-34 ------------------------
     # Se audita la consulta, nunca su texto: quien le cuenta sus síntomas a un
@@ -154,6 +162,12 @@ LABELS = {
     Action.REPORT_DELETE: "Reporte eliminado",
     Action.PATIENT_VOICE_QUERY: "Comprobantes consultados por voz o texto",
     Action.PATIENT_RECEIPTS_EXPORT: "Comprobantes descargados en PDF",
+    Action.FINANCE_QUERY: "Contabilidad consultada",
+    Action.FINANCE_EXPORT: "Contabilidad exportada",
+    Action.FINANCE_EXPENSE_CREATE: "Gasto cargado",
+    Action.FINANCE_EXPENSE_UPDATE: "Gasto modificado",
+    Action.FINANCE_EXPENSE_DELETE: "Gasto eliminado",
+    Action.FINANCE_SETTINGS_UPDATE: "Comisión de la pasarela modificada",
     Action.ASSISTANT_QUERY: "Consulta al asistente de orientación",
     Action.ASSISTANT_EMERGENCY: "Derivación a emergencia por el asistente",
     Action.ASSISTANT_REINDEX: "Catálogo del asistente reindexado",

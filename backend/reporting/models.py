@@ -16,6 +16,7 @@ no al guardar.
 
 import uuid
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -74,3 +75,87 @@ class SavedReport(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Expense(models.Model):
+    """US-50 — Un gasto de la organización o de una sucursal.
+
+    Es el dato que la contabilidad no puede sacar de los pagos: el alquiler, los
+    insumos, los sueldos. Se carga a mano, con una categoría cerrada, y entra a
+    la utilidad. ``branch`` vacío es un gasto **general** del centro (no de una
+    sede en particular).
+
+    Un gasto no se mezcla entre monedas: lleva la suya, y la contabilidad suma
+    por moneda.
+    """
+
+    class Category(models.TextChoices):
+        SUPPLIES = "insumos", "Insumos"
+        RENT = "alquiler", "Alquiler"
+        PAYROLL = "sueldos", "Sueldos"
+        UTILITIES = "servicios", "Servicios"
+        OTHER = "otros", "Otros"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.CASCADE,
+        related_name="expenses",
+    )
+    branch = models.ForeignKey(
+        "catalog.Branch", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="expenses",
+    )
+    category = models.CharField(max_length=12, choices=Category.choices)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    spent_on = models.DateField()
+    note = models.CharField(max_length=200, blank=True, default="")
+    created_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="expenses_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "expenses"
+        verbose_name = "gasto"
+        verbose_name_plural = "gastos"
+        ordering = ["-spent_on", "-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="ck_expense_amount",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["organization", "spent_on"],
+                         name="ix_expense_org_date"),
+        ]
+
+    def __str__(self):
+        return f"{self.category} · {self.amount} {self.currency}"
+
+
+class FinanceSettings(models.Model):
+    """US-50 — Cuánto cobra cada pasarela, por organización.
+
+    ``stripe_percent`` es el porcentaje que se queda la pasarela de los pagos en
+    línea (Stripe y el simulado); el efectivo en ventanilla no tiene comisión.
+    Una fila por organización, creada al primer uso.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.OneToOneField(
+        "tenancy.Organization", on_delete=models.CASCADE,
+        related_name="finance_settings",
+    )
+    stripe_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "finance_settings"
+        verbose_name = "ajustes de finanzas"
+        verbose_name_plural = "ajustes de finanzas"
