@@ -21,7 +21,7 @@ from catalog.models import (
     Specialty,
 )
 from patients.models import Patient, PatientHistoryEntry
-from reporting.models import SavedReport
+from reporting.models import Expense, FinanceSettings, SavedReport
 from scheduling.models import Schedule, ScheduleBlock
 from tenancy.context import no_tenant_context, platform_admin_context, tenant_context
 from tenancy.models import (
@@ -230,9 +230,10 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
-        # US-23 agrega appointments.appointment.book_at_counter
-        # para reservar citas desde recepción.
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1
+        # US-23 agrega appointments.appointment.book_at_counter para reservar
+        # citas desde recepción; US-50 suma los dos permisos de finanzas (el
+        # último término).
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 2
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()
@@ -535,6 +536,35 @@ def test_un_reporte_no_pertenece_a_un_usuario_de_otra_organizacion(
                 SavedReport.objects.create(
                     organization=org_a, owner=user_b, name="Ajeno",
                     dataset="patients", definition={"dataset": "patients"},
+                )
+
+
+def test_no_se_ven_los_gastos_ni_la_comision_de_otra_organizacion(
+    org_a, org_b, branches_a,
+):
+    """US-50 — lo que gasta y lo que le cobra la pasarela al vecino es su cuenta."""
+    with tenant_context(org_a.id):
+        Expense.objects.create(
+            organization=org_a, branch=branches_a["centro"], category="insumos",
+            amount=10, currency="BOB", spent_on=dt.date(2026, 10, 1),
+        )
+        FinanceSettings.objects.create(organization=org_a, stripe_percent=3)
+
+    with tenant_context(org_b.id):
+        assert Expense.objects.count() == 0
+        assert FinanceSettings.objects.count() == 0
+
+
+def test_un_gasto_no_se_cuelga_de_una_sucursal_de_otra_organizacion(
+    org_a, branch_b,
+):
+    """La clave foránea compuesta `(branch_id, organization_id)`."""
+    with tenant_context(org_a.id):
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                Expense.objects.create(
+                    organization=org_a, branch=branch_b, category="insumos",
+                    amount=10, currency="BOB", spent_on=dt.date(2026, 10, 1),
                 )
 
 

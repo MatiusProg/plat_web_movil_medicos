@@ -29,7 +29,20 @@ class PractitionerWriteSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Practitioner
-        fields = ["first_name", "last_name", "license_number", "specialties", "branches"]
+        fields = ["first_name", "last_name", "license_number", "fee_percent",
+                  "specialties", "branches"]
+        extra_kwargs = {"fee_percent": {"required": False}}
+
+    def validate_fee_percent(self, value):
+        """US-50 — el honorario es plata de la organización: quien no maneja la
+        contabilidad no lo cambia, aunque pueda editar al profesional."""
+        request = self.context.get("request")
+        usuario = getattr(request, "user", None)
+        if not (usuario and usuario.has_permission("finance.expense.manage")):
+            raise serializers.ValidationError(
+                "No tienes permiso para cambiar el honorario del profesional."
+            )
+        return value
 
     def get_fields(self):
         fields = super().get_fields()
@@ -80,7 +93,15 @@ class PractitionerAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Practitioner
         fields = ["id", "first_name", "last_name", "full_name", "license_number",
-                  "is_active", "specialties", "branches"]
+                  "is_active", "specialties", "branches", "fee_percent"]
+
+    def to_representation(self, instance):
+        datos = super().to_representation(instance)
+        # US-50 — el honorario solo lo ve quien ve la contabilidad.
+        usuario = getattr(self.context.get("request"), "user", None)
+        if not (usuario and usuario.has_permission("finance.accounting.read")):
+            datos.pop("fee_percent", None)
+        return datos
 
     def get_specialties(self, obj):
         return [{"id": str(s.id), "name": s.name} for s in obj.specialties.all()]

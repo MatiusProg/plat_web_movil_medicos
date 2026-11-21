@@ -9,6 +9,8 @@ export interface ProfesionalAdmin {
   full_name: string
   license_number: string
   is_active: boolean
+  /** US-50: solo llega a quien ve la contabilidad. Porcentaje como texto. */
+  fee_percent?: string
   specialties: Referencia[]
   branches: Referencia[]
 }
@@ -17,6 +19,8 @@ export interface ProfesionalEscritura {
   first_name: string
   last_name: string
   license_number: string
+  /** US-50: honorario (%) del profesional; solo lo manda quien maneja la contabilidad. */
+  fee_percent?: string
   specialties: string[]
   branches: string[]
 }

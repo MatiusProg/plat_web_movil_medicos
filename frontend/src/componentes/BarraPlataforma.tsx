@@ -172,6 +172,14 @@ const items: ItemMenu[] = [
         icono: 'indicadores',
         requiere: 'reporting.kpi.read',
     },
+    // US-50 — ingresos, honorarios, gastos y utilidad (planes Pro y Premium).
+    {
+        etiqueta: 'Contabilidad',
+        ruta: '/contabilidad',
+        seccion: 'Organización',
+        icono: 'indicadores',
+        requiere: 'finance.accounting.read',
+    },
     // US-35 — qué fichas futuras tienen más riesgo de inasistencia (plan Premium).
     {
         etiqueta: 'Riesgo de inasistencia',

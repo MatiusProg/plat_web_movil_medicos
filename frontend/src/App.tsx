@@ -38,6 +38,7 @@ import { MiHistoria } from '@/paginas/MiHistoria'
 import { Reportes } from '@/paginas/Reportes'
 import { Kpis } from '@/paginas/Kpis'
 import { RiesgoInasistencia } from '@/paginas/RiesgoInasistencia'
+import { Contabilidad } from '@/paginas/Contabilidad'
 import { ProyeccionDemanda } from '@/paginas/ProyeccionDemanda'
 import { Respaldos } from '@/paginas/Respaldos'
 import { Profesionales } from '@/paginas/Profesionales'
@@ -237,6 +238,8 @@ export default function App() {
                         {/* US-29: panel de indicadores (KPIs) */}
                         <Route path="/kpis" element={<Kpis />} />
                         <Route path="/proyeccion-demanda" element={<ProyeccionDemanda />} />
+                        {/* US-50: contabilidad (planes Pro y Premium) */}
+                        <Route path="/contabilidad" element={<Contabilidad />} />
                         {/* US-35: riesgo de inasistencia de las fichas futuras */}
                         <Route path="/riesgo-inasistencia" element={<RiesgoInasistencia />} />
                         {/* Característica general 6: copias de seguridad por plan */}

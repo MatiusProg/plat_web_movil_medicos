@@ -56,6 +56,7 @@ export function Profesionales() {
     setError(null)
     setForm({id:p?.id??null,value:p?{
       first_name:p.first_name,last_name:p.last_name,license_number:p.license_number,
+      ...(p.fee_percent!==undefined?{fee_percent:p.fee_percent}:{}),
       specialties:p.specialties.map(s=>s.id),branches:p.branches.map(b=>b.id),
     }:vacio()})
   }
@@ -63,6 +64,8 @@ export function Profesionales() {
     e.preventDefault();if(!form||saving)return
     const value={...form.value,first_name:form.value.first_name.trim(),
       last_name:form.value.last_name.trim(),license_number:form.value.license_number.trim()}
+    // US-50: un honorario en blanco no se manda (el backend lo deja como está).
+    if(!value.fee_percent)delete value.fee_percent
     if(!value.first_name||!value.last_name){setError('Ingresá el nombre y apellido.');return}
     setSaving(true);setError(null)
     try{
@@ -114,6 +117,7 @@ function FormularioProfesional({inicial,esEdicion,specialties,branches,saving,er
   saving:boolean;error:string|null;onChange:(v:ProfesionalEscritura)=>void
   onSubmit:(e:FormEvent)=>void;onClose:()=>void
 }) {
+  const {puede}=useSesion()
   const [value,setValue]=useState(inicial)
   const set=(next:ProfesionalEscritura)=>{setValue(next);onChange(next)}
   const campo=<K extends keyof ProfesionalEscritura>(key:K,v:ProfesionalEscritura[K])=>set({...value,[key]:v})
@@ -129,7 +133,7 @@ function FormularioProfesional({inicial,esEdicion,specialties,branches,saving,er
       <form onSubmit={e=>void onSubmit(e)}>
         <div className="max-h-[65vh] space-y-6 overflow-y-auto p-5 sm:p-6">
           {error&&<ErrorCatalogo mensaje={error}/>}
-          <section className="space-y-4"><div><h3 className="font-semibold">Información profesional</h3><p className="mt-1 text-sm text-tinta-500">El profesional puede registrarse antes de tener una cuenta de acceso.</p></div><div className="grid gap-4 sm:grid-cols-2"><Campo etiqueta="Nombres" required maxLength={80} value={value.first_name} onChange={e=>campo('first_name',e.target.value)} placeholder="Ej. Laura"/><Campo etiqueta="Apellidos" required maxLength={80} value={value.last_name} onChange={e=>campo('last_name',e.target.value)} placeholder="Ej. Gómez"/><div className="sm:col-span-2"><Campo etiqueta="Matrícula profesional (opcional)" maxLength={40} value={value.license_number} onChange={e=>campo('license_number',e.target.value)} placeholder="Ej. MP-1001" ayuda="Debe ser única dentro del centro médico cuando se registra."/></div></div></section>
+          <section className="space-y-4"><div><h3 className="font-semibold">Información profesional</h3><p className="mt-1 text-sm text-tinta-500">El profesional puede registrarse antes de tener una cuenta de acceso.</p></div><div className="grid gap-4 sm:grid-cols-2"><Campo etiqueta="Nombres" required maxLength={80} value={value.first_name} onChange={e=>campo('first_name',e.target.value)} placeholder="Ej. Laura"/><Campo etiqueta="Apellidos" required maxLength={80} value={value.last_name} onChange={e=>campo('last_name',e.target.value)} placeholder="Ej. Gómez"/><div className="sm:col-span-2"><Campo etiqueta="Matrícula profesional (opcional)" maxLength={40} value={value.license_number} onChange={e=>campo('license_number',e.target.value)} placeholder="Ej. MP-1001" ayuda="Debe ser única dentro del centro médico cuando se registra."/></div>{puede('finance.expense.manage')&&<div className="sm:col-span-2"><Campo etiqueta="Honorario (%)" type="number" inputMode="decimal" min={0} max={100} step="0.01" value={value.fee_percent??''} onChange={e=>campo('fee_percent',e.target.value)} placeholder="Ej. 40" ayuda="Porcentaje de lo cobrado que se le paga al profesional. Entra a la contabilidad."/></div>}</div></section>
           <section className="space-y-3 border-t border-tinta-200 pt-5 dark:border-tinta-800"><div><h3 className="font-semibold">Especialidades</h3><p className="mt-1 text-sm text-tinta-500">Seleccioná una o varias áreas de atención.</p></div><div className="grid gap-2 sm:grid-cols-2">{specialties.filter(s=>s.is_active||selectedSpecialties.has(s.id)).map(s=><label key={s.id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-tinta-200 p-3 text-sm transition hover:border-marca-300 dark:border-tinta-800 dark:hover:border-marca-800"><input type="checkbox" className="mt-0.5 size-4 accent-marca-600" checked={selectedSpecialties.has(s.id)} onChange={()=>toggle('specialties',s.id)}/><span className="min-w-0"><span className="block font-medium">{s.name}</span>{!s.is_active&&<span className="text-xs text-tinta-500">Inactiva · asociación existente</span>}</span></label>)}</div>{specialties.length===0&&<p className="text-sm text-tinta-500">No hay especialidades registradas. <Link to="/especialidades" className="font-semibold text-marca-600 dark:text-marca-400">Crear especialidad →</Link></p>}</section>
           <section className="space-y-3 border-t border-tinta-200 pt-5 dark:border-tinta-800"><div><h3 className="font-semibold">Sucursales donde atiende</h3><p className="mt-1 text-sm text-tinta-500">Podés asignar varias sedes al mismo profesional. No se crean registros duplicados.</p></div><div className="grid gap-2 sm:grid-cols-2">{branches.filter(b=>b.is_active||selectedBranches.has(b.id)).map(b=><label key={b.id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-tinta-200 p-3 text-sm transition hover:border-marca-300 dark:border-tinta-800 dark:hover:border-marca-800"><input type="checkbox" className="mt-0.5 size-4 accent-marca-600" checked={selectedBranches.has(b.id)} onChange={()=>toggle('branches',b.id)}/><span className="min-w-0"><span className="block font-medium">{b.name}</span><span className="mt-0.5 block text-xs text-tinta-500">{b.address||b.timezone}</span>{!b.is_active&&<span className="block text-xs text-tinta-500">Inactiva · asociación existente</span>}</span></label>)}</div>{branches.length===0&&<p className="text-sm text-tinta-500">No hay sucursales registradas. <Link to="/sucursales" className="font-semibold text-marca-600 dark:text-marca-400">Registrar sucursal →</Link></p>}<p className="text-xs leading-5 text-tinta-500">Si quitás una sede con agendas activas, el backend rechazará el cambio. Desactivá o reasigná esas agendas antes.</p></section>
         </div>

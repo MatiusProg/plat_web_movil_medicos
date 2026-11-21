@@ -12,6 +12,7 @@ Las agendas (`Schedule`, `ScheduleBlock`) viven en la app `scheduling`.
 import unicodedata
 import uuid
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -179,6 +180,12 @@ class Practitioner(models.Model):
     # Nombre normalizado —minúsculas, sin tildes— para la búsqueda de US-16.
     search_name = models.CharField(max_length=170, editable=False, default="")
     is_active = models.BooleanField(default=True)
+    # US-50 — porcentaje de lo cobrado que se le paga al profesional (0 a 100).
+    # La contabilidad lo descuenta de los pagos que no se devolvieron.
+    fee_percent = models.DecimalField(
+        "honorario (%)", max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
     specialties = models.ManyToManyField(
         Specialty, through="PractitionerSpecialty", related_name="practitioners",
     )
