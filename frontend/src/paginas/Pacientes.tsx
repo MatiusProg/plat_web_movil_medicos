@@ -385,18 +385,18 @@ export function Pacientes() {
 
 
     return (
-        <div className="mx-auto max-w-7xl space-y-7">
+        <main className="mx-auto max-w-7xl space-y-7 px-5 py-8 sm:py-10">
 
             <header>
-                <p className="text-sm font-semibold text-marca-400">
+                <p className="text-sm font-semibold text-marca-700 dark:text-marca-400">
                     Gestión de pacientes
                 </p>
 
-                <h1 className="mt-1 text-3xl font-bold tracking-tight text-tinta-50">
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">
                     Pacientes
                 </h1>
 
-                <p className="mt-2 text-sm text-tinta-400">
+                <p className="mt-2 text-sm text-tinta-500 dark:text-tinta-400">
                     Buscá, consultá y administrá los pacientes de la organización.
                 </p>
             </header>
@@ -405,14 +405,14 @@ export function Pacientes() {
             {mensajeError && (
                 <div
                     role="alert"
-                    className="rounded-xl border border-alerta-500/40 bg-alerta-500/10 px-4 py-3 text-sm text-alerta-200"
+                    className="rounded-xl border border-alerta-500/40 bg-alerta-500/10 px-4 py-3 text-sm text-alerta-700 dark:text-alerta-200"
                 >
                     {mensajeError}
                 </div>
             )}
 
 
-            <section className="rounded-2xl border border-tinta-800 bg-tinta-900 p-5">
+            <section className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 p-5">
 
                 <div className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
 
@@ -429,7 +429,7 @@ export function Pacientes() {
                     />
 
                     <div className="space-y-1.5">
-                        <label className="block text-sm font-medium text-tinta-300">
+                        <label className="block text-sm font-medium text-tinta-700 dark:text-tinta-300">
                             Estado
                         </label>
 
@@ -444,7 +444,7 @@ export function Pacientes() {
                                             | '',
                                     )
                             }
-                            className="w-full rounded-xl border border-tinta-700 bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-100 outline-none focus:border-marca-500"
+                            className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-900 dark:text-tinta-100 outline-none focus:border-marca-500"
                         >
                             <option value="">
                                 Todos
@@ -475,9 +475,9 @@ export function Pacientes() {
 
             {(puede('patients.patient.create') ||
                 puede('patients.patient.update')) && (
-                <section className="rounded-2xl border border-tinta-800 bg-tinta-900 p-5">
+                <section className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 p-5">
 
-                    <h2 className="text-lg font-semibold text-tinta-100">
+                    <h2 className="text-lg font-semibold text-tinta-900 dark:text-tinta-100">
                         {editandoId
                             ? 'Editar paciente'
                             : 'Registrar paciente'}
@@ -489,7 +489,7 @@ export function Pacientes() {
                     >
 
                         <div className="space-y-1.5">
-                            <label className="block text-sm font-medium text-tinta-300">
+                            <label className="block text-sm font-medium text-tinta-700 dark:text-tinta-300">
                                 Tipo de documento
                             </label>
 
@@ -507,7 +507,7 @@ export function Pacientes() {
                                             }),
                                         )
                                 }
-                                className="w-full rounded-xl border border-tinta-700 bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-100"
+                                className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-900 dark:text-tinta-100"
                             >
                                 <option value="CI">
                                     Cédula de identidad
@@ -598,7 +598,7 @@ export function Pacientes() {
                         />
 
                         <div className="space-y-1.5">
-                            <label className="block text-sm font-medium text-tinta-300">
+                            <label className="block text-sm font-medium text-tinta-700 dark:text-tinta-300">
                                 Sexo
                             </label>
 
@@ -614,7 +614,7 @@ export function Pacientes() {
                                             }),
                                         )
                                 }
-                                className="w-full rounded-xl border border-tinta-700 bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-100"
+                                className="w-full rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-900 dark:text-tinta-100"
                             >
                                 <option value="">
                                     Sin especificar
@@ -668,7 +668,7 @@ export function Pacientes() {
                                         setEditandoId(null)
                                         setFormulario(VACIO)
                                     }}
-                                    className="rounded-xl border border-tinta-700 px-4 py-2.5 text-sm font-semibold text-tinta-300 hover:bg-tinta-800"
+                                    className="rounded-xl border border-tinta-300 dark:border-tinta-700 px-4 py-2.5 text-sm font-semibold text-tinta-700 dark:text-tinta-300 hover:bg-tinta-100 dark:hover:bg-tinta-800"
                                 >
                                     Cancelar
                                 </button>
@@ -680,11 +680,11 @@ export function Pacientes() {
             )}
 
 
-            <section className="overflow-hidden rounded-2xl border border-tinta-800 bg-tinta-900">
+            <section className="overflow-hidden rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900">
 
-                <div className="flex items-center justify-between border-b border-tinta-800 px-5 py-4">
+                <div className="flex items-center justify-between border-b border-tinta-200 dark:border-tinta-800 px-5 py-4">
 
-                    <h2 className="font-semibold text-tinta-100">
+                    <h2 className="font-semibold text-tinta-900 dark:text-tinta-100">
                         Resultados
                     </h2>
 
@@ -698,7 +698,7 @@ export function Pacientes() {
 
                     <table className="min-w-full text-sm">
 
-                        <thead className="bg-tinta-950/40 text-left text-tinta-400">
+                        <thead className="bg-tinta-50 dark:bg-tinta-950/40 text-left text-tinta-500 dark:text-tinta-400">
                         <tr>
                             <th className="px-5 py-3">
                                 Paciente
@@ -723,16 +723,16 @@ export function Pacientes() {
                         </thead>
 
 
-                        <tbody className="divide-y divide-tinta-800">
+                        <tbody className="divide-y divide-tinta-200 dark:divide-tinta-800">
 
                         {pacientes.map(
                             paciente => (
                                 <tr
                                     key={paciente.id}
-                                    className="text-tinta-300"
+                                    className="text-tinta-700 dark:text-tinta-300"
                                 >
 
-                                    <td className="px-5 py-4 font-medium text-tinta-100">
+                                    <td className="px-5 py-4 font-medium text-tinta-900 dark:text-tinta-100">
                                         {paciente.full_name}
                                     </td>
 
@@ -763,7 +763,7 @@ export function Pacientes() {
                                                         paciente.id,
                                                     )
                                                 }
-                                                className="rounded-lg border border-tinta-700 px-3 py-2 text-xs font-semibold hover:bg-tinta-800"
+                                                className="rounded-lg border border-tinta-300 dark:border-tinta-700 px-3 py-2 text-xs font-semibold hover:bg-tinta-100 dark:hover:bg-tinta-800"
                                             >
                                                 Ver
                                             </button>
@@ -778,7 +778,7 @@ export function Pacientes() {
                                                             paciente.id,
                                                         )
                                                     }
-                                                    className="rounded-lg border border-tinta-700 px-3 py-2 text-xs font-semibold hover:bg-tinta-800"
+                                                    className="rounded-lg border border-tinta-300 dark:border-tinta-700 px-3 py-2 text-xs font-semibold hover:bg-tinta-100 dark:hover:bg-tinta-800"
                                                 >
                                                     Editar
                                                 </button>
@@ -795,7 +795,7 @@ export function Pacientes() {
                                                                 paciente,
                                                             )
                                                         }
-                                                        className="rounded-lg border border-alerta-500/40 px-3 py-2 text-xs font-semibold text-alerta-300 hover:bg-alerta-500/10"
+                                                        className="rounded-lg border border-alerta-500/40 px-3 py-2 text-xs font-semibold text-alerta-600 dark:text-alerta-300 hover:bg-alerta-500/10"
                                                     >
                                                         Desactivar
                                                     </button>
@@ -816,9 +816,9 @@ export function Pacientes() {
             {puede(
                 'patients.patient.merge',
             ) && (
-                <section className="rounded-2xl border border-tinta-800 bg-tinta-900 p-5">
+                <section className="rounded-2xl border border-tinta-200 dark:border-tinta-800 bg-white dark:bg-tinta-900 p-5">
 
-                    <h2 className="text-lg font-semibold text-tinta-100">
+                    <h2 className="text-lg font-semibold text-tinta-900 dark:text-tinta-100">
                         Fusionar duplicados
                     </h2>
 
@@ -836,7 +836,7 @@ export function Pacientes() {
                                         evento.target.value,
                                     )
                             }
-                            className="rounded-xl border border-tinta-700 bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-100"
+                            className="rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-900 dark:text-tinta-100"
                         >
                             <option value="">
                                 Paciente origen
@@ -868,7 +868,7 @@ export function Pacientes() {
                                         evento.target.value,
                                     )
                             }
-                            className="rounded-xl border border-tinta-700 bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-100"
+                            className="rounded-xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 px-3.5 py-2.5 text-sm text-tinta-900 dark:text-tinta-100"
                         >
                             <option value="">
                                 Paciente destino
@@ -907,16 +907,16 @@ export function Pacientes() {
 
 
             {detalle && (
-                <section className="rounded-2xl border border-marca-800 bg-marca-950/30 p-5">
+                <section className="rounded-2xl border border-marca-200 dark:border-marca-800 bg-marca-50 dark:bg-marca-950/30 p-5">
 
                     <div className="flex items-start justify-between gap-4">
 
                         <div>
-                            <p className="text-sm font-semibold text-marca-400">
+                            <p className="text-sm font-semibold text-marca-700 dark:text-marca-400">
                                 Detalle del paciente
                             </p>
 
-                            <h2 className="mt-1 text-xl font-bold text-tinta-100">
+                            <h2 className="mt-1 text-xl font-bold text-tinta-900 dark:text-tinta-100">
                                 {detalle.full_name}
                             </h2>
                         </div>
@@ -926,7 +926,7 @@ export function Pacientes() {
                             onClick={() =>
                                 setDetalle(null)
                             }
-                            className="rounded-lg px-3 py-2 text-sm text-tinta-400 hover:bg-tinta-800"
+                            className="rounded-lg px-3 py-2 text-sm text-tinta-500 dark:text-tinta-400 hover:bg-tinta-100 dark:hover:bg-tinta-800"
                         >
                             Cerrar
                         </button>
@@ -964,7 +964,7 @@ export function Pacientes() {
 
                     <div className="mt-6">
 
-                        <h3 className="font-semibold text-tinta-200">
+                        <h3 className="font-semibold text-tinta-800 dark:text-tinta-200">
                             Próximas fichas
                         </h3>
 
@@ -980,9 +980,9 @@ export function Pacientes() {
                                     ficha => (
                                         <div
                                             key={ficha.id}
-                                            className="rounded-xl border border-tinta-800 bg-tinta-950/40 px-4 py-3 text-sm"
+                                            className="rounded-xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-950/40 px-4 py-3 text-sm"
                                         >
-                                            <p className="font-medium text-tinta-200">
+                                            <p className="font-medium text-tinta-800 dark:text-tinta-200">
                                                 {
                                                     ficha.practitioner_name
                                                 }
@@ -1032,9 +1032,9 @@ export function Pacientes() {
                         }
                     }
                 >
-                    <div className="w-full max-w-md rounded-2xl border border-tinta-700 bg-tinta-900 p-6 shadow-2xl">
+                    <div className="w-full max-w-md rounded-2xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 p-6 shadow-2xl">
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -1054,15 +1054,15 @@ export function Pacientes() {
 
                         <h2
                             id="titulo-desactivar-paciente"
-                            className="mt-5 text-xl font-bold text-tinta-100"
+                            className="mt-5 text-xl font-bold text-tinta-900 dark:text-tinta-100"
                         >
                             Desactivar paciente
                         </h2>
 
 
-                        <p className="mt-2 text-sm leading-6 text-tinta-400">
+                        <p className="mt-2 text-sm leading-6 text-tinta-500 dark:text-tinta-400">
                             ¿Seguro que deseas desactivar a{' '}
-                            <strong className="text-tinta-200">
+                            <strong className="text-tinta-800 dark:text-tinta-200">
                                 {pacienteADesactivar.full_name}
                             </strong>
                             ?
@@ -1083,7 +1083,7 @@ export function Pacientes() {
                                 onClick={() =>
                                     setPacienteADesactivar(null)
                                 }
-                                className="rounded-xl border border-tinta-700 px-4 py-2.5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-xl border border-tinta-300 dark:border-tinta-700 px-4 py-2.5 text-sm font-semibold text-tinta-700 dark:text-tinta-300 transition hover:bg-tinta-100 dark:hover:bg-tinta-800 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Cancelar
                             </button>
@@ -1131,9 +1131,9 @@ export function Pacientes() {
                         }
                     }
                 >
-                    <div className="w-full max-w-lg rounded-2xl border border-tinta-700 bg-tinta-900 p-6 shadow-2xl">
+                    <div className="w-full max-w-lg rounded-2xl border border-tinta-300 dark:border-tinta-700 bg-white dark:bg-tinta-900 p-6 shadow-2xl">
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -1154,26 +1154,26 @@ export function Pacientes() {
 
                         <h2
                             id="titulo-fusionar-pacientes"
-                            className="mt-5 text-xl font-bold text-tinta-100"
+                            className="mt-5 text-xl font-bold text-tinta-900 dark:text-tinta-100"
                         >
                             Confirmar fusión de pacientes
                         </h2>
 
 
-                        <p className="mt-2 text-sm leading-6 text-tinta-400">
+                        <p className="mt-2 text-sm leading-6 text-tinta-500 dark:text-tinta-400">
                             El paciente origen será absorbido por el paciente destino.
                             El registro destino es el que se conservará.
                         </p>
 
 
-                        <div className="mt-5 grid gap-3 rounded-xl border border-tinta-800 bg-tinta-950/40 p-4 sm:grid-cols-2">
+                        <div className="mt-5 grid gap-3 rounded-xl border border-tinta-200 dark:border-tinta-800 bg-tinta-50 dark:bg-tinta-950/40 p-4 sm:grid-cols-2">
 
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-wide text-tinta-500">
                                     Origen
                                 </p>
 
-                                <p className="mt-1 font-semibold text-tinta-200">
+                                <p className="mt-1 font-semibold text-tinta-800 dark:text-tinta-200">
                                     {
                                         pacientes.find(
                                             paciente =>
@@ -1182,7 +1182,7 @@ export function Pacientes() {
                                     }
                                 </p>
 
-                                <p className="mt-1 text-xs text-red-300">
+                                <p className="mt-1 text-xs text-red-600 dark:text-red-300">
                                     Será absorbido
                                 </p>
                             </div>
@@ -1193,7 +1193,7 @@ export function Pacientes() {
                                     Destino
                                 </p>
 
-                                <p className="mt-1 font-semibold text-tinta-200">
+                                <p className="mt-1 font-semibold text-tinta-800 dark:text-tinta-200">
                                     {
                                         pacientes.find(
                                             paciente =>
@@ -1202,7 +1202,7 @@ export function Pacientes() {
                                     }
                                 </p>
 
-                                <p className="mt-1 text-xs text-emerald-300">
+                                <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
                                     Se conservará
                                 </p>
                             </div>
@@ -1224,7 +1224,7 @@ export function Pacientes() {
                                 onClick={() =>
                                     setConfirmandoFusion(false)
                                 }
-                                className="rounded-xl border border-tinta-700 px-4 py-2.5 text-sm font-semibold text-tinta-300 transition hover:bg-tinta-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-xl border border-tinta-300 dark:border-tinta-700 px-4 py-2.5 text-sm font-semibold text-tinta-700 dark:text-tinta-300 transition hover:bg-tinta-100 dark:hover:bg-tinta-800 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Cancelar
                             </button>
@@ -1249,7 +1249,7 @@ export function Pacientes() {
                 </div>
             )}
 
-        </div>
+        </main>
     )
 }
 
@@ -1267,7 +1267,7 @@ function Dato({
                 {etiqueta}
             </p>
 
-            <p className="mt-1 font-medium text-tinta-200">
+            <p className="mt-1 font-medium text-tinta-800 dark:text-tinta-200">
                 {valor}
             </p>
         </div>

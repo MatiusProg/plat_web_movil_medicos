@@ -20,6 +20,7 @@ import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/files/archivos.dart';
 import 'package:mobile/features/clinical_record/clinical_record_api.dart';
 import 'package:mobile/features/clinical_record/clinical_record_screen.dart';
+import 'package:mobile/features/clinical_record/signos_evolucion.dart';
 
 http.Response _json(Object cuerpo) => http.Response(
       jsonEncode(cuerpo),
@@ -54,11 +55,12 @@ Map<String, dynamic> _atencion(
   List<Map<String, dynamic>> medicamentos = const [],
   List<Map<String, dynamic>> ordenes = const [],
   Map<String, dynamic>? signos,
+  String fecha = '2026-09-20T14:00:00Z',
 }) =>
     {
       'id': id,
       'status': 'signed',
-      'appointment_starts_at': '2026-09-20T14:00:00Z',
+      'appointment_starts_at': fecha,
       'practitioner_name': 'Dra. Paz',
       'branch_name': sucursal,
       'reason': 'Dolor de cabeza.',
@@ -309,14 +311,16 @@ void main() {
       ]),
     });
 
+    // En la atención y, como es la única, también en «Mis signos vitales».
     expect(find.text('Signos vitales'), findsOneWidget);
-    expect(find.text('150/95 mmHg'), findsOneWidget);
-    expect(find.text('39,2 °C'), findsOneWidget);
-    expect(find.text('88 %'), findsOneWidget);
-    expect(find.text('62 kg'), findsOneWidget);
-    expect(find.text('24,2'), findsOneWidget);
-    expect(find.text('Alta'), findsNWidgets(2));
-    expect(find.text('Baja'), findsOneWidget);
+    expect(find.text('Mis signos vitales'), findsOneWidget);
+    expect(find.text('150/95 mmHg'), findsNWidgets(2));
+    expect(find.text('39,2 °C'), findsNWidgets(2));
+    expect(find.text('88 %'), findsNWidgets(2));
+    expect(find.text('62 kg'), findsNWidgets(2));
+    expect(find.text('24,2'), findsNWidgets(2));
+    expect(find.text('Alta'), findsNWidgets(4));
+    expect(find.text('Baja'), findsNWidgets(2));
     // Lo que no se tomó no aparece.
     expect(find.text('Glucosa'), findsNothing);
     // La corrección se agrega debajo; lo firmado sigue a la vista.
@@ -329,6 +333,91 @@ void main() {
       't1': _historia('Ana Ríos', [_atencion('e1', 'Sede Central', 'Migraña.')]),
     });
     expect(find.text('Signos vitales'), findsNothing);
+    expect(find.text('Mis signos vitales'), findsNothing);
+    expect(find.byType(GraficoSigno), findsNothing);
+  });
+
+  // US-53: la evolución. Las atenciones llegan de la más nueva a la más vieja
+  // (o en cualquier orden): el gráfico va de la más vieja a la más nueva.
+  Map<String, dynamic> conSignos(String id, String fecha, int sis, int dia,
+          double? kg, {List<Map<String, dynamic>> enmiendas = const []}) =>
+      _atencion(id, 'Sede Central', 'Control.', fecha: fecha, enmiendas: enmiendas,
+          signos: {
+            'systolic': sis,
+            'diastolic': dia,
+            'weight_kg': kg,
+            'alerts': {if (sis >= 140 || dia >= 90) 'blood_pressure': 'Alta'},
+          });
+
+  testWidgets('US-53: Mis signos vitales muestra la última y la evolución',
+      (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(tester, {
+      't1': _historia('Ana Ríos', [
+        conSignos('e2', '2026-10-21T14:00:00Z', 146, 92, 69.1),
+        _atencion('e0', 'Sede Central', 'Sin signos.',
+            fecha: '2026-11-01T14:00:00Z'),
+        conSignos('e1', '2026-08-23T14:00:00Z', 132, 84, 70.2),
+      ]),
+    });
+    expect(find.text('Mis signos vitales'), findsOneWidget);
+    // La última con signos es la de octubre, no la de noviembre sin signos.
+    expect(find.text('Última medición: 21/10/2026, Dra. Paz'), findsOneWidget);
+    expect(find.text('Presión arterial (mmHg)'), findsOneWidget);
+    expect(find.text('Peso (kg)'), findsOneWidget);
+    expect(find.byType(GraficoSigno), findsNWidgets(2));
+    expect(find.text('— Sistólica · normal 90–140'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) =>
+          w is Semantics &&
+          w.properties.label ==
+              'Presión arterial: 2 mediciones. '
+                  'La última, Sistólica 146, Diastólica 92 mmHg.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('US-53: con una sola medición lo dice', (tester) async {
+    _pantallaGrande(tester);
+    await _abrir(tester, {
+      't1': _historia('Ana Ríos', [
+        conSignos('e1', '2026-08-23T14:00:00Z', 120, 80, null),
+      ]),
+    });
+    // Sin peso tomado, no hay gráfico de peso.
+    expect(find.byType(GraficoSigno), findsOneWidget);
+    expect(find.text('Peso (kg)'), findsNothing);
+    expect(find.text('Con una sola medición todavía no hay evolución.'),
+        findsOneWidget);
+  });
+
+  test('US-53: los puntos van en orden y marcan la enmienda', () {
+    final enmienda = {
+      'id': 'm1',
+      'section': 'vital_signs',
+      'section_display': 'Signos vitales',
+      'text': 'Era 138.',
+      'author_name': 'Dra. Paz',
+      'created_at': '2026-10-22T10:00:00Z',
+    };
+    final atenciones = [
+      for (final j in [
+        conSignos('b', '2026-10-21T14:00:00Z', 146, 92, null, enmiendas: [enmienda]),
+        _atencion('x', 'Sede Central', 'Sin signos.'),
+        conSignos('a', '2026-08-23T14:00:00Z', 132, 84, 70.2),
+      ])
+        Atencion.fromJson(j),
+    ];
+    final p = puntosDe(presion, atenciones);
+    expect([for (final q in p) q.valores], [
+      [132.0, 84.0],
+      [146.0, 92.0],
+    ]);
+    expect([for (final q in p) q.enmendado], [false, true]);
+    // El peso sólo se tomó una vez.
+    expect(puntosDe(peso, atenciones).single.valores, [70.2]);
+    expect(ultimaMedicion(atenciones)!.id, 'b');
+    expect(ultimaMedicion([atenciones[1]]), isNull);
   });
 
   test('US-53: lee los signos, con decimales como texto o número', () {

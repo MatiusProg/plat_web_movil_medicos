@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SECCIONES, verHistorial, type Historial as DatosHistorial } from '@/api/atencion'
-import { VerSignos } from './SignosVitales'
+import { EvolucionSignos } from './EvolucionSignos'
+import { FilaSignos, VerSignos } from './SignosVitales'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { ErrorCatalogo, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
@@ -26,6 +27,8 @@ export function Historial() {
   const leer = puede('encounters.history.read')
   const [datos, setDatos] = useState<DatosHistorial | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // US-53: la evolución de los signos, al lado de la línea de tiempo.
+  const [vista, setVista] = useState<'linea' | 'evolucion'>('linea')
 
   const cargar = useCallback(async (signal?: AbortSignal) => {
     try { setDatos(await verHistorial(pacienteId, { token }, signal)); setError(null) }
@@ -50,7 +53,14 @@ export function Historial() {
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-tinta-900 dark:text-tinta-50">{datos.patient.full_name}</h1>
       <p className="mt-1.5 max-w-2xl text-[1.0625rem] text-tinta-500">{resumenHistorial(datos, 'Todavía no tiene atenciones firmadas.')}</p>
     </div>
-    <LineaDeTiempo datos={datos} />
+    {datos.encounters.some(e => e.vital_signs) && <div className="flex gap-1 border-b border-tinta-200 dark:border-tinta-800" role="tablist" aria-label="Vista del historial">
+      {([['linea', 'Línea de tiempo'], ['evolucion', 'Evolución']] as const).map(([id, nombre]) => <button key={id} type="button" role="tab"
+        aria-selected={vista === id} onClick={() => setVista(id)}
+        className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${vista === id ? 'border-marca-600 text-marca-700 dark:text-marca-400' : 'border-transparent text-tinta-500 hover:text-tinta-800 dark:hover:text-tinta-200'}`}>{nombre}</button>)}
+    </div>}
+    {vista === 'evolucion' && datos.encounters.some(e => e.vital_signs)
+      ? <div className={PANEL}><EvolucionSignos encuentros={datos.encounters} /></div>
+      : <LineaDeTiempo datos={datos} signosCompactos />}
   </main>
 }
 
@@ -62,12 +72,14 @@ export function Historial() {
  * firmado, que nunca se reemplaza. La receta y las órdenes (US-26) van al
  * pie de cada atención, con su PDF (US-27).
  */
-export function LineaDeTiempo({ datos, cabeza, pie }: {
+export function LineaDeTiempo({ datos, cabeza, pie, signosCompactos = false }: {
   datos: DatosHistorial
   /** Algo arriba de lo firmado; MiHistoria pone el resumen aprobado (US-39). */
   cabeza?: (e: DatosHistorial['encounters'][number]) => ReactNode
   /** Algo más al pie de cada atención; MiHistoria pone el enlace al chat (US-47). */
   pie?: (e: DatosHistorial['encounters'][number]) => ReactNode
+  /** US-53: el médico los lee en una fila; el paciente, en la grilla con su nombre completo. */
+  signosCompactos?: boolean
 }) {
   const [sucursal, setSucursal] = useState<string>('todas')
   const encuentros = datos.encounters.filter(e => sucursal === 'todas' || e.branch_name === sucursal)
@@ -91,7 +103,7 @@ export function LineaDeTiempo({ datos, cabeza, pie }: {
           {cabeza?.(e)}
           {(e.vital_signs || e.amendments.some(a => a.section === 'vital_signs')) && <div className="mt-3 space-y-1">
             <h3 className="text-sm font-medium text-tinta-700 dark:text-tinta-300">Signos vitales</h3>
-            <VerSignos signos={e.vital_signs} />
+            {signosCompactos ? <FilaSignos signos={e.vital_signs} /> : <VerSignos signos={e.vital_signs} />}
             {e.amendments.filter(a => a.section === 'vital_signs').map(a => <p key={a.id} className="ml-3 border-l-2 border-marca-400 pl-3 text-sm">
               <span className="block text-xs text-tinta-500">Enmienda de {a.author_name} · {fechaHora(a.created_at)}</span>
               <span className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{a.text}</span>

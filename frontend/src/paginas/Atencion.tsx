@@ -9,7 +9,7 @@ import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { AvisoCatalogo, ErrorCatalogo, INPUT, PANEL, SECONDARY, mensajeError } from './catalogo_comun'
 import { PanelReceta, type Pendientes } from './RecetaAtencion'
-import { EditorSignos, VerSignos } from './SignosVitales'
+import { EditorSignos, FilaSignos } from './SignosVitales'
 import { aTextos, leerSignos, mismosSignos, SIN_SIGNOS, type TextosSignos } from './signos_vitales'
 import { PanelResumenHistorial } from './ResumenHistorial'
 import { PanelChat } from './ChatAtencion'
@@ -158,7 +158,7 @@ export function Atencion() {
     <form onSubmit={e => void guardar(e)} className={`${PANEL} space-y-5`}>
       {firmado ? <section aria-labelledby="signos-titulo" className="space-y-2">
         <h2 id="signos-titulo" className="text-sm font-medium text-tinta-700 dark:text-tinta-300">Signos vitales</h2>
-        {encuentro.vital_signs ? <VerSignos signos={encuentro.vital_signs} /> : <p className="text-sm text-tinta-500">No se tomaron.</p>}
+        {encuentro.vital_signs ? <FilaSignos signos={encuentro.vital_signs} /> : <p className="text-sm text-tinta-500">No se tomaron.</p>}
         {encuentro.amendments.filter(a => a.section === 'vital_signs').map(a => <div key={a.id} className="ml-3 border-l-2 border-marca-400 pl-3 text-sm">
           <p className="text-xs text-tinta-500">Enmienda de {a.author_name} · {fechaHora(a.created_at)}</p>
           <p className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{a.text}</p>
