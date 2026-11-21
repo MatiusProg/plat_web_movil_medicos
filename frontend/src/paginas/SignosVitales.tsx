@@ -9,7 +9,7 @@
  */
 import { SIGNOS, type CampoSigno, type SignosVitales } from '@/api/atencion'
 import { INPUT } from './catalogo_comun'
-import { calcular, leerSignos, type TextosSignos } from './signos_vitales'
+import { calcular, filaCompacta, leerSignos, type TextosSignos } from './signos_vitales'
 
 const ALERTA_DE: Partial<Record<CampoSigno, keyof SignosVitales['alerts']>> = {
   systolic: 'blood_pressure', diastolic: 'blood_pressure', temperature: 'temperature', spo2: 'spo2',
@@ -71,4 +71,16 @@ export function VerSignos({ signos }: { signos: SignosVitales | null }) {
     </dl>
     <Imc bmi={signos.bmi} />
   </div>
+}
+
+/** Para el médico: todo en una línea, «PA 150/95 Alta · FC 88 · T 38,6 °C Alta · IMC 25,2». */
+export function FilaSignos({ signos }: { signos: SignosVitales | null }) {
+  if (!signos) return null
+  return <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm tabular-nums text-tinta-800 dark:text-tinta-100">
+    {filaCompacta(signos).map((p, i) => <span key={p.texto} className="inline-flex items-center gap-1.5">
+      {i > 0 && <span aria-hidden="true" className="text-tinta-400">·</span>}
+      <span className={p.alerta ? 'font-semibold text-alerta-700 dark:text-alerta-200' : ''}>{p.texto}</span>
+      {p.alerta && <Marca texto={p.alerta} />}
+    </span>)}
+  </p>
 }

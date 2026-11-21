@@ -28,9 +28,35 @@ Antes de US-53, si el médico anotaba la presión, quedaba como texto suelto en
    - Se corrigen con una **enmienda** en la sección «Signos vitales», que queda
      debajo de lo original.
 5. Se ven en tres lugares, con las marcas:
-   - en la atención firmada;
-   - en el historial del médico;
-   - en *Mi historia* del paciente, en la web y en el móvil.
+   - en la atención firmada y en el historial del médico, en una **fila
+     compacta**: «PA 150/95 Alta · FC 88 · T 38,6 °C Alta · IMC 25,2»;
+   - en *Mi historia* del paciente, en la web y en el móvil, con su nombre
+     completo.
+6. **Gráficas de evolución.**
+   - **Médico (web):** en el historial, la pestaña «Evolución» tiene un
+     selector con los signos que se tomaron alguna vez y la gráfica del
+     elegido.
+   - **Paciente (web y móvil):** arriba de *Mi historia*, «Mis signos
+     vitales» con la última medición y las gráficas de presión y peso.
+   - Van de la atención más vieja a la más nueva, con la **franja normal
+     sombreada**. El borde de arriba de la presión, la temperatura y la
+     saturación es el mismo umbral que marca «Alta» o «Baja».
+   - Se grafica **lo que se firmó**. Si la atención tiene una enmienda de
+     signos, el punto va **hueco** y la corrección se lee en la atención: la
+     gráfica no interpreta el texto de la enmienda.
+   - Con una sola medición lo dice («todavía no hay evolución»). Sin signos,
+     la sección no aparece.
+
+### Franjas de referencia de las gráficas
+
+| Signo | Franja |
+|---|---|
+| Presión sistólica / diastólica | 90–140 / 60–90 mmHg |
+| Frecuencia cardíaca | 60–100 lpm |
+| Temperatura | 36–38 °C |
+| Saturación O₂ | 92–100 % |
+| IMC | 18,5–25 |
+| Glucosa y peso | Sin franja: la glucosa depende de si estaba en ayunas |
 
 ### Límites de lo posible (iguales en la base, la API y la web)
 
@@ -112,5 +138,15 @@ con la APK nueva:
 - En el celular, Jimena la ve con las marcas **Alta**, el IMC 25,2 y la
   enmienda debajo (`US-53-07`).
 
-**Pendiente:** las gráficas de evolución (pestaña «Evolución» del médico y
-«Mis signos vitales» del paciente).
+### Gráficas (21/11/26)
+
+- **Web (local):** con 5 atenciones firmadas de Jimena entre julio y
+  noviembre. Capturas `US-53-08` a `US-53-11`: la fila compacta, la evolución
+  de la presión del médico, y «Mis signos vitales» del paciente.
+  Las franjas se revisaron en modo claro y oscuro. La web no tiene pruebas
+  unitarias; se probó en Chrome.
+- **Móvil:** 4 pruebas nuevas en `test/clinical_record_test.dart`.
+  Comprueban el orden de los puntos, la marca de la enmienda, que la última
+  medición sea la más nueva con signos, el aviso con una sola medición y que
+  no haya sección sin signos. Están verificadas por mutación: rompí el código
+  7 veces y las pruebas lo detectaron las 7.

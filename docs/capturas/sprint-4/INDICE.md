@@ -135,3 +135,7 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
 | `US-53-05-web-firmada-con-enmienda.png` | Atención firmada: los signos en solo lectura, con sus marcas, el IMC y una enmienda que corrige la temperatura. |
 | `US-53-06-web-historial-del-medico.png` | El historial del médico muestra los signos en la línea de tiempo. |
 | `US-53-07-movil-paciente-produccion.png` | **Producción, celular:** Jimena (paciente1) ve en *Mi historia clínica* los signos que cargó Mauricio: 150/95 y 38,6 °C marcados **Alta**, IMC 25,2 y la enmienda de la temperatura debajo. |
+| `US-53-08-web-medico-fila-compacta.png` | Historial del médico: los signos en una fila, con lo anormal en color y su marca. |
+| `US-53-09-web-medico-evolucion-presion.png` | Pestaña «Evolución»: sistólica y diastólica de julio a noviembre, con la franja normal; el último punto va hueco porque esa atención tiene una enmienda. |
+| `US-53-10-web-paciente-mis-signos-vitales.png` | *Mi historia* del paciente: «Mis signos vitales» con la última medición. |
+| `US-53-11-web-paciente-graficas-presion-y-peso.png` | Las gráficas de presión y peso del paciente. |

@@ -28,6 +28,7 @@ import 'package:mobile/features/medications/recordarme.dart';
 import 'package:mobile/features/medications/recordatorios.dart';
 
 import 'clinical_record_api.dart';
+import 'signos_evolucion.dart';
 import 'rating_card.dart';
 
 const _meses = [
@@ -202,6 +203,8 @@ class _ClinicalRecordScreenState extends State<ClinicalRecordScreen> {
               '${historia.sucursales.length == 1 ? 'sucursal' : 'sucursales'}',
               style: theme.textTheme.titleSmall,
             ),
+            // US-53: la última medición y su evolución, de todas las sucursales.
+            MisSignosVitales(atenciones: historia.atenciones),
             // El filtro sólo tiene sentido si hay más de una sucursal.
             if (historia.sucursales.length > 1) ...[
               const SizedBox(height: 12),

@@ -18,6 +18,9 @@ import { verResumenesAprobados, type ResumenAprobado } from '@/api/textos_ia'
 import { useTitulo } from '@/rutas/useTitulo'
 import { useSesion } from '@/sesion/useSesion'
 import { CalificarAtencion } from './CalificarAtencion'
+import { GraficoSigno } from './EvolucionSignos'
+import { VerSignos } from './SignosVitales'
+import { SERIES, puntosDe, ultimaMedicion } from './signos_vitales'
 import { ErrorCatalogo, PANEL, mensajeError } from './catalogo_comun'
 import { LineaDeTiempo, resumenHistorial } from './Historial'
 
@@ -88,6 +91,7 @@ export function MiHistoria() {
           ? `${deQuien.full_name} todavía no tiene atenciones firmadas.`
           : 'Todavía no tienes atenciones firmadas.')}
       </p>
+      <MisSignosVitales key={elegido} datos={datos} />
       {datos.encounters.length === 0
         ? <div className={`${PANEL} text-center text-sm text-tinta-500`}>Cuando un médico atienda y firme la consulta, aparece acá.</div>
         : <LineaDeTiempo key={elegido} datos={datos}
@@ -101,6 +105,30 @@ export function MiHistoria() {
           </>} />}
     </>}
   </main>
+}
+
+/**
+ * US-53 — «Mis signos vitales»: la última medición y cómo vienen la presión y
+ * el peso. Sin signos tomados, la sección no aparece.
+ */
+function MisSignosVitales({ datos }: { datos: DatosHistorial }) {
+  const ultima = ultimaMedicion(datos.encounters)
+  if (!ultima) return null
+  const fecha = new Date(ultima.appointment_starts_at).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })
+  const graficas = SERIES.filter(s => s.id === 'presion' || s.id === 'weight_kg')
+    .map(s => ({ serie: s, puntos: puntosDe(s, datos.encounters) })).filter(g => g.puntos.length > 0)
+  return <section className={`${PANEL} space-y-5`} aria-labelledby="mis-signos">
+    <div>
+      <h2 id="mis-signos" className="font-semibold text-tinta-900 dark:text-tinta-50">Mis signos vitales</h2>
+      <p className="mt-1 text-sm text-tinta-500">Última medición: {fecha}, {ultima.practitioner_name}.</p>
+    </div>
+    <VerSignos signos={ultima.vital_signs} />
+    {ultima.amendments.some(a => a.section === 'vital_signs') && <p className="text-sm text-tinta-500">Tu médico agregó una corrección: la ves en esa atención, más abajo.</p>}
+    {graficas.map(g => <div key={g.serie.id} className="space-y-2">
+      <h3 className="text-sm font-medium text-tinta-700 dark:text-tinta-300">{g.serie.etiqueta}{g.serie.unidad && ` (${g.serie.unidad})`}</h3>
+      <GraficoSigno serie={g.serie} puntos={g.puntos} />
+    </div>)}
+  </section>
 }
 
 /** US-39: el resumen en palabras simples, arriba de lo firmado, que sigue completo debajo. */
