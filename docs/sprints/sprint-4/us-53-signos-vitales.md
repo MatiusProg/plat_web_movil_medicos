@@ -145,6 +145,8 @@ con la APK nueva:
   de la presión del médico, y «Mis signos vitales» del paciente.
   Las franjas se revisaron en modo claro y oscuro. La web no tiene pruebas
   unitarias; se probó en Chrome.
+- **Celular contra producción:** con 5 atenciones de Jimena, de julio a
+  noviembre. Capturas `US-53-12` y `US-53-13`.
 - **Móvil:** 4 pruebas nuevas en `test/clinical_record_test.dart`.
   Comprueban el orden de los puntos, la marca de la enmienda, que la última
   medición sea la más nueva con signos, el aviso con una sola medición y que
