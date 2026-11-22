@@ -114,7 +114,7 @@ export function CheckIn() {
                     Recepción
                 </p>
 
-                <h1 className="mt-1 text-3xl font-bold tracking-tight text-tinta-50">
+                <h1 className="mt-1 text-3xl font-bold tracking-tight text-tinta-900 dark:text-tinta-50">
                     Check-in de pacientes
                 </h1>
 

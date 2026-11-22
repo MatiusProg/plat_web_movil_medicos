@@ -33,7 +33,7 @@ def ficha_confirmada(paciente_a, org_a, practitioner_a, branches_a, agenda_a):
 @pytest.fixture
 def recepcion_a(staff_a, org_a):
     dar_rol(staff_a, org_a, "recepcion", "Recepción",
-            ["appointments.appointment.read"])
+            ["appointments.appointment.read", "appointments.appointment.check_in"])
     return staff_a
 
 

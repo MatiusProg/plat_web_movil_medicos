@@ -3,6 +3,15 @@
 El QR es el comprobante firmado de US-19 (`receipts.py`): se verifica la
 firma antes de buscar la ficha, y un código alterado, de otro centro o que no
 es un comprobante se rechaza diciendo por qué.
+
+Por documento se busca **la ficha de hoy** del paciente: primero la confirmada
+más temprana y, si no hay ninguna confirmada, la primera del día (para decir
+por qué no se puede: ya registró su llegada, falta el pago, etc.). Antes se
+tomaba la primera ficha de toda su historia, que para quien ya vino alguna vez
+estaba atendida: el check-in por documento fallaba siempre.
+
+Lo hace recepción (`appointments.appointment.check_in`), no cualquiera que
+lea fichas.
 """
 
 from django.db import transaction
@@ -13,7 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Appointment
-from .permissions import CanReadAppointments
+from .permissions import CanCheckIn
 from .receipts import ReceiptError, read_code
 
 
@@ -49,7 +58,7 @@ class CheckInSerializer(serializers.Serializer):
 class CheckInView(APIView):
     permission_classes = [
         IsAuthenticated,
-        CanReadAppointments,
+        CanCheckIn,
     ]
 
     def post(self, request):
@@ -87,8 +96,8 @@ class CheckInView(APIView):
                     {
                         "code": "ficha_no_encontrada",
                         "detail": (
-                            "No se encontró una ficha válida "
-                            "para realizar el check-in."
+                            "No se encontró una ficha para hoy "
+                            "con ese comprobante o documento."
                         ),
                     },
                     status=status.HTTP_404_NOT_FOUND,
@@ -158,7 +167,7 @@ class CheckInView(APIView):
         organization,
         document_number,
     ):
-        return (
+        de_hoy = (
             Appointment.objects
             .select_for_update()
             .select_related(
@@ -169,11 +178,15 @@ class CheckInView(APIView):
             .filter(
                 organization=organization,
                 patient__document_number=document_number.strip(),
+                starts_at__date=timezone.localdate(),
             )
             .order_by(
                 "starts_at",
             )
-            .first()
+        )
+        return (
+            de_hoy.filter(status=Appointment.Status.CONFIRMED).first()
+            or de_hoy.first()
         )
 
     def _find_by_qr(

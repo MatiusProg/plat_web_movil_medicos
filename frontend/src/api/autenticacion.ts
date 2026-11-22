@@ -7,7 +7,7 @@
  */
 
 import { pedir } from './cliente'
-import type { SesionIniciada } from './tipos'
+import type { SesionIniciada, UsuarioSesion } from './tipos'
 
 export interface Credenciales {
   /** Slug del centro médico. Vacío = Superadministrador de Plataforma. */
@@ -42,6 +42,15 @@ export function renovarSesion(refresh: string): Promise<{ access: string; refres
     metodo: 'POST',
     cuerpo: { refresh },
   })
+}
+
+/**
+ * El usuario con sus roles y permisos de este momento (misma forma que el del
+ * inicio de sesión). Se pide después de cada renovación: si a un rol le
+ * agregaron o quitaron un permiso, el menú lo refleja sin cerrar sesión.
+ */
+export function verUsuarioActual(token: string): Promise<UsuarioSesion> {
+  return pedir<UsuarioSesion>('/accounts/me/', { token })
 }
 
 /**

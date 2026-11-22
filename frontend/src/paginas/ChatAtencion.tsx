@@ -140,13 +140,13 @@ export function PanelChat({ encuentroId, titulo = true }: { encuentroId: string;
           {medico ? 'El paciente todavía no escribió.' : 'Escribe tu duda sobre la medicación o las indicaciones de esta atención.'}
         </p>
         : datos.messages.map(m => <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
-          <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${m.mine
+          <div className={`min-w-0 max-w-[85%] rounded-2xl px-4 py-2.5 ${m.mine
             ? 'bg-marca-600 text-white'
             : m.flagged_emergency
               ? 'border border-alerta-300 bg-alerta-50 text-tinta-900 dark:border-alerta-500/40 dark:bg-alerta-500/15 dark:text-tinta-50'
               : 'bg-tinta-100 text-tinta-900 dark:bg-tinta-800 dark:text-tinta-50'}`}>
             {m.flagged_emergency && <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-alerta-700 dark:text-alerta-300">Posible urgencia: se le indicó ir a emergencias</p>}
-            <p className="whitespace-pre-wrap text-[1.0625rem] leading-6">{m.body}</p>
+            <p className="whitespace-pre-wrap [overflow-wrap:anywhere] text-[1.0625rem] leading-6">{m.body}</p>
             <p className={`mt-1 text-xs ${m.mine ? 'text-marca-100' : 'text-tinta-500'}`}>{m.mine ? 'Tú' : m.author_name} · {fechaHora(m.created_at)}</p>
           </div>
         </div>)}
