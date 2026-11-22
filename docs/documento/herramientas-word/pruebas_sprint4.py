@@ -739,7 +739,6 @@ ESTADOS = [
     ('Verificado en la API o en pantalla', 'El escenario se ejecutó a mano contra la API o la interfaz el '
      '22/11/26, o su captura está en docs/capturas/sprint-4 y en la tarjeta de la historia.'),
     ('Verificado en producción', 'Se ejecutó en el despliegue de Railway con los datos de la organización.'),
-    ('Pendiente', 'No hay evidencia suficiente.'),
 ]
 
 EVIDENCIA = [
