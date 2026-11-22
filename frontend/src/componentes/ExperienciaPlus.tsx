@@ -34,7 +34,7 @@ export function ExperienciaPlus({ ficha, cerrar }: { ficha: Ficha; cerrar: () =>
   const confirmada = ficha.status === 'confirmed'
   const futura = new Date(ficha.starts_at).getTime() > Date.now()
   const editable = confirmada && futura
-  const falta = confirmada ? cuentaRegresiva(ficha.starts_at) : null
+  const falta = confirmada ? cuentaRegresiva(ficha.starts_at, ficha.practitioner_name) : null
   const cuando = new Date(ficha.starts_at).toLocaleString('es-BO', { dateStyle: 'full', timeStyle: 'short', hourCycle: 'h23' })
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function ExperienciaPlus({ ficha, cerrar }: { ficha: Ficha; cerrar: () =>
 
       <div className="space-y-6 overflow-y-auto px-6 py-5">
         {falta && <p className="rounded-2xl bg-marca-50 px-4 py-3 text-center font-semibold text-marca-800 dark:bg-marca-950/40 dark:text-marca-200">
-          {falta} para tu ficha con {ficha.practitioner_name}
+          {falta}
         </p>}
 
         <div className="grid gap-3 sm:grid-cols-3">

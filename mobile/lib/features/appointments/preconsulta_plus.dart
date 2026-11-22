@@ -1,30 +1,59 @@
 /// US-51 — «Tu ficha, más que un comprobante».
 ///
 /// Lo que el paciente necesita para ir, que el sistema ya sabe: agregarla al
-/// calendario (el `.ics` del backend, con la hora de La Paz y un aviso un día
-/// antes), cómo llegar (el mapa de la sede), cómo prepararse y cuánto falta.
+/// calendario, cómo llegar (el mapa de la sede), cómo prepararse y cuánto
+/// falta.
+///
+/// En el teléfono, «Agregar a mi calendario» abre Google Calendar con el evento
+/// listo para guardar. Ninguna app de Android abre un `.ics` con «Abrir»: se
+/// probó en el celular y ofrecía el visor de imágenes. El `.ics` del backend
+/// queda para la web y el correo.
 /// Más la preconsulta, que el médico ve al abrir la atención. Sin cobro extra.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
-import 'package:mobile/core/files/archivos.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'appointments_api.dart';
 
-/// «Es hoy a las 10:00», «Es mañana a las 10:00», «Faltan 3 días»… o `null`
-/// si el turno ya pasó.
-String? cuentaRegresiva(DateTime inicio, DateTime ahora) {
+/// «Tu ficha con X es hoy a las 10:00», «… es mañana a las 10:00» o
+/// «Faltan 3 días para tu ficha con X». `null` si el turno ya pasó. Cuenta
+/// días de calendario, no de 24 h: a las 22:00, un turno a las 00:30 ya es
+/// «mañana».
+String? cuentaRegresiva(DateTime inicio, DateTime ahora, String medico) {
   if (!inicio.isAfter(ahora)) return null;
   String dos(int n) => n.toString().padLeft(2, '0');
   final hora = '${dos(inicio.hour)}:${dos(inicio.minute)}';
   final dias = DateTime(inicio.year, inicio.month, inicio.day)
       .difference(DateTime(ahora.year, ahora.month, ahora.day))
       .inDays;
-  if (dias == 0) return 'Es hoy a las $hora';
-  if (dias == 1) return 'Es mañana a las $hora';
-  return 'Faltan $dias días';
+  if (dias == 0) return 'Tu ficha con $medico es hoy a las $hora';
+  if (dias == 1) return 'Tu ficha con $medico es mañana a las $hora';
+  return 'Faltan $dias días para tu ficha con $medico';
+}
+
+/// El enlace de Google Calendar para crear el evento de la ficha. Las horas
+/// van en UTC (`Z`), así no dependen de la zona del teléfono.
+Uri enlaceCalendario(Appointment ficha) {
+  String utc(DateTime d) {
+    final u = d.toUtc();
+    String dos(int n) => n.toString().padLeft(2, '0');
+    return '${u.year}${dos(u.month)}${dos(u.day)}T'
+        '${dos(u.hour)}${dos(u.minute)}${dos(u.second)}Z';
+  }
+
+  final lugar = ficha.branchAddress.isEmpty
+      ? ficha.branchName
+      : '${ficha.branchName}, ${ficha.branchAddress}';
+  return Uri.https('calendar.google.com', '/calendar/render', {
+    'action': 'TEMPLATE',
+    'text': 'Ficha con ${ficha.practitionerName}',
+    'dates': '${utc(ficha.startsAt)}/${utc(ficha.endsAt)}',
+    'location': lugar,
+    'details': 'Lleva tu identificación y el comprobante con QR de la aplicación.'
+        '${ficha.branchMapsUrl == null ? '' : '\nCómo llegar: ${ficha.branchMapsUrl}'}',
+  });
 }
 
 Future<bool> _abrirFuera(Uri url) =>
@@ -36,8 +65,6 @@ class PreconsultaPlusSheet extends StatefulWidget {
     required this.client,
     required this.ficha,
     this.openUrl,
-    this.guardado,
-    this.abridor,
     this.ahora,
   });
   final ApiClient client;
@@ -45,8 +72,6 @@ class PreconsultaPlusSheet extends StatefulWidget {
 
   /// Se inyectan en las pruebas.
   final Future<bool> Function(Uri url)? openUrl;
-  final GuardadoDeArchivos? guardado;
-  final AbridorDeArchivos? abridor;
   final DateTime? ahora;
 
   @override
@@ -62,29 +87,15 @@ class _PreconsultaPlusSheetState extends State<PreconsultaPlusSheet> {
   bool _saving = false;
   String? _message;
 
-  bool _bajandoCalendario = false;
-
   String get _path => '/appointments/appointments/${widget.ficha.id}/preconsultation/';
   DateTime get _ahora => widget.ahora ?? DateTime.now();
   bool get _editable => widget.ficha.isConfirmed && widget.ficha.startsAt.isAfter(_ahora);
 
-  /// El `.ics` se guarda en Descargas y se abre: el teléfono ofrece
-  /// agregarlo a su calendario.
   Future<void> _calendario() async {
-    setState(() => _bajandoCalendario = true);
-    try {
-      final archivo = await widget.client.download(
-        'GET', '/appointments/appointments/${widget.ficha.id}/calendar.ics');
-      final ruta = await (widget.guardado ?? GuardadoEnDescargas())
-          .guardar(archivo.nombre ?? 'ficha.ics', archivo.bytes);
-      final problema = await (widget.abridor ?? AbridorDelSistema()).abrir(ruta);
-      if (mounted && problema != null) setState(() => _message = problema);
-    } on ApiError catch (e) {
-      if (mounted) setState(() => _message = e.message);
-    } catch (_) {
-      if (mounted) setState(() => _message = 'No se pudo guardar el archivo del calendario.');
-    } finally {
-      if (mounted) setState(() => _bajandoCalendario = false);
+    final abierto =
+        await (widget.openUrl ?? _abrirFuera)(enlaceCalendario(widget.ficha));
+    if (!abierto && mounted) {
+      setState(() => _message = 'No se pudo abrir el calendario.');
     }
   }
 
@@ -151,7 +162,8 @@ class _PreconsultaPlusSheetState extends State<PreconsultaPlusSheet> {
         ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
     final porQueNo = _porQueNo;
     final falta = widget.ficha.isConfirmed
-        ? cuentaRegresiva(widget.ficha.startsAt, _ahora)
+        ? cuentaRegresiva(
+            widget.ficha.startsAt, _ahora, widget.ficha.practitionerName)
         : null;
     final anotado = _reason.text.isNotEmpty || _questions.text.isNotEmpty;
     return SafeArea(
@@ -177,7 +189,7 @@ class _PreconsultaPlusSheetState extends State<PreconsultaPlusSheet> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '$falta para tu ficha con ${widget.ficha.practitionerName}',
+                    falta,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
@@ -190,9 +202,9 @@ class _PreconsultaPlusSheetState extends State<PreconsultaPlusSheet> {
                 _Tarjeta(
                   icono: Icons.event_available_outlined,
                   titulo: 'Agregar a mi calendario',
-                  texto: 'Con un aviso un día antes.',
-                  accion: _bajandoCalendario ? 'Guardando…' : 'Agregar',
-                  onTap: _bajandoCalendario ? null : _calendario,
+                  texto: 'Se abre tu calendario con la ficha lista.',
+                  accion: 'Agregar',
+                  onTap: _calendario,
                 ),
               ],
               if (widget.ficha.branchMapsUrl != null) ...[
