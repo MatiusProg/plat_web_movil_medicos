@@ -368,3 +368,25 @@ class WaitlistEntry(models.Model):
 
     def __str__(self):
         return f"{self.patient_id} · {self.status} · {self.date_from}–{self.date_to}"
+
+
+class AppointmentPreconsultation(models.Model):
+    """US-51: notas voluntarias previas a la atención; nunca un diagnóstico."""
+
+    appointment = models.OneToOneField(
+        Appointment, on_delete=models.PROTECT, related_name="preconsultation",
+    )
+    organization = models.ForeignKey(
+        "tenancy.Organization", on_delete=models.PROTECT,
+        related_name="appointment_preconsultations",
+    )
+    reason = models.TextField(blank=True, default="")
+    questions = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "appointment_preconsultations"
+        constraints = [
+            models.UniqueConstraint(fields=["appointment", "organization"],
+                                    name="uq_preconsult_appointment_org"),
+        ]
