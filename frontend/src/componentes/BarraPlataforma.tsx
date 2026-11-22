@@ -246,13 +246,14 @@ const items: ItemMenu[] = [
         icono: 'ficha', requiere: 'appointments.appointment.book_at_counter',
     },
 
-    // US-22 — check-in en recepción.
+    // US-22 — check-in en recepción. Pide su propio permiso: con el de leer
+    // fichas lo veía también el Paciente, que lee las suyas.
     {
         etiqueta: 'Check-in',
         ruta: '/check-in',
         seccion: 'Atención',
         icono: 'ficha',
-        requiere: 'appointments.appointment.read',
+        requiere: 'appointments.appointment.check_in',
     },
 
     // US-24 — la agenda del profesional para registrar la atención.

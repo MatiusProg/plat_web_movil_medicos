@@ -39,6 +39,13 @@ class CanRescheduleAppointments(RequiresPermission):
     code = "appointments.appointment.reschedule"
 
 
+class CanCheckIn(RequiresPermission):
+    """US-22. Registrar la llegada es de recepción, no de quien puede leer fichas:
+    el Paciente también lee las suyas. Ver `migrations/0011_seed_checkin_permission.py`."""
+
+    code = "appointments.appointment.check_in"
+
+
 class CanConfirmAttendance(RequiresPermission):
     """US-21. Se siembra en `payments/migrations/0003_seed_permissions.py`."""
 

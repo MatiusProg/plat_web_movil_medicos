@@ -226,14 +226,20 @@ def test_las_plantillas_de_rol_quedaron_sembradas(db):
     US-35 suma ``appointments.noshow.read`` en
     ``noshow/0003_seed_permiso_riesgo``, sólo para la Administración: ver el
     riesgo de inasistencia de las fichas.
+
+    El arreglo del check-in de US-22 (22/11/26) suma
+    ``appointments.appointment.check_in`` en
+    ``appointments/0011_seed_checkin_permission``, para Recepción y
+    Administración: antes pedía el de leer fichas, que también tiene el
+    Paciente.
     """
     with platform_admin_context():
         plantillas = Role.objects.filter(organization__isnull=True, is_system=True)
         assert plantillas.count() == 5
         # US-23 agrega appointments.appointment.book_at_counter para reservar
         # citas desde recepción; US-50 suma los dos permisos de finanzas (el
-        # último término).
-        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 2
+        # penúltimo término) y el check-in de US-22 suma el suyo (el último).
+        assert Permission.objects.count() == 25 + 17 - 1 + 1 + 2 + 2 + 3 + 2 + 1 + 4 + 4 + 3 + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 1
         assert SubscriptionPlan.objects.count() == 3
         # El viejo no quedó dando vueltas.
         assert not Permission.objects.filter(code="users.audit.read").exists()

@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { cerrarSesion as pedirCierre, iniciarSesion, renovarSesion } from '@/api/autenticacion'
+import { cerrarSesion as pedirCierre, iniciarSesion, renovarSesion, verUsuarioActual } from '@/api/autenticacion'
 import type { Credenciales } from '@/api/autenticacion'
 import {
   borrarSesion,
@@ -30,12 +30,30 @@ import { ContextoSesion, type EstadoSesion } from './contexto'
 /**
  * Cuánto antes de que expire el acceso se lo renueva.
  *
- * El backend lo emite con 30 minutos (`ACCESS_TOKEN_LIFETIME`). Se renueva a
- * los 25 para dejar margen: si el reloj del navegador está corrido unos minutos
- * respecto del servidor —pasa más de lo que uno cree—, renovar justo sobre la
- * hora produce un 401 intermitente imposible de reproducir.
+ * El backend lo emite con 30 minutos (`ACCESS_TOKEN_LIFETIME`). Se renueva 5
+ * minutos antes para dejar margen: si el reloj del navegador está corrido unos
+ * minutos respecto del servidor —pasa más de lo que uno cree—, renovar justo
+ * sobre la hora produce un 401 intermitente imposible de reproducir.
  */
-const MINUTOS_HASTA_RENOVAR = 25
+const MINUTOS_DE_MARGEN = 5
+
+/**
+ * Milisegundos hasta renovar, según el vencimiento (`exp`) del propio token.
+ *
+ * Contar 25 minutos desde que se abre la aplicación fallaba al volver con la
+ * sesión guardada: si el acceso ya había vencido (la pestaña cerrada media
+ * hora o hasta el día siguiente), todo respondía «Given token not valid for any
+ * token type» durante 25 minutos. Con el vencimiento real, un acceso vencido se
+ * renueva enseguida. Si el token no se puede leer, se renueva enseguida también.
+ */
+function msHastaRenovar(access: string): number {
+  try {
+    const carga = JSON.parse(atob(access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return Math.max(0, carga.exp * 1000 - Date.now() - MINUTOS_DE_MARGEN * 60_000)
+  } catch {
+    return 0
+  }
+}
 
 export function ProveedorSesion({ children }: { children: ReactNode }) {
   // Se lee en el primer render y no en un efecto: `localStorage` es síncrono,
@@ -70,7 +88,11 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
         const par = await renovarSesion(sesion.refresh)
         if (!vigente) return
         // Los DOS valores: el backend rota, y el refresco viejo ya no sirve.
-        persistir({ ...sesion, access: par.access, refresh: par.refresh })
+        // Y el usuario de ahora: los permisos pudieron cambiar desde el login.
+        // Si esa lectura falla, se sigue con el que había.
+        const usuario = await verUsuarioActual(par.access).catch(() => sesion.usuario)
+        if (!vigente) return
+        persistir({ access: par.access, refresh: par.refresh, usuario })
       } catch {
         // El refresco venció o fue a la lista negra. No hay nada que
         // reintentar: hay que volver a iniciar sesión.
@@ -78,7 +100,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       }
     }
 
-    temporizador.current = window.setTimeout(renovar, MINUTOS_HASTA_RENOVAR * 60_000)
+    temporizador.current = window.setTimeout(renovar, msHastaRenovar(sesion.access))
 
     return () => {
       vigente = false
