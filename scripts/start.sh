@@ -53,6 +53,17 @@ python -u manage.py send_appointment_reminders --loop &
 echo "==> Lanzando la predicción de inasistencia en segundo plano"
 python -u manage.py score_noshow --loop &
 
+# US-38: el reentrenamiento del modelo de inasistencia. Una vuelta por día.
+# Sólo entrena una candidata si hay al menos 20 desenlaces nuevos, y la promueve
+# únicamente si mejora al vigente sobre fichas posteriores a su entrenamiento;
+# si no, la deja rechazada. Toma un candado por organización, así que el
+# contenedor viejo y el nuevo conviviendo en un despliegue no se pisan.
+# Se apaga con NOSHOW_RETRAINING=off.
+if [ "${NOSHOW_RETRAINING:-on}" != "off" ]; then
+    echo "==> Lanzando el reentrenamiento de inasistencia en segundo plano"
+    python -u manage.py retrain_noshow --all --loop --every 1440 &
+fi
+
 # US-52: la lista de espera. Cada minuto libera las reservas que vencieron sin
 # pagarse y le ofrece el turno al siguiente de la fila. Idempotente; sólo toca a
 # las organizaciones cuyo plan la incluye. Se apaga con WAITLIST_PROCESS=off.
