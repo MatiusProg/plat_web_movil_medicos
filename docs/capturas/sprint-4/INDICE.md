@@ -151,3 +151,13 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
 | `LOGIN-03-movil-plataforma-aparte.png` | Al final y separada, «Administración de la plataforma», sólo para el superadministrador. |
 | `LOGIN-04-movil-buscador-sobre-el-teclado.png` | Con el buscador y el teclado abiertos, la hoja sube por encima del teclado y los resultados quedan a la vista. |
 | `LOGIN-05-movil-inicio-con-nombre-del-centro.png` | El inicio muestra «Centro médico: Clínica San Gabriel», el nombre y no el slug. |
+
+## US-51: El plus de la ficha pagada (móvil en producción, 21/11/26)
+
+| Archivo | Caso que muestra |
+|---|---|
+| `US-51-01-movil-plus-produccion.png` | La ficha confirmada de mañana muestra la cuenta regresiva («Tu ficha con Mauricio Copa Choque es mañana a las 10:00»), el calendario, «Cómo llegar» con la dirección, «Cómo prepararte» y la preconsulta guardada. |
+| `US-51-02-movil-como-llegar-mapa.png` | «Abrir el mapa» abre Google Maps en la Sede Sopocachi, junto a la Plaza Avaroa y la Av. 6 de Agosto. |
+
+«Agregar» abrió Google Calendar con el evento listo: «Ficha con Mauricio Copa Choque», el domingo 22/11/2026 de 10:00 a 10:30. Esa pantalla no se capturó porque muestra la cuenta personal del calendario.
+
