@@ -92,6 +92,28 @@ function Factores({ factores }: { factores: FichaEnRiesgo['factors'] }) {
   })}</ul>
 }
 
+// --- Historial de versiones (US-38) -------------------------------------------
+
+/** Los motivos con que el reentrenamiento rechaza a un candidato (noshow/retraining.py). */
+const MOTIVO_RECHAZO: Record<string, string> = {
+  sin_evaluacion_independiente: 'No hay suficientes fichas posteriores al vigente para compararlos sin fuga: se mantiene el vigente',
+  no_mejora_vigente: 'No mejora al vigente en las mismas fichas: se mantiene el vigente',
+}
+
+/** Qué dice la columna «Comparación con vigente anterior» de una versión. */
+function textoComparacion(v: VersionRiesgo): string {
+  const c = v.comparison
+  if (c?.incumbent_brier !== undefined && c.candidate_brier !== undefined) {
+    return `Anterior ${decimal(c.incumbent_brier)} · Candidato ${decimal(c.candidate_brier)} (mismas ${c.holdout_n} fichas)`
+  }
+  if (c?.reason) {
+    const base = MOTIVO_RECHAZO[c.reason] ?? 'Rechazado por el control del reentrenamiento'
+    return c.holdout_n !== undefined ? `${base} (${c.holdout_n} fichas disponibles)` : base
+  }
+  if (v.status === 'rejected' && !v.beats_baseline) return 'No supera la línea base: nunca se usó'
+  return 'Entrenamiento inicial'
+}
+
 // --- Tarjeta del modelo ------------------------------------------------------
 
 /** «Brier 0,08 vs 0,11 de siempre-asiste», o lo que se pueda decir con lo que haya. */
@@ -287,9 +309,7 @@ export function RiesgoInasistencia() {
           <tbody>{versiones.map(v => <tr key={v.version} className="border-t border-tinta-200 dark:border-tinta-800">
             <td className="p-2">v{v.version}</td><td className="p-2">{({ active: 'Vigente', candidate: 'Candidato', rejected: 'Rechazado', retired: 'Retirado' } as const)[v.status]}</td>
             <td className="p-2">{fechaLarga(v.trained_at)}</td><td className="p-2">{v.brier === null ? '—' : decimal(v.brier)}</td>
-            <td className="p-2">{v.comparison?.incumbent_brier !== undefined && v.comparison.candidate_brier !== undefined
-              ? `Anterior ${decimal(v.comparison.incumbent_brier)} · Candidato ${decimal(v.comparison.candidate_brier)} (mismas ${v.comparison.holdout_n} fichas)`
-              : v.comparison?.reason ?? 'Entrenamiento inicial'}</td>
+            <td className="p-2">{textoComparacion(v)}</td>
           </tr>)}</tbody>
         </table></div>
       </section>}
