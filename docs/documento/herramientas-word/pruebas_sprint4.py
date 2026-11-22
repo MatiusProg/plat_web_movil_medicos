@@ -533,7 +533,7 @@ CUS = [
                'test_la_base_no_deja_borrar_ni_reabrir_una_conversacion']),
              ('Falla el push.', 'El mensaje queda guardado.', ['test_si_el_push_falla_el_mensaje_queda']),
              ('Un mensaje con una palabra muy larga o con un <script>.', 'Se muestra como texto y la burbuja '
-              'no se rompe (corregido en el PR #137).', ['api:caso límite del 22/11/26 en la web local']),
+              'no se rompe (corregido en el PR #137).', ['captura:US-47-35']),
          ]),
     dict(cu='CU49', nombre='Calificación de la Atención', us='US-48', plat='Web / móvil', resp=KAREN,
          desc='El paciente atendido califica su atención de 1 a 5 estrellas con un comentario opcional, y la '
@@ -875,6 +875,92 @@ P_CUH = next(e for e in s3_rep if texto(e).startswith('Caso de uso / historia'))
 P_RESP = next(e for e in s3_rep if texto(e).startswith('Responsable:'))
 
 MOVIL = sys.argv[4] if len(sys.argv) > 4 else 'todas sus pruebas aprobadas'
+EJEC = sys.argv[5]      # salidas reales: <archivo>.txt de pytest -v, movil_<archivo>.txt y api_<CP>.txt
+CAPT = sys.argv[6]      # docs/capturas/sprint-4
+TMP = sys.argv[7]       # dónde dejar los PNG de las ejecuciones
+
+import glob  # noqa: E402
+import os  # noqa: E402
+import re  # noqa: E402
+
+from docx.enum.text import WD_ALIGN_PARAGRAPH  # noqa: E402
+from docx.shared import Cm  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from terminal_png import dibujar  # noqa: E402
+
+def leer(ruta):
+    """Las salidas de consola en Windows pueden venir en cp1252."""
+    crudo = open(ruta, 'rb').read()
+    try:
+        return crudo.decode('utf-8')
+    except UnicodeDecodeError:
+        return crudo.decode('cp1252')
+
+
+# Índice de las salidas de pytest: archivo -> (cabecera, resumen, líneas).
+PYTEST = {}
+for ruta in glob.glob(os.path.join(EJEC, 'test_*.txt')):
+    arch = os.path.basename(ruta)[:-4]
+    lineas = leer(ruta).splitlines()
+    cab = [l for l in lineas if l.startswith('platform ')] + [re.search(r'collected \d+ items?', l).group(0) for l in lineas if re.search(r'collected \d+ items?', l)][:1]
+    resumen = next(l for l in reversed(lineas) if re.match(r'^=+ .*(passed|failed).* =+$', l))
+    PYTEST[arch] = (cab, resumen, lineas)
+
+
+def lineas_pytest(pruebas):
+    """Extracto real de la salida de pytest -v para esas pruebas, agrupado por archivo."""
+    por_archivo = {}
+    for t in pruebas:
+        for arch, (_, _, lineas) in sorted(PYTEST.items()):
+            hits = [l for l in lineas if re.search(rf'::{t}(\[| )', l) and ('PASSED' in l or 'FAILED' in l)]
+            if hits:
+                por_archivo.setdefault(arch, []).extend(hits)
+                break
+        else:
+            raise SystemExit(f'No está en las salidas: {t}')
+    out = []
+    for arch, hits in por_archivo.items():
+        cab, resumen, _ = PYTEST[arch]
+        out += [f'$ python -m pytest tests/{arch}.py -v'] + cab + ['…'] + hits + ['…', resumen, '']
+    return out[:-1]
+
+
+def lineas_movil(arch):
+    lineas = leer(os.path.join(EJEC, f'movil_{arch}.txt')).splitlines()
+    vistos, out = set(), []
+    for l in lineas:
+        m = re.match(r'^\d\d:\d\d \+\d+: (.*)$', l)
+        if m and 'loading ' not in m.group(1) and 'All tests passed' not in l and m.group(1) not in vistos:
+            vistos.add(m.group(1))
+            out.append(l)
+    final = next(l for l in reversed(lineas) if 'All tests passed' in l or 'failed' in l.lower())
+    return [f'$ flutter test test/{arch}.dart --reporter expanded'] + out[-14:] + [final]
+
+
+def lineas_api(cp):
+    ruta = os.path.join(EJEC, f'api_{cp}.txt')
+    return leer(ruta).rstrip().splitlines() if os.path.exists(ruta) else []
+
+
+def captura(cod):
+    return glob.glob(os.path.join(CAPT, cod + '-*.png'))[0]
+
+
+def imagen(ruta, ancho_cm):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run().add_picture(ruta, width=Cm(ancho_cm))
+    el = p._p
+    el.getparent().remove(el)
+    return el
+
+
+def ancho_de(ruta):
+    from PIL import Image
+    w, h = Image.open(ruta).size
+    return 6.0 if h > w else 15.5
+
 
 doc = docx.Document(ENT)
 db = doc.element.body
@@ -886,6 +972,11 @@ for nombre, t, c in (('2.2.1', t_impl, c_impl), ('2.3.1', t_plan, c_plan), ('2.3
     if any(texto(e) for e in c) or any(e.tag == qn('w:tbl') for e in c):
         sys.exit(f'El {nombre} del Sprint 4 ya tiene contenido: no se toca.')
 
+# Los subtítulos navegables usan los estilos de título del propio Sprint 4.
+_, s4 = entre(db, 'Sprint 4', '2.1 Diseño', '2.2 Implementación')
+H5 = next(e for e in s4 if texto(e).startswith('2.1.1.1 Modelo C4'))
+H6 = next(e for e in s4 if texto(e).startswith('CU36 – Predicción'))
+
 # 2.2.1
 impl = [par(P_IMPL, IMPL_INTRO), tabla(T_IMPL, IMPL)]
 
@@ -895,7 +986,7 @@ plan = [par(P_PLAN, PLAN_INTRO), tabla_un_parrafo(T_CONV, CONVENCION), blanco(),
         tabla(T_COB, [(f"{c['cu']} · {c['nombre']}", c['us'], str(len(c['esc']))) for c in CUS]), blanco()]
 for c in CUS:
     n = c['us'].split('-')[1]
-    plan += [par(P_CU, f"{c['cu']} — {c['nombre']}"),
+    plan += [par(H5, f"{c['cu']} — {c['nombre']}"),
              tabla(T_FICHA, [('Caso de uso', f"{c['cu']} — {c['nombre']}"),
                              ('Historia de usuario', f"{c['us']} · {c['plat']}"),
                              ('Descripción', c['desc']), ('Precondiciones', c['pre']),
@@ -904,22 +995,49 @@ for c in CUS:
              tabla(T_ESC, [(f'CP-{n}-{i:02d}', a, r) for i, (a, r, _) in enumerate(c['esc'], 1)]), blanco()]
 
 # 2.3.2
+os.makedirs(TMP, exist_ok=True)
 evid = [(t.replace('{MOVIL}', MOVIL), b) for t, b in EVIDENCIA]
 rep = [tabla(T_EST, ESTADOS), blanco(), par(P_EVID, evid), par(P_EVID, ALCANCE),
        par(P_ROT_RES, 'Resumen de casos de uso'),
        tabla(T_RES, [(c['cu'], c['us'], c['resp'], c['sit']) for c in CUS]), blanco()]
-total = {}
+total, n_img = {}, 0
 for c in CUS:
     n = c['us'].split('-')[1]
-    filas = []
-    for i, (a, _, ev) in enumerate(c['esc'], 1):
+    rep += [par(H5, f"{c['cu']} — {c['nombre']}"),
+            par(P_CUH, [('Caso de uso / historia:', True), (f" {c['cu']} · {c['us']} · {c['plat']}", False)]),
+            par(P_RESP, [('Responsable:', True), (f" {c['resp']}", False)])]
+    for i, (a, r, ev) in enumerate(c['esc'], 1):
+        cp = f'CP-{n}-{i:02d}'
         prueba, estado = evidencia(ev)
         total[estado] = total.get(estado, 0) + 1
-        filas.append((f'CP-{n}-{i:02d}', a, prueba, estado))
-    rep += [par(P_PRUEBA, f"Prueba de caso de uso {c['cu']}: {c['nombre']}"),
-            par(P_CUH, [('Caso de uso / historia:', True), (f" {c['cu']} · {c['us']} · {c['plat']}", False)]),
-            par(P_RESP, [('Responsable:', True), (f" {c['resp']}", False)]),
-            tabla(T_REP, filas), blanco()]
+        rep += [par(H6, f'{cp} · {a.rstrip(".")}'),
+                tabla(T_FICHA, [('Escenario', a), ('Resultado esperado', r),
+                                ('Prueba identificada', prueba), ('Estado', estado)]),
+                blanco()]
+        figuras = []
+        for e in ev:
+            if e.startswith('captura:'):
+                ruta = captura(e.split(':', 1)[1])
+                nombre = os.path.basename(ruta)[:-4]
+                cod, resto = nombre[:8], nombre[9:].replace('-', ' ')
+                figuras.append((ruta, ancho_de(ruta), f'Captura {cod}: {resto}.'))
+        tests = [e for e in ev if e.startswith('test_')]
+        if tests:
+            png = dibujar(f'{cp} · pytest · 22/11/26', lineas_pytest(tests), os.path.join(TMP, f'{cp}.png'))
+            figuras.append((png, 15.5, f'Ejecución de las pruebas de {cp} en el backend (extracto real, 22/11/26).'))
+        for e in ev:
+            if e.startswith('móvil:'):
+                arch = e.split(':', 1)[1].replace('.dart', '')
+                png = dibujar(f'{cp} · flutter test', lineas_movil(arch), os.path.join(TMP, f'{cp}-movil.png'))
+                figuras.append((png, 15.5, f'Ejecución de mobile/test/{arch}.dart (extracto real, 22/11/26).'))
+        api = lineas_api(cp)
+        if api:
+            png = dibujar(f'{cp} · API local · 22/11/26', api, os.path.join(TMP, f'{cp}-api.png'))
+            figuras.append((png, 15.5, f'Verificación de {cp} contra la API local (salida real, 22/11/26).'))
+        for ruta, ancho, pie in figuras:
+            rep += [imagen(ruta, ancho), par(P_NOTA, [(pie, False)])]
+            n_img += 1
+        rep.append(blanco())
 
 for titulo, nuevos in ((t_impl, impl), (t_plan, plan), (t_rep, rep)):
     ancla = titulo
@@ -928,4 +1046,5 @@ for titulo, nuevos in ((t_impl, impl), (t_plan, plan), (t_rep, rep)):
         ancla = el
 
 doc.save(SAL)
-print('casos de uso:', len(CUS), 'escenarios:', sum(len(c['esc']) for c in CUS), 'estados:', total, '->', SAL)
+print('casos de uso:', len(CUS), 'escenarios:', sum(len(c['esc']) for c in CUS), 'imágenes:', n_img,
+      'estados:', total, '->', SAL)
