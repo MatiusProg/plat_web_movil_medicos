@@ -14,6 +14,8 @@ from comun import *
 ENT, SAL, CAP = sys.argv[1], sys.argv[2], sys.argv[3]
 
 CAPTURAS = {
+    'US-35': ['US-35-01-web-modelo-vigente-y-metricas', 'US-35-02-web-fichas-futuras-con-riesgo', 'US-35-03-web-filtro-riesgo-alto'],
+    'US-38': ['US-38-01-web-historial-de-reentrenamientos'],
     'US-37': ['US-37-01-web-proyeccion-de-demanda', 'US-37-02-web-demanda-por-especialidad-y-franja'],
     'US-39': ['US-39-01-web-resumen-de-la-consulta', 'US-39-02-movil-resumen-de-la-consulta'],
     'US-40': ['US-40-02-produccion-como-prepararte', 'US-40-03-produccion-resumen-con-estudio', 'US-40-01-movil-como-prepararte'],
