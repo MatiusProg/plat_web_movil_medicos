@@ -108,16 +108,16 @@ $CASOS_SPRINT4['CU36'] = @{
     @{ t='op'; g='faltan fichas o ausencias' },
     @{ t='msg'; g=2; o='gentr'; d='sistema'; m='TrainResult(None, sin_datos, message)'; ret=$true; src='training.py:109' },
     @{ t='fin' },
-    @{ t='msg'; g=1; o='sistema'; d='gpred'; m='run_due(now)'; src='score_noshow.py:138; scoring.py:407' },
+    @{ t='msg'; g=1; o='sistema'; d='gpred'; m='run_due(now)'; src='score_noshow.py:68 (_vuelta); scoring.py:176' },
     @{ t='loop'; g='por cada organización con el plan' },
-    @{ t='msg'; g=1; o='gpred'; d='version'; m='filter(status=active).first()'; src='scoring.py:324 (active_version)' },
-    @{ t='msg'; g=1; o='gpred'; d='ficha'; m='filter(status__in, starts_at <= now+60d)'; src='scoring.py:340' },
-    @{ t='msg'; g=1; o='gpred'; d='pred'; m='bulk_create(nuevas, ignore_conflicts=True)'; src='scoring.py:382; INSERT INTO noshow_predictions' },
-    @{ t='msg'; g=1; o='gpred'; d='pred'; m='bulk_update(cambiadas, campos)'; src='scoring.py:383; UPDATE noshow_predictions' },
+    @{ t='msg'; g=1; o='gpred'; d='version'; m='filter(status=active).first()'; src='scoring.py:91-98 (active_version)' },
+    @{ t='msg'; g=1; o='gpred'; d='ficha'; m='filter(status__in, starts_at <= now+60d)'; src='scoring.py:109-114' },
+    @{ t='msg'; g=1; o='gpred'; d='pred'; m='bulk_create(nuevas, ignore_conflicts=True)'; src='scoring.py:151; INSERT INTO noshow_predictions' },
+    @{ t='msg'; g=1; o='gpred'; d='pred'; m='bulk_update(cambiadas, campos)'; src='scoring.py:152; UPDATE noshow_predictions' },
     @{ t='fin' },
     @{ t='msg'; g=3; o='admin'; d='pantalla'; m='abrirRiesgoInasistencia()'; src='RiesgoInasistencia.tsx:189' },
     @{ t='msg'; g=3; o='pantalla'; d='ctrlmod'; m='get(request)'; src='RiesgoInasistencia.tsx:221; riesgo.ts:106; GET /api/noshow/model/; views.py:174' },
-    @{ t='msg'; g=3; o='ctrlmod'; d='gpred'; m='active_version(organization)'; src='views.py:180; scoring.py:322' },
+    @{ t='msg'; g=3; o='ctrlmod'; d='gpred'; m='active_version(organization)'; src='views.py:180; scoring.py:91' },
     @{ t='alt' },
     @{ t='op'; g='hay un modelo vigente' },
     @{ t='msg'; g=3; o='ctrlmod'; d='pantalla'; m='200(model, metrics, cutoffs)'; ret=$true; src='views.py:182' },
@@ -180,10 +180,10 @@ $CASOS_SPRINT4['CU37'] = @{
     @{ t='msg'; g=1; o='sistema'; d='comando'; m='handle(--loop, --every=15)'; src='start.sh:47; send_appointment_reminders.py:45' },
     @{ t='msg'; g=1; o='comando'; d='grec'; m='run_cycle()'; src='send_appointment_reminders.py:73 (_vuelta); reminders.py:156' },
     @{ t='loop'; g='por cada organización activa' },
-    @{ t='msg'; g=1; o='grec'; d='gpred'; m='has_feature(organization)'; src='reminders.py:132 (run_reinforced_for); scoring.py:391' },
+    @{ t='msg'; g=1; o='grec'; d='gpred'; m='has_feature(organization)'; src='reminders.py:132 (run_reinforced_for); scoring.py:160' },
     @{ t='alt' },
     @{ t='op'; g='el plan incluye la predicción' },
-    @{ t='msg'; g=1; o='gpred'; d='grec'; m='True'; ret=$true; src='scoring.py:394' },
+    @{ t='msg'; g=1; o='gpred'; d='grec'; m='True'; ret=$true; src='scoring.py:160-163' },
     @{ t='msg'; g=1; o='grec'; d='ficha'; m='filter(confirmed, starts_at <= now+3h)'; src='reminders.py:77 (due_reinforced); reinforced_reminder_sent_at IS NULL' },
     @{ t='msg'; g=1; o='grec'; d='pred'; m='filter(level=high, version vigente)'; src='reminders.py:83; JOIN noshow_predictions en la misma consulta' },
     @{ t='msg'; g=1; o='grec'; d='ficha'; m='select_for_update(skip_locked=True, of=self)'; src='reminders.py:103; si es None la tomó otro proceso' },
@@ -195,7 +195,7 @@ $CASOS_SPRINT4['CU37'] = @{
     @{ t='msg'; g=1; o='correo'; d='paciente'; m='correo(Tu ficha de hoy a las HH:MM)'; src='services.py:172-183 (_email)' },
     @{ t='msg'; g=1; o='grec'; d='ficha'; m='save(reinforced_reminder_sent_at)'; src='reminders.py:110-111; misma transacción que el envío' },
     @{ t='op'; g='el plan no la incluye' },
-    @{ t='msg'; g=2; o='gpred'; d='grec'; m='False'; ret=$true; src='scoring.py:394; reminders.py:132 devuelve 0' },
+    @{ t='msg'; g=2; o='gpred'; d='grec'; m='False'; ret=$true; src='scoring.py:160-163; reminders.py:132 devuelve 0' },
     @{ t='fin' },
     @{ t='fin' },
     @{ t='msg'; g=1; o='grec'; d='comando'; m='(avisadas, reforzadas)'; ret=$true; src='reminders.py:167' }
@@ -318,9 +318,9 @@ $CASOS_SPRINT4['CU39'] = @{
   )
   grupos = [ordered]@{ 1 = 'Reentrenar y promover si mejora al vigente'; 2 = 'Sin desenlaces nuevos suficientes'; 3 = 'El candidato no mejora al vigente'; 4 = 'Ver el historial de versiones' }
   guion = @(
-    @{ t='msg'; g=1; o='sistema'; d='comando'; m='handle(--all, --loop, --every=1440)'; src='retrain_noshow.py:173' },
-    @{ t='msg'; g=1; o='comando'; d='greent'; m='run_due(slugs, min_new)'; src='retrain_noshow.py:187; retraining.py:107' },
-    @{ t='msg'; g=1; o='greent'; d='gpred'; m='eligible_organizations(slugs)'; src='retraining.py:110; scoring.py:397' },
+    @{ t='msg'; g=1; o='sistema'; d='comando'; m='handle(--all, --loop, --every=1440)'; src='retrain_noshow.py:26' },
+    @{ t='msg'; g=1; o='comando'; d='greent'; m='run_due(slugs, min_new)'; src='retrain_noshow.py:39-41; retraining.py:107' },
+    @{ t='msg'; g=1; o='greent'; d='gpred'; m='eligible_organizations(slugs)'; src='retraining.py:110; scoring.py:166' },
     @{ t='loop'; g='por cada organización habilitada' },
     @{ t='msg'; g=1; o='greent'; d='gpred'; m='active_version(organization)'; src='retraining.py:50; tras select_for_update de la organización (retraining.py:48)' },
     @{ t='msg'; g=1; o='greent'; d='version'; m='filter(kind).order_by(-version).first()'; src='retraining.py:51' },
@@ -344,9 +344,9 @@ $CASOS_SPRINT4['CU39'] = @{
     @{ t='fin' },
     @{ t='fin' },
     @{ t='msg'; g=4; o='admin'; d='pantalla'; m='abrirRiesgoInasistencia()'; src='RiesgoInasistencia.tsx:189' },
-    @{ t='msg'; g=4; o='pantalla'; d='ctrlver'; m='get(request)'; src='RiesgoInasistencia.tsx:231; riesgo.ts:133; GET /api/noshow/versions/; retrain_views.py:133' },
-    @{ t='msg'; g=4; o='ctrlver'; d='version'; m='filter(kind).order_by(-version)[:30]'; src='retrain_views.py:138' },
-    @{ t='msg'; g=4; o='ctrlver'; d='pantalla'; m='200(results: version, status, comparison)'; ret=$true; src='retrain_views.py:141' }
+    @{ t='msg'; g=4; o='pantalla'; d='ctrlver'; m='get(request)'; src='RiesgoInasistencia.tsx:231; riesgo.ts:133; GET /api/noshow/versions/; retrain_views.py:15' },
+    @{ t='msg'; g=4; o='ctrlver'; d='version'; m='filter(kind).order_by(-version)[:30]'; src='retrain_views.py:20-22' },
+    @{ t='msg'; g=4; o='ctrlver'; d='pantalla'; m='200(results: version, status, comparison)'; ret=$true; src='retrain_views.py:23' }
   )
 }
 
