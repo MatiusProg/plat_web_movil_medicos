@@ -5,8 +5,23 @@ Qué pide cada una, **qué hay hoy en el repositorio**, dónde está, y qué fal
 Este documento no es una declaración de intenciones: cada fila dice el archivo
 y la prueba que la respaldan. Lo que no está hecho figura como no hecho.
 
-**Corte:** 15/09/2026, Sprint 2 en curso. Estado general: **6 de 8 cumplidas,
-2 parciales**.
+**Corte:** 21/11/2026, Sprint 4 implementado. Estado general: **6 de 8
+cumplidas, 2 parciales**. Las dos parciales siguen igual que en el corte del
+15/09/2026: no se trabajaron en los Sprints 3 y 4.
+
+**Lo que se sumó desde el 15/09** y refuerza las características ya cumplidas:
+- **4, facilidad de uso:**
+  - asistente administrativo: horarios, costos y preparaciones (US-32);
+  - resumen de la consulta en palabras simples y preparación para estudios,
+    validados por el médico (US-39, US-40, US-42);
+  - chat con el médico (US-47);
+  - en la ficha pagada: calendario, cómo llegar y cuenta regresiva (US-51).
+- **5, reportes:**
+  - indicadores y reportes operativos (US-29, US-30);
+  - comprobantes por voz (US-46);
+  - finanzas y contabilidad por voz (US-50).
+- **7, web y móvil:** las historias del Sprint 4 están en las dos
+  plataformas. La app móvil final es la v1.6.1.
 
 | # | Característica | Estado | Dónde |
 |---|---|---|---|
@@ -179,11 +194,10 @@ distinguir mayúsculas ni tildes (US-16), disponibilidad consolidada entre sedes
 formulario. El asistente cubre la duda del paciente, no la del recepcionista
 sobre un campo concreto.
 
-**Y falta US-32**, el asistente administrativo: hoy el corpus son las
-descripciones de las especialidades, así que el asistente orienta sobre *a qué
-especialidad ir*, no sobre horarios de sucursal, costos ni preparaciones
-previas. Indexar esas fuentes es agregar dos tipos de fragmento al mismo
-índice; el modelo ya los prevé (`SourceType`).
+**US-32, el asistente administrativo, ya está hecho (Sprint 2).** El corpus
+suma los horarios de sucursal, los costos y las preparaciones previas de los
+servicios (`Service.preparation`), además de las especialidades. Así el
+asistente contesta también *cuánto cuesta* y *cómo prepararse*.
 
 ---
 
@@ -521,4 +535,6 @@ Los detalles del despliegue, con las trampas que costaron una tarde, están en
    Sin estimar.
 3. **Característica 4** — ayuda contextual por pantalla, además del asistente.
 
-Las tres van al Planning. Ninguna está empezada.
+Al 21/11/2026 ninguna de las tres está empezada. Las historias del Sprint 4
+priorizaron las funcionalidades que pidió la ingeniera el 17/11. Si se
+defienden como parciales, este documento dice exactamente qué falta y por qué.
