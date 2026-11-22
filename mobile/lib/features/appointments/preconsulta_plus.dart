@@ -1,4 +1,6 @@
 /// US-51: experiencia posterior a la compra. Sin cobro adicional.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:mobile/core/api/client.dart';
 import 'package:mobile/core/api/errors.dart';
