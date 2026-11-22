@@ -33,15 +33,31 @@ costaron una tarde, está en [docs/entorno/despliegue.md](docs/entorno/despliegu
 
 ## En qué sprint vamos
 
-**Sprint 2 · 12/09/26 – 05/10/26** — reserva, pago y atención de la ficha, más
-el adelanto del subsistema de inteligencia artificial (chatbot RAG sobre
-pgvector). Quién hace qué: [docs/sprints/sprint-2/reparto.md](docs/sprints/sprint-2/reparto.md).
+**Sprint 4 · 10/11/26 – 23/11/26** (último), con la revisión del 24 al
+26/11/26. **Todas sus historias están implementadas y desplegadas**:
+
+- **US-35 a US-42:** riesgo de inasistencia, recordatorios, demanda, IA en la
+  atención y textos validados por el médico.
+- **US-46:** comprobantes por voz.
+- **US-47:** chat con el médico.
+- **US-48 a US-53**, la ampliación del 17/11:
+  - calificación;
+  - recordatorios de medicamentos;
+  - finanzas y contabilidad;
+  - el plus de la ficha pagada;
+  - lista de espera;
+  - signos vitales con gráficas.
+
+La app móvil final es la **v1.6.1**. Lo que queda es el documento final y la
+defensa.
 
 | Sprint | Estado | Documentos |
 |---|---|---|
 | Sprint 0 | Cerrado | [revisión y retrospectiva](docs/sprints/sprint-0/revision-y-retrospectiva.md) |
 | Sprint 1 | Cerrado | [reparto](docs/sprints/sprint-1/reparto.md) · [historias de usuario](docs/sprints/sprint-1/historias-de-usuario.md) |
-| **Sprint 2** | **En curso** | [reparto](docs/sprints/sprint-2/reparto.md) |
+| Sprint 2 | Cerrado | [reparto](docs/sprints/sprint-2/reparto.md) |
+| Sprint 3 | Cerrado | [reparto](docs/sprints/sprint-3/reparto.md) |
+| **Sprint 4** | **Implementado; falta la revisión** | [reparto](docs/sprints/sprint-4/reparto.md) · [ampliación del 17/11](docs/sprints/sprint-4/ampliacion-17-11.md) · [capturas](docs/capturas/sprint-4/INDICE.md) |
 
 ---
 
@@ -262,9 +278,10 @@ commits, proceso de pull request y Definición de Terminado.
 | Developer | José Daniel Iporo Chulque | 216024773 |
 | — | Michael Alexander Mamani Samurio | 220153590 — *retiró la materia* |
 
-El equipo trabaja el Sprint 2 con cinco integrantes. Cómo se redistribuyeron
-las historias que quedaron pendientes está en el
-[reparto del Sprint 2](docs/sprints/sprint-2/reparto.md).
+Desde el Sprint 2 el equipo trabaja con cinco integrantes. Los roles de
+Scrum Master y Product Owner rotan por sprint: en el Sprint 3 fueron Luis
+Miguel Aguayo y Karen Ortega. Las historias de Michael se redistribuyeron
+según el [reparto del Sprint 2](docs/sprints/sprint-2/reparto.md).
 
 ## Licencia
 

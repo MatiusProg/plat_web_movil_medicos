@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/core/api/client.dart';
-import 'package:mobile/core/files/archivos.dart';
 import 'package:mobile/features/appointments/appointments_api.dart';
 import 'package:mobile/features/appointments/preconsulta_plus.dart';
 
@@ -26,30 +25,12 @@ Appointment _ficha(String status, DateTime inicio, {String? mapa = _mapa}) =>
 
 const _mapa = 'https://www.google.com/maps/search/?api=1&query=-16.5,-68.1';
 
-class _Guardado implements GuardadoDeArchivos {
-  final guardados = <String, List<int>>{};
-  @override
-  Future<String> guardar(String nombre, List<int> bytes) async {
-    guardados[nombre] = bytes;
-    return '/descargas/$nombre';
-  }
-}
-
-class _Abridor implements AbridorDeArchivos {
-  final abiertos = <String>[];
-  @override
-  Future<String?> abrir(String ruta) async {
-    abiertos.add(ruta);
-    return null;
-  }
-}
-
 http.Response _json(Object c, [int s = 200]) => http.Response(jsonEncode(c), s,
     headers: {'content-type': 'application/json; charset=utf-8'});
 
 Future<List<http.Request>> _abrir(WidgetTester tester, Appointment ficha,
     {Map<String, dynamic> guardado = const {'reason': '', 'questions': ''},
-    List<Uri>? urls, _Guardado? archivos, _Abridor? abridor}) async {
+    List<Uri>? urls}) async {
   final pedidos = <http.Request>[];
   final client = ApiClient(httpClient: MockClient((r) async {
     pedidos.add(r);
@@ -69,7 +50,6 @@ Future<List<http.Request>> _abrir(WidgetTester tester, Appointment ficha,
     home: Scaffold(body: PreconsultaPlusSheet(
       client: client, ficha: ficha,
       openUrl: (u) async { urls?.add(u); return true; },
-      guardado: archivos, abridor: abridor,
     )),
   ));
   await tester.pumpAndSettle();
@@ -127,25 +107,35 @@ void main() {
 
   test('la cuenta regresiva cuenta días de calendario', () {
     final ahora = DateTime(2026, 11, 21, 22, 0);
-    expect(cuentaRegresiva(DateTime(2026, 11, 21, 23, 30), ahora), 'Es hoy a las 23:30');
-    // A dos horas, pero ya es mañana.
-    expect(cuentaRegresiva(DateTime(2026, 11, 22, 0, 30), ahora), 'Es mañana a las 00:30');
-    expect(cuentaRegresiva(DateTime(2026, 11, 24, 10, 0), ahora), 'Faltan 3 días');
-    expect(cuentaRegresiva(DateTime(2026, 11, 21, 21, 0), ahora), isNull);
+    expect(cuentaRegresiva(DateTime(2026, 11, 21, 23, 30), ahora, 'Ana'),
+        'Tu ficha con Ana es hoy a las 23:30');
+    // A dos horas y media, pero ya es mañana.
+    expect(cuentaRegresiva(DateTime(2026, 11, 22, 0, 30), ahora, 'Ana'),
+        'Tu ficha con Ana es mañana a las 00:30');
+    expect(cuentaRegresiva(DateTime(2026, 11, 24, 10, 0), ahora, 'Ana'),
+        'Faltan 3 días para tu ficha con Ana');
+    expect(cuentaRegresiva(DateTime(2026, 11, 21, 21, 0), ahora, 'Ana'), isNull);
   });
 
-  testWidgets('agrega la ficha al calendario: baja el .ics y lo abre', (tester) async {
-    final archivos = _Guardado();
-    final abridor = _Abridor();
-    final pedidos = await _abrir(tester, _ficha('confirmed', manana),
-        archivos: archivos, abridor: abridor);
-    expect(find.textContaining('para tu ficha con Laura Gómez'), findsOneWidget);
+  test('el enlace del calendario lleva la ficha en UTC, la sede y el mapa', () {
+    final ficha = _ficha('confirmed', DateTime.utc(2026, 12, 3, 14, 30));
+    final url = enlaceCalendario(ficha);
+    expect(url.host, 'calendar.google.com');
+    expect(url.queryParameters['action'], 'TEMPLATE');
+    expect(url.queryParameters['text'], 'Ficha con Laura Gómez');
+    // 10:30 en La Paz son 14:30 UTC; la ficha dura 30 minutos.
+    expect(url.queryParameters['dates'], '20261203T143000Z/20261203T150000Z');
+    expect(url.queryParameters['location'], 'Sede Centro, Av. 6 de Agosto 2170');
+    expect(url.queryParameters['details'], contains('Cómo llegar: $_mapa'));
+  });
+
+  testWidgets('agrega la ficha al calendario con Google Calendar', (tester) async {
+    final urls = <Uri>[];
+    await _abrir(tester, _ficha('confirmed', manana), urls: urls);
+    expect(find.textContaining('Tu ficha con Laura Gómez es mañana'), findsOneWidget);
     await tester.tap(find.text('Agregar'));
     await tester.pumpAndSettle();
-    expect(pedidos.last.url.path,
-        endsWith('/appointments/appointments/f1/calendar.ics'));
-    expect(archivos.guardados.keys, ['ficha-2026-12-03-1030.ics']);
-    expect(abridor.abiertos, ['/descargas/ficha-2026-12-03-1030.ics']);
+    expect(urls.single.host, 'calendar.google.com');
   });
 
   testWidgets('cómo llegar abre el mapa de la sede', (tester) async {
@@ -166,7 +156,7 @@ void main() {
   testWidgets('atendida: ni calendario ni cuenta regresiva', (tester) async {
     await _abrir(tester, _ficha('attended', ayer));
     expect(find.text('Agregar a mi calendario'), findsNothing);
-    expect(find.textContaining('para tu ficha con'), findsNothing);
+    expect(find.textContaining('Tu ficha con'), findsNothing);
     // Cómo llegar sigue: la sede no cambió.
     expect(find.text('Cómo llegar'), findsOneWidget);
   });

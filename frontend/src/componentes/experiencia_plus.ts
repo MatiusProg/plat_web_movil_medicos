@@ -6,15 +6,15 @@ const DIA = 24 * 60 * 60 * 1000
 const dia = (fecha: Date) => new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime()
 
 /**
- * «Es hoy a las 10:00», «Es mañana a las 10:00», «Faltan 3 días»… o `null`
- * si la ficha ya pasó: no tiene sentido contar hacia atrás.
+ * «Tu ficha con X es hoy a las 10:00», «… es mañana a las 10:00» o «Faltan 3
+ * días para tu ficha con X». `null` si la ficha ya pasó.
  */
-export function cuentaRegresiva(inicio: string, ahora: Date = new Date()): string | null {
+export function cuentaRegresiva(inicio: string, medico: string, ahora: Date = new Date()): string | null {
   const turno = new Date(inicio)
   if (turno.getTime() <= ahora.getTime()) return null
   const hora = turno.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
   const dias = Math.round((dia(turno) - dia(ahora)) / DIA)
-  if (dias === 0) return `Es hoy a las ${hora}`
-  if (dias === 1) return `Es mañana a las ${hora}`
-  return `Faltan ${dias} días`
+  if (dias === 0) return `Tu ficha con ${medico} es hoy a las ${hora}`
+  if (dias === 1) return `Tu ficha con ${medico} es mañana a las ${hora}`
+  return `Faltan ${dias} días para tu ficha con ${medico}`
 }
