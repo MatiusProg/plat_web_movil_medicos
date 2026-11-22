@@ -161,3 +161,19 @@ GRASABYEBYE cada 8 horas por 5 días y orden de «Perfil lipídico».
 
 «Agregar» abrió Google Calendar con el evento listo: «Ficha con Mauricio Copa Choque», el domingo 22/11/2026 de 10:00 a 10:30. Esa pantalla no se capturó porque muestra la cuenta personal del calendario.
 
+
+## US-35 y US-38: riesgo de inasistencia y reentrenamiento (22/11/2026)
+
+Tomadas contra producción en la organización **urbari**, con su administrador:
+el riesgo de inasistencia sólo lo ve la Administración. Se usó urbari y no
+sangabriel porque es la única organización con datos que tienen un patrón real.
+En sangabriel el modelo no supera la línea base (AUC 0,43), así que lo rechaza y
+no muestra riesgos. US-36 (el segundo recordatorio por push) quedó sin captura:
+sólo sale para fichas de riesgo alto dentro de las 3 horas previas.
+
+| Archivo | Qué muestra |
+|---|---|
+| `US-35-01-web-modelo-vigente-y-metricas.png` | Modelo vigente v1: 1.502 fichas para aprender y 376 para comprobar, Brier 0,13 contra 0,14 de «siempre asiste», AUC 0,75 y los cortes de riesgo medio y alto. |
+| `US-35-02-web-fichas-futuras-con-riesgo.png` | Fichas futuras con su nivel de riesgo, la probabilidad y qué lo aumenta o lo reduce (faltas previas, pago adelantado, anticipación). |
+| `US-35-03-web-filtro-riesgo-alto.png` | Filtro «Riesgo alto»: 20 fichas. |
+| `US-38-01-web-historial-de-reentrenamientos.png` | Historial: la v2 rechazada sin reemplazar a la v1 porque no hay una comparación justa (las 51 fichas posteriores no tienen asistencias y ausencias a la vez). |
