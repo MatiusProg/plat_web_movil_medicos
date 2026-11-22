@@ -155,6 +155,15 @@ export function Atencion() {
     <PanelAntecedentes datos={antecedentes} />
     {verHistorialPermitido && <PanelResumenHistorial pacienteId={encuentro.patient.id} />}
 
+    {encuentro.preconsultation && <section aria-labelledby="preconsulta-titulo" className="rounded-2xl border border-marca-200 bg-marca-50 px-5 py-4 dark:border-marca-900 dark:bg-marca-950/30">
+      <h2 id="preconsulta-titulo" className="text-sm font-semibold text-marca-800 dark:text-marca-200">Lo que el paciente anotó antes de la consulta</h2>
+      <dl className="mt-2 space-y-2 text-sm">
+        {encuentro.preconsultation.reason && <div><dt className="font-medium text-tinta-700 dark:text-tinta-300">Motivo</dt><dd className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{encuentro.preconsultation.reason}</dd></div>}
+        {encuentro.preconsultation.questions && <div><dt className="font-medium text-tinta-700 dark:text-tinta-300">Sus preguntas</dt><dd className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{encuentro.preconsultation.questions}</dd></div>}
+      </dl>
+      <p className="mt-2 text-xs text-tinta-500">Lo escribió el paciente: no forma parte de la atención firmada.</p>
+    </section>}
+
     <form onSubmit={e => void guardar(e)} className={`${PANEL} space-y-5`}>
       {firmado ? <section aria-labelledby="signos-titulo" className="space-y-2">
         <h2 id="signos-titulo" className="text-sm font-medium text-tinta-700 dark:text-tinta-300">Signos vitales</h2>

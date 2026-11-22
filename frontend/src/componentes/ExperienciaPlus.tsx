@@ -1,57 +1,143 @@
+/**
+ * US-51 — «Tu ficha, más que un comprobante».
+ *
+ * Lo que el paciente necesita para ir, que el sistema ya sabe: agregarla al
+ * calendario (el `.ics` del backend, con la hora de La Paz y un aviso 24 h
+ * antes), cómo llegar (el mapa de la sede, si tiene coordenadas), cómo
+ * prepararse y cuánto falta. Más la preconsulta: el motivo y las preguntas que
+ * después ve el médico al abrir la atención. Sin cobro adicional.
+ */
 import { useEffect, useState } from 'react'
+import { descargarArchivo } from '@/api/cliente'
 import type { Ficha } from '@/api/fichas'
-import { leerPreconsulta, guardarPreconsulta } from '@/api/preconsulta'
+import { guardarPreconsulta, leerPreconsulta } from '@/api/preconsulta'
 import { useSesion } from '@/sesion/useSesion'
+import { cuentaRegresiva } from './experiencia_plus'
 
-/** US-51: experiencia complementaria SIN recargos ni prioridad clínica. */
+const CAMPO = 'w-full rounded-xl border border-tinta-300 bg-white px-3.5 py-2.5 text-[1.0625rem] text-tinta-800 outline-none transition focus:border-marca-500 focus:ring-4 focus:ring-marca-500/20 dark:border-tinta-700 dark:bg-tinta-900 dark:text-tinta-100'
+const TARJETA = 'flex flex-col gap-2 rounded-2xl border border-tinta-200 bg-tinta-50 p-4 dark:border-tinta-800 dark:bg-tinta-950/40'
+const BOTON = 'mt-auto inline-flex items-center justify-center rounded-xl border border-marca-300 px-3 py-2 text-sm font-semibold text-marca-700 transition hover:bg-marca-50 disabled:opacity-50 dark:border-marca-800 dark:text-marca-300 dark:hover:bg-marca-950/40'
+
+function Icono({ d }: { d: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5 text-marca-600 dark:text-marca-400" aria-hidden="true"><path d={d} /></svg>
+}
+
 export function ExperienciaPlus({ ficha, cerrar }: { ficha: Ficha; cerrar: () => void }) {
   const { token } = useSesion()
   const [reason, setReason] = useState('')
   const [questions, setQuestions] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
-  const editable = ficha.status === 'confirmed' && new Date(ficha.starts_at).getTime() > Date.now()
+  const [cargando, setCargando] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+  const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null)
+  const [bajando, setBajando] = useState(false)
+
+  const confirmada = ficha.status === 'confirmed'
+  const futura = new Date(ficha.starts_at).getTime() > Date.now()
+  const editable = confirmada && futura
+  const falta = confirmada ? cuentaRegresiva(ficha.starts_at) : null
+  const cuando = new Date(ficha.starts_at).toLocaleString('es-BO', { dateStyle: 'full', timeStyle: 'short', hourCycle: 'h23' })
+
   useEffect(() => {
-    let alive = true
-    leerPreconsulta(ficha.id, { token }).then(data => {
-      if (alive) { setReason(data.reason); setQuestions(data.questions) }
-    }).catch(() => { if (alive) setMessage('No se pudo cargar la preconsulta.') })
-      .finally(() => { if (alive) setLoading(false) })
-    return () => { alive = false }
+    let vivo = true
+    leerPreconsulta(ficha.id, { token })
+      .then(d => { if (vivo) { setReason(d.reason); setQuestions(d.questions) } })
+      .catch(() => { if (vivo) setAviso({ ok: false, texto: 'No se pudo cargar la preconsulta.' }) })
+      .finally(() => { if (vivo) setCargando(false) })
+    return () => { vivo = false }
   }, [ficha.id, token])
+
   const guardar = async () => {
-    setSaving(true); setMessage('')
+    setGuardando(true); setAviso(null)
     try {
       await guardarPreconsulta(ficha.id, { reason, questions }, { token })
-      setMessage('Preconsulta guardada correctamente.')
-    } catch { setMessage('No se pudo guardar. Verifica la conexión o el estado de la ficha.') }
-    finally { setSaving(false) }
+      setAviso({ ok: true, texto: 'Preconsulta guardada: tu médico la verá al atenderte.' })
+    } catch {
+      setAviso({ ok: false, texto: 'No se pudo guardar. Revisa tu conexión o el estado de la ficha.' })
+    } finally { setGuardando(false) }
   }
-  const calendario = () => {
-    const utc = (date: string) => new Date(date).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-    const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n')
-    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Plataforma Medica//US51//ES', 'BEGIN:VEVENT', `UID:${ficha.id}@fichas`, `DTSTAMP:${utc(new Date().toISOString())}`, `DTSTART:${utc(ficha.starts_at)}`, `DTEND:${utc(ficha.ends_at)}`, `SUMMARY:${esc('Consulta médica - ' + ficha.practitioner_name)}`, `LOCATION:${esc(ficha.branch_name)}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n')
-    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }))
-    const a = document.createElement('a'); a.href = url; a.download = 'mi-cita.ics'; a.click()
-    URL.revokeObjectURL(url)
+
+  const calendario = async () => {
+    setBajando(true)
+    try { await descargarArchivo(`/appointments/appointments/${ficha.id}/calendar.ics`, { token }, 'ficha.ics') }
+    catch { setAviso({ ok: false, texto: 'No se pudo bajar el archivo del calendario.' }) }
+    finally { setBajando(false) }
   }
-  return <div role="dialog" aria-modal="true" aria-label="Tu experiencia de compra" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-gray-900 dark:bg-gray-900 dark:text-white">
-      <div className="flex justify-between gap-4"><h2 className="text-xl font-semibold">Tu ficha, más que un comprobante</h2><button type="button" onClick={cerrar} aria-label="Cerrar">✕</button></div>
-      <p className="mt-2 text-sm">{ficha.patient_name} · {ficha.practitioner_name} · {ficha.branch_name}</p>
-      <p className="mt-1 text-sm">{new Date(ficha.starts_at).toLocaleString('es-BO')}</p>
-      <button type="button" className="mt-3 rounded-lg border px-3 py-2" onClick={calendario}>Agregar al calendario</button>
-      <h3 className="mt-5 font-semibold">Antes de tu cita</h3>
-      <p className="text-sm">Lleva tu identificación y sigue únicamente las instrucciones comunicadas por tu centro médico. Si tienes dudas sobre preparación, consulta con el profesional.</p>
-      <h3 className="mt-4 font-semibold">Preconsulta opcional</h3>
-      {loading ? <p>Cargando…</p> : <div className="mt-2 space-y-3">
-        <label className="block text-sm">Motivo de la consulta<textarea className="mt-1 w-full rounded-lg border bg-transparent p-2" maxLength={1200} rows={3} value={reason} onChange={e => setReason(e.target.value)} disabled={!editable}/></label>
-        <label className="block text-sm">Preguntas para conversar con tu médico<textarea className="mt-1 w-full rounded-lg border bg-transparent p-2" maxLength={1200} rows={3} value={questions} onChange={e => setQuestions(e.target.value)} disabled={!editable}/></label>
-        {editable && <button type="button" className="rounded-lg bg-blue-700 px-4 py-2 text-white disabled:opacity-50" onClick={guardar} disabled={saving}>{saving ? 'Guardando…' : 'Guardar preconsulta'}</button>}
-        {message && <p role="status" className="text-sm">{message}</p>}
-      </div>}
-      <p className="mt-4 text-xs">Este formulario no sustituye una evaluación médica. No compartas información que no quieras registrar.</p>
+
+  const porQueNo = editable ? null : confirmada
+    ? 'El turno ya empezó: la preconsulta se podía completar hasta ese momento.'
+    : 'La preconsulta se completa antes del turno: esta ficha ya no está pendiente.'
+
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onMouseDown={cerrar}>
+    <div role="dialog" aria-modal="true" aria-labelledby="plus-titulo" onMouseDown={e => e.stopPropagation()}
+      className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-tinta-200 bg-white shadow-2xl dark:border-tinta-800 dark:bg-tinta-900">
+      <header className="flex shrink-0 items-start justify-between gap-4 border-b border-tinta-200 px-6 py-5 dark:border-tinta-800">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-marca-600 dark:text-marca-400">Tu ficha, más que un comprobante</p>
+          <h2 id="plus-titulo" className="mt-1 text-xl font-bold text-tinta-900 dark:text-tinta-50">{ficha.practitioner_name}</h2>
+          <p className="mt-0.5 text-sm text-tinta-500">{ficha.branch_name} · <span className="first-letter:uppercase">{cuando}</span></p>
+        </div>
+        <button type="button" onClick={cerrar} aria-label="Cerrar"
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl text-xl text-tinta-500 transition hover:bg-tinta-100 dark:hover:bg-tinta-800">×</button>
+      </header>
+
+      <div className="space-y-6 overflow-y-auto px-6 py-5">
+        {falta && <p className="rounded-2xl bg-marca-50 px-4 py-3 text-center font-semibold text-marca-800 dark:bg-marca-950/40 dark:text-marca-200">
+          {falta} para tu ficha con {ficha.practitioner_name}
+        </p>}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {editable && <section className={TARJETA}>
+            <Icono d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+            <h3 className="font-semibold text-tinta-900 dark:text-tinta-50">Calendario</h3>
+            <p className="text-sm text-tinta-600 dark:text-tinta-300">Agrégala con un aviso un día antes. Sirve para Google, Outlook y el celular.</p>
+            <button type="button" className={BOTON} onClick={() => void calendario()} disabled={bajando}>{bajando ? 'Bajando…' : 'Agregar a mi calendario'}</button>
+          </section>}
+          {ficha.branch_maps_url && <section className={TARJETA}>
+            <Icono d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Zm0-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+            <h3 className="font-semibold text-tinta-900 dark:text-tinta-50">Cómo llegar</h3>
+            <p className="text-sm text-tinta-600 dark:text-tinta-300">{ficha.branch_address || ficha.branch_name}</p>
+            <a className={BOTON} href={ficha.branch_maps_url} target="_blank" rel="noreferrer">Abrir el mapa</a>
+          </section>}
+          <section className={TARJETA}>
+            <Icono d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" />
+            <h3 className="font-semibold text-tinta-900 dark:text-tinta-50">Cómo prepararte</h3>
+            <ul className="list-disc space-y-1 pl-4 text-sm text-tinta-600 dark:text-tinta-300">
+              <li>Llega 10 minutos antes.</li>
+              <li>Lleva tu identificación y el comprobante con QR.</li>
+              <li>Trae tus recetas y estudios anteriores.</li>
+            </ul>
+          </section>
+        </div>
+
+        <section className="space-y-3">
+          <div>
+            <h3 className="font-semibold text-tinta-900 dark:text-tinta-50">Preconsulta <span className="font-normal text-tinta-500">(opcional)</span></h3>
+            <p className="text-sm text-tinta-500">{porQueNo ?? 'Cuéntale a tu médico el motivo y lo que quieres preguntarle: lo ve al abrir tu atención.'}</p>
+          </div>
+          {cargando ? <p role="status" className="text-sm text-tinta-500">Cargando…</p>
+            : porQueNo ? (reason || questions
+              ? <dl className="space-y-2 text-sm">
+                {reason && <div><dt className="font-medium text-tinta-700 dark:text-tinta-300">Motivo de consulta</dt><dd className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{reason}</dd></div>}
+                {questions && <div><dt className="font-medium text-tinta-700 dark:text-tinta-300">Preguntas para el médico</dt><dd className="whitespace-pre-wrap text-tinta-800 dark:text-tinta-100">{questions}</dd></div>}
+              </dl>
+              : <p className="text-sm text-tinta-500">No anotaste una preconsulta para esta ficha.</p>)
+            : <>
+              <label className="block space-y-1.5 text-sm">
+                <span className="font-medium text-tinta-700 dark:text-tinta-300">Motivo de consulta</span>
+                <textarea className={`${CAMPO} min-h-20 resize-y`} maxLength={1200} value={reason} onChange={e => setReason(e.target.value)} placeholder="Ej.: dolor de cabeza desde hace una semana" />
+              </label>
+              <label className="block space-y-1.5 text-sm">
+                <span className="font-medium text-tinta-700 dark:text-tinta-300">Preguntas para el médico</span>
+                <textarea className={`${CAMPO} min-h-20 resize-y`} maxLength={1200} value={questions} onChange={e => setQuestions(e.target.value)} placeholder="Ej.: ¿puedo seguir tomando ibuprofeno?" />
+              </label>
+              <button type="button" onClick={() => void guardar()} disabled={guardando}
+                className="rounded-xl bg-marca-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-marca-700 disabled:opacity-50">
+                {guardando ? 'Guardando…' : 'Guardar preconsulta'}</button>
+            </>}
+          {aviso && <p role="status" className={`text-sm font-medium ${aviso.ok ? 'text-marca-700 dark:text-marca-300' : 'text-alerta-600 dark:text-alerta-400'}`}>{aviso.texto}</p>}
+          <p className="text-xs text-tinta-500">Esta información no sustituye una evaluación médica.</p>
+        </section>
+      </div>
     </div>
   </div>
 }

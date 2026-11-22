@@ -149,6 +149,7 @@ class EncounterSerializer(serializers.ModelSerializer):
     prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
     orders = MedicalOrderSerializer(many=True, read_only=True)
     vital_signs = serializers.SerializerMethodField()
+    preconsultation = serializers.SerializerMethodField()
 
     class Meta:
         model = Encounter
@@ -157,9 +158,25 @@ class EncounterSerializer(serializers.ModelSerializer):
             "patient", "practitioner_name", "branch_name",
             "reason", "evolution", "diagnosis", "indications", "treatment",
             "signed_at", "signed_by_name", "amendments",
-            "prescription_items", "orders", "vital_signs", "created_at", "updated_at",
+            "prescription_items", "orders", "vital_signs", "preconsultation",
+            "created_at", "updated_at",
         ]
         read_only_fields = fields
+
+    def get_preconsultation(self, encuentro):
+        """US-51: lo que el paciente anotó antes del turno, o ``None``.
+
+        Lo escribe el paciente, no el médico: se muestra aparte y nunca entra
+        en lo firmado.
+        """
+        from appointments.models import AppointmentPreconsultation
+
+        item = (AppointmentPreconsultation.objects
+                .filter(appointment_id=encuentro.appointment_id).first())
+        if item is None or not (item.reason or item.questions):
+            return None
+        return {"reason": item.reason, "questions": item.questions,
+                "updated_at": item.updated_at}
 
     def get_vital_signs(self, encuentro):
         """US-53: ``None`` si no se tomaron; nunca un objeto con todo vacío."""

@@ -39,6 +39,9 @@ export interface Ficha {
   practitioner_name: string
   branch: string
   branch_name: string
+  // US-51: «Cómo llegar». Sin coordenadas en la sede, `branch_maps_url` es null.
+  branch_address: string
+  branch_maps_url: string | null
   starts_at: string
   ends_at: string
   status: EstadoFicha

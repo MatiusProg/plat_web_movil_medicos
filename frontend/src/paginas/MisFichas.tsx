@@ -404,7 +404,7 @@ export function MisFichas() {
                       </button>
                     )}
                     {conComprobante && (
-                      <button type="button" onClick={() => setFichaPlus(ficha)} className="rounded-xl border border-blue-500 px-3 py-1.5 text-sm font-semibold text-blue-700 dark:text-blue-300">Mi experiencia Plus</button>
+                      <button type="button" onClick={() => setFichaPlus(ficha)} className="border-marca-300 text-marca-700 dark:border-marca-800 dark:text-marca-300 hover:bg-marca-50 dark:hover:bg-marca-950/40 rounded-xl border px-3 py-1.5 text-sm font-semibold transition">Mi experiencia Plus</button>
                     )}
                     {conComprobante && (
                       <button
