@@ -112,6 +112,9 @@ function Get-PaqueteTipo($nombre, $rehacer) {
 # externos del caso). Los actores de los paquetes de casos de uso no se
 # tocan; sus conectores con lo borrado se van con lo borrado.
 function Quitar-Diagrama($pkg, $dia) {
+    # La coleccion queda vieja despues de crear el caso anterior en la misma
+    # corrida: sin el Refresh, GetAt devolvia null (22/11/26).
+    $pkg.Elements.Refresh(); $pkg.Diagrams.Refresh()
     $propios = @{}
     foreach ($do in $dia.DiagramObjects) {
         $el = $ea.GetElementByID($do.ElementID)
@@ -121,8 +124,14 @@ function Quitar-Diagrama($pkg, $dia) {
         if ($pkg.Diagrams.GetAt($i).DiagramID -eq $dia.DiagramID) { $pkg.Diagrams.DeleteAt($i, $false) }
     }
     $pkg.Diagrams.Refresh()
-    for ($i = $pkg.Elements.Count - 1; $i -ge 0; $i--) {
-        if ($propios.ContainsKey([int]$pkg.Elements.GetAt($i).ElementID)) { $pkg.Elements.DeleteAt($i, $false) }
+    # Uno por uno, buscando su posicion de nuevo cada vez: GetAt con la
+    # coleccion recien agrandada por AddNew tiraba «referencia a objeto no
+    # establecida» en el segundo caso de una misma corrida (22/11/26).
+    foreach ($id in @($propios.Keys)) {
+        $pkg.Elements.Refresh()
+        $i = 0; $pos = -1
+        foreach ($x in $pkg.Elements) { if ([int]$x.ElementID -eq $id) { $pos = $i; break }; $i++ }
+        if ($pos -ge 0) { $pkg.Elements.DeleteAt($pos, $true) }
     }
     $pkg.Elements.Refresh()
 }
@@ -195,7 +204,9 @@ function Claves-Casos($caso) {
 # «404», «{status, text_id}» o «(crudo, "gemini")» se escribe return(...).
 function Rotulo-Mensaje($it) {
     $m = [string]$it.m
-    if ($m -match '^[^\s(){}]+\(.*\)$') { return $m }
+    if ($m -match '^[^\s(){}]+\(.*\)(\[[^\]]*\])?$') { return $m }
+    # Una llamada con su corte de QuerySet (filter(...)[:30]) se deja como esta.
+    if (-not $it.ret -and $m.Contains('(')) { return $m }
     if ($m -match '^\((.*)\)$') { return "return($($Matches[1]))" }
     return "return($m)"
 }
