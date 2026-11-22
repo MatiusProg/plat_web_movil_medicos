@@ -160,6 +160,8 @@ export interface Encuentro extends Record<Seccion, string> {
   orders: Orden[]
   /** US-53: `null` si no se tomaron. */
   vital_signs: SignosVitales | null
+  /** US-51: lo que el paciente anotó antes del turno; no es parte de lo firmado. */
+  preconsultation: { reason: string; questions: string; updated_at: string } | null
   created_at: string
   updated_at: string
   /** US-48: sólo en el historial propio. El médico nunca la recibe. */

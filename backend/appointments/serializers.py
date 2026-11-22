@@ -19,6 +19,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
         source="practitioner.full_name", read_only=True,
     )
     branch_name = serializers.CharField(source="branch.name", read_only=True)
+    # US-51: «Cómo llegar». `branch_maps_url` es `None` si la sede no tiene
+    # coordenadas, y entonces el botón no aparece.
+    branch_address = serializers.CharField(source="branch.address", read_only=True)
+    branch_maps_url = serializers.SerializerMethodField()
     # US-18: cuánto cuesta y en qué quedó el pago. Lo calcula el backend; el
     # móvil sólo lo muestra (regla 10 del Sprint 2).
     fee = serializers.SerializerMethodField()
@@ -29,6 +33,11 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
         amount, currency = quote(obj)
         return {"amount": str(amount), "currency": currency}
+
+    def get_branch_maps_url(self, obj):
+        from .calendar import maps_url
+
+        return maps_url(obj.branch)
 
     def get_payment_status(self, obj):
         # El último intento: un `succeeded` o `refunded` siempre es el último,
@@ -42,7 +51,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "id",
             "patient", "patient_name",
             "practitioner", "practitioner_name",
-            "branch", "branch_name",
+            "branch", "branch_name", "branch_address", "branch_maps_url",
             "starts_at", "ends_at",
             "status",
             "expires_at",

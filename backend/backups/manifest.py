@@ -136,6 +136,10 @@ TABLES: tuple[Table, ...] = (
     # las fichas al restaurar fallaría con una entrada colgando de ellas. Se
     # purga y se repone como las fichas, de la misma foto del archivo.
     Table("appointments", "WaitlistEntry", "Lista de espera"),
+    # US-51: lo que el paciente anotó antes de su turno. Cuelga de la ficha con
+    # `PROTECT`, igual que la lista de espera: si no viajara, borrar las fichas
+    # al restaurar fallaría. Se purga y se repone con ellas.
+    Table("appointments", "AppointmentPreconsultation", "Preconsultas"),
     Table("payments", "Payment", "Pagos", strategy=APPEND),
     Table("encounters", "Encounter", "Atenciones médicas", strategy=APPEND),
     Table("encounters", "EncounterAmendment", "Enmiendas de atenciones",

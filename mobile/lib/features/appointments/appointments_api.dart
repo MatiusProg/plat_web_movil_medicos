@@ -60,6 +60,8 @@ class Appointment {
     this.practitionerId = '',
     required this.practitionerName,
     required this.branchName,
+    this.branchAddress = '',
+    this.branchMapsUrl,
     required this.startsAt,
     required this.endsAt,
     required this.status,
@@ -79,6 +81,10 @@ class Appointment {
   final String practitionerId;
   final String practitionerName;
   final String branchName;
+
+  /// US-51: «Cómo llegar». `null` si la sede no tiene coordenadas.
+  final String branchAddress;
+  final String? branchMapsUrl;
   final DateTime startsAt;
   final DateTime endsAt;
   final String status;
@@ -107,6 +113,8 @@ class Appointment {
       practitionerId: json['practitioner'] as String? ?? '',
       practitionerName: json['practitioner_name'] as String? ?? '',
       branchName: json['branch_name'] as String? ?? '',
+      branchAddress: json['branch_address'] as String? ?? '',
+      branchMapsUrl: json['branch_maps_url'] as String?,
       startsAt:
           _fecha(json['starts_at']) ?? DateTime.fromMillisecondsSinceEpoch(0),
       endsAt: _fecha(json['ends_at']) ?? DateTime.fromMillisecondsSinceEpoch(0),

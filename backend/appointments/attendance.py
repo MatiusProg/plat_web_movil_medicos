@@ -18,7 +18,7 @@ import uuid
 
 from django.conf import settings
 from django.core import signing
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.urls import reverse
@@ -147,10 +147,21 @@ def send_confirmation_email(appointment_id, organization_id) -> bool:
                 "Confirmá que vas a asistir con este enlace:\n\n"
                 f"  {attendance_link(appointment)}\n"
             )
-        send_mail(
+            # US-51: «Cómo llegar» y la ficha adjunta para el calendario.
+            from .calendar import build_ics, ics_filename, maps_url
+
+            mapa = maps_url(appointment.branch)
+            if mapa:
+                cuerpo += f"\nCómo llegar a {appointment.branch.name}:\n\n  {mapa}\n"
+            cuerpo += ("\nTe adjuntamos la ficha para tu calendario: ábrela y se "
+                       "agrega con un aviso un día antes.\n")
+            ics, nombre = build_ics(appointment), ics_filename(appointment)
+        correo = EmailMessage(
             "Tu ficha está confirmada", cuerpo,
-            settings.DEFAULT_FROM_EMAIL, [destino], fail_silently=False,
+            settings.DEFAULT_FROM_EMAIL, [destino],
         )
+        correo.attach(nombre, ics, "text/calendar")
+        correo.send(fail_silently=False)
         return True
     except Exception:  # noqa: BLE001
         logger.exception("No se pudo enviar el aviso de la ficha %s", appointment_id)

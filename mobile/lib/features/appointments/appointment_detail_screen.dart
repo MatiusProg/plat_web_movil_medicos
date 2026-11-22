@@ -523,6 +523,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
           onPressed: () => showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,
+            showDragHandle: true,
+            useSafeArea: true,
             builder: (_) => PreconsultaPlusSheet(client: _client!, ficha: ficha),
           ),
         ),
