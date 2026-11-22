@@ -96,8 +96,10 @@ function Factores({ factores }: { factores: FichaEnRiesgo['factors'] }) {
 
 /** Los motivos con que el reentrenamiento rechaza a un candidato (noshow/retraining.py). */
 const MOTIVO_RECHAZO: Record<string, string> = {
-  sin_evaluacion_independiente: 'No hay suficientes fichas posteriores al vigente para compararlos sin fuga: se mantiene el vigente',
-  no_mejora_vigente: 'No mejora al vigente en las mismas fichas: se mantiene el vigente',
+  // Se rechaza si las fichas posteriores al vigente son menos de 20 o no tienen
+  // asistencias y ausencias a la vez (retraining.MIN_EVALUATION).
+  sin_evaluacion_independiente: 'Sin comparación justa con el vigente: las fichas posteriores a su entrenamiento son menos de 20 o no tienen asistencias y ausencias a la vez. Se mantiene el vigente',
+  no_mejora_vigente: 'No mejora al vigente en las mismas fichas. Se mantiene el vigente',
 }
 
 /** Qué dice la columna «Comparación con vigente anterior» de una versión. */
@@ -108,7 +110,7 @@ function textoComparacion(v: VersionRiesgo): string {
   }
   if (c?.reason) {
     const base = MOTIVO_RECHAZO[c.reason] ?? 'Rechazado por el control del reentrenamiento'
-    return c.holdout_n !== undefined ? `${base} (${c.holdout_n} fichas disponibles)` : base
+    return c.holdout_n !== undefined ? `${base} (${c.holdout_n} fichas posteriores)` : base
   }
   if (v.status === 'rejected' && !v.beats_baseline) return 'No supera la línea base: nunca se usó'
   return 'Entrenamiento inicial'
