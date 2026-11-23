@@ -93,6 +93,11 @@ CAMBIOS = [
      'cada historia corresponde a su caso de uso.',
      'Los casos de uso salen del paquete 3.10: cada historia corresponde a su caso de uso. La descripción de '
      'cada nota está en la tabla que sigue.'),
+    ('T-55, la verificación final de las IA en producción, queda para antes de la revisión.',
+     'T-55, la verificación final de las IA en producción, se hizo el 22/11/26 sobre la base de producción: '
+     'urbari y scsalud tienen su modelo de inasistencia vigente, urbari tiene puntuadas sus 61 fichas futuras '
+     'y su reentrenamiento corrió ese día, la proyección de demanda responde en las ocho organizaciones activas '
+     'y los resúmenes y preparaciones generados con Gemini están aprobados por el médico.'),
 ]
 
 CONCLUSIONES = {
@@ -259,6 +264,22 @@ for p in body.iter(qn('w:p')):
             poner(p, t.replace(viejo, nuevo))
             hechos += 1
 assert hechos >= len(CAMBIOS), hechos  # las del Sprint 4 también están en su revisión y su retrospectiva (capítulo 4)
+
+# Sprint Backlog: todas las tareas están entregadas (sólo la retroalimentación de la revisión del
+# Sprint 2 sigue pendiente, y esa está en un párrafo, no en el backlog).
+cerradas = 0
+for tbl in body.iter(qn('w:tbl')):
+    trs = tbl.findall(qn('w:tr'))
+    cab = [texto(tc).strip() for tc in trs[0].findall(qn('w:tc'))] if trs else []
+    if 'Estado' not in cab or 'Prioridad' not in cab:
+        continue
+    k = cab.index('Estado')
+    for tr in trs[1:]:
+        tcs = tr.findall(qn('w:tc'))
+        if len(tcs) > k and texto(tcs[k]).strip() == 'Pendiente':
+            celda(tcs[k], 'Completado')
+            cerradas += 1
+print('tareas del backlog cerradas:', cerradas)
 
 # Conclusiones individuales
 for nombre, parrafos in CONCLUSIONES.items():
