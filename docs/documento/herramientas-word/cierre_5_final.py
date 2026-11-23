@@ -9,8 +9,8 @@ Uso: python cierre_5_final.py ENTRADA.docx SALIDA.docx
   quedó programado en producción (PR #134).
 - Conclusiones: reemplaza los cinco «[A completar por …]».
 
-Notas de los Sprints 1 a 3: las que sacó cada uno en su revisión. Sprint 4: las
-que propuso el equipo, con un promedio de 90, a la espera de la revisión.
+Notas de los Sprints 1 a 3: las que sacó cada uno en su revisión. Sprint 4: 90
+para los cinco, la nota conjunta que decidió el equipo.
 """
 import copy
 import sys
@@ -31,7 +31,7 @@ NOTAS = {
     'Sprint 1': {KAREN: 90, MATEO: 90, MIGUEL: 90, ALEX: 90, DANIEL: 90},
     'Sprint 2': {KAREN: 65, MATEO: 90, MIGUEL: 80, ALEX: 65, DANIEL: 60},
     'Sprint 3': {KAREN: 85, MATEO: 85, MIGUEL: 85, ALEX: 85, DANIEL: 42.5},
-    'Sprint 4': {KAREN: 92, MATEO: 95, MIGUEL: 88, ALEX: 90, DANIEL: 85},
+    'Sprint 4': {KAREN: 90, MATEO: 90, MIGUEL: 90, ALEX: 90, DANIEL: 90},  # nota conjunta, decidida por el equipo
 }
 for s, n in NOTAS.items():
     assert all(v < 100 for v in n.values()), s
@@ -186,7 +186,9 @@ def celda(tc, valor, rpr_de=None):
 
 
 def num(v):
-    return (f'{v:.2f}'.rstrip('0').rstrip('.')).replace('.', ',')
+    from decimal import ROUND_HALF_UP, Decimal
+    d = Decimal(str(v)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    return (f'{d:.2f}'.rstrip('0').rstrip('.')).replace('.', ',')
 
 
 doc = docx.Document(ENT)
