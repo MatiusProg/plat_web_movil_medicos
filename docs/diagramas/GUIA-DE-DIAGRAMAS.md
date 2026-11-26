@@ -18,6 +18,7 @@ Sale de dos guías que ya existían:
 2. [Modelo C4 en Lucidchart](#2-modelo-c4-en-lucidchart)
 3. [Antes de abrir Enterprise Architect](#3-antes-de-abrir-enterprise-architect)
    - [3.4 Desde el Sprint 3: «Diseño de clase» en lugar de «análisis de clase»](#34-desde-el-sprint-3-diseño-de-clase-en-lugar-de-análisis-de-clase)
+   - [3.5 Sprint 4](#35-sprint-4)
 4. [Diagramas de clases y de comunicación](#4-diagramas-de-clases-y-de-comunicación)
 5. [Diagrama de secuencia](#5-diagrama-de-secuencia)
 6. [Diagrama de estado](#6-diagrama-de-estado)
@@ -518,6 +519,32 @@ Orden: `ea-cu-modelo-sprint3`, `ea-comunicacion-sprint3`, `ea-diseno-clases-spri
 **`-UsarEAAbierto`.** En algunas máquinas, crear el repositorio de EA por COM falla con `CO_E_SERVER_EXEC_FAILURE (0x80080005)`, sobre todo con la versión de prueba, cuyo aviso sale como ventana aparte. En ese caso se deja EA abierto **sin ningún proyecto** y se corre el generador con `-UsarEAAbierto`: usa ese EA en vez de levantar otro, y al terminar no lo cierra. El eapx que se escribe **no** tiene que estar abierto en EA.
 
 Los PNG exportados están en `docs/diagramas/png/Sprint3/`. Los rótulos de comunicación se corrieron por script, escribiendo `SX`/`SY` en `t_diagramlinks.Geometry`. La secuencia, el estado, el tiempo y la navegación del Sprint 3 los armó Karen con los generadores de la tabla.
+
+### 3.5 Sprint 4
+
+Mismas reglas y mismo orden que en el Sprint 3, con los generadores `scripts/ea-*-sprint4.ps1`:
+
+| Archivo | Qué hace |
+|---|---|
+| `scripts/ea-sprint4-casos.ps1` | Los datos de los 16 casos de uso (CU36–CU43 y CU47–CU54): participantes, métodos, mensajes y relaciones. Es la fuente de los mensajes y las guardas de la secuencia. |
+| `scripts/ea-sprint4-comun.ps1` | Lo común, cargado con dot-sourcing. |
+| `ea-cu-modelo-sprint4.ps1` | 1.3, casos de uso del Sprint 4 (copia del Sprint 3 más los nuevos). |
+| `ea-comunicacion-sprint4.ps1` | 2.1.3, comunicación. |
+| `ea-diseno-clases-sprint4.ps1` | Diseño de clase. **Después de `-Rehacer` hay que rehacer también la secuencia**: sus líneas de vida apuntan a estas clases. |
+| `ea-secuencia-sprint4.ps1` | Secuencia. |
+| `scripts/ea-sprint4-dinamica.ps1` | Los datos de estado y tiempo. |
+| `ea-estado-sprint4.ps1` / `ea-tiempo-sprint4.ps1` | Estado y tiempo; con `-Caso`, sólo esos casos. |
+| `scripts/ea-sprint4-navegacion-datos.ps1` + `ea-navegacion-sprint4.ps1` | Navegación: el sistema completo y P5, P6, P7, P9 y P10. Conviene generar siempre todos juntos. |
+| `ea-exportar-png-sprint4.ps1` | Exporta a una carpeta temporal, **sólo para verificar**. Los PNG del documento se exportan a mano desde EA. |
+
+**Hechos a mano por Luis** sobre su copia de `PlataformaMedica.eapx`, sin generador:
+
+- el **modelo de dominio del Sprint 4** (`2.1.2 Modelo de Dominio - Sprint 4`), cargado sobre una copia del del Sprint 3 con los cambios de `modelo-dominio-sprint4-cambios.md`;
+- la **secuencia de CU51, CU52, CU53 y CU54**, con sus fragmentos combinados.
+
+Correcciones que se aplicaron a esa secuencia y que valen para cualquiera que se rehaga: **las llamadas van con línea continua y sólo los retornos con punteada** (estaban punteadas CU51 2.9, CU52 1.9, CU53 2.5 y CU54 4.3 y 4.5); en CU54, `4.8 GraficoSigno` va dentro del `loop`; en CU51, los dos `alt` (3.2 y 2.9) van separados. En CU50, si alguien lo edita: 2.7 y 2.8 continuas, 3.1 punteada.
+
+Los PNG están en `docs/diagramas/png/Sprint4/`, una carpeta por tipo de diagrama.
 
 ---
 
